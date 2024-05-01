@@ -40,21 +40,23 @@ use crate::packager::{Config, Context, Framework, Packager};
 
 #[derive(ValueEnum, Debug, Copy, Clone)]
 pub enum PackageType {
+    #[value(help = "A macOS/iOS framework bundle generator")]
     Framework
 }
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    #[arg(short = 't', long = "target")]
+    #[arg(short = 't', long = "target", help = "Specify which target(s) to build for.")]
     target_list: Vec<String>,
 
-    #[arg(long)]
+    #[arg(long, help = "Build rust targets in release mode.")]
     release: bool,
 
-    #[arg(short = 'p', long = "package", required = true)]
+    #[arg(short = 'p', long = "package", required = true, help = "The packager engine to use.")]
     package_type: PackageType,
 
+    #[arg(help = "Root path of the crate, where to find the manifest (Cargo.toml).")]
     root: Option<PathBuf>
 }
 

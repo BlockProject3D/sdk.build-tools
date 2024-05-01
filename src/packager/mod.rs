@@ -73,15 +73,15 @@ pub trait Packager {
         Ok(())
     }
 
-    fn do_build(&self, context: &Context) -> Result<(), Self::Error> {
+    fn do_build(&self, _context: &Context) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn do_package_target(&self, target: &str, context: &Context) -> Result<(), Self::Error> {
+    fn do_package_target(&self, _target: &str, _context: &Context) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn do_package(&self, context: &Context) -> Result<(), Self::Error> {
+    fn do_package(&self, _context: &Context) -> Result<(), Self::Error> {
         Ok(())
     }
 }
