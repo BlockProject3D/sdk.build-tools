@@ -56,6 +56,18 @@ impl<'a> Context<'a> {
         };
         self.root.join("target").join(target).join(config_path_name)
     }
+
+    pub fn get_package_name(&self) -> &str {
+        &self.manifest.package().name
+    }
+
+    pub fn get_version(&self) -> &str {
+        self.manifest.package().version()
+    }
+
+    pub fn get_bin_path(&self, target: &str) -> PathBuf {
+        self.get_target_path(target).join(format!("lib{}.dylib", self.get_package_name().replace("-", "_")))
+    }
 }
 
 pub trait Packager {

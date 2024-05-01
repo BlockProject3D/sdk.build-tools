@@ -27,17 +27,23 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::fmt::{Display, Formatter};
+use std::process::Command;
 use serde::Deserialize;
-use crate::packager::Packager;
+use crate::packager::{Context, Packager};
 
 #[derive(Deserialize)]
 pub struct Framework {
-
+    name: String,
+    identifier: String,
+    includes: Option<String>,
+    umbrella: Option<String>
 }
 
 #[derive(Debug)]
 pub enum Error {
-    Io(std::io::Error)
+    Io(std::io::Error),
+    Lipo,
+    InstallNameTool
 }
 
 impl From<std::io::Error> for Error {
@@ -49,7 +55,9 @@ impl From<std::io::Error> for Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Io(e) => write!(f, "io error: {}", e)
+            Error::Io(e) => write!(f, "io error: {}", e),
+            Error::Lipo => write!(f, "failed to run lipo tool"),
+            Error::InstallNameTool => write!(f, "failed to run install_name_tool")
         }
     }
 }
@@ -59,4 +67,124 @@ impl std::error::Error for Error {}
 impl Packager for Framework {
     const NAME: &'static str = "Framework";
     type Error = Error;
+
+    fn do_package_target(&self, target: &str, context: &Context) -> Result<(), Self::Error> {
+        let bin_dir;
+        let res_dir;
+        let module_dir;
+        let framework_dir = &context.get_target_path(target).join(format!("{}.framework", self.name));
+        if target.contains("darwin") {
+            bin_dir = format!("{}.framework/Versions/A/", self.name);
+            res_dir = format!("{}.framework/Versions/A/Resources", self.name);
+            module_dir = format!("{}.framework/Versions/A/Modules", self.name)
+        } else {
+            bin_dir = format!("{}.framework/", self.name);
+            res_dir = format!("{}.framework/", self.name);
+            module_dir = format!("{}.framework/Modules", self.name);
+        }
+        let bin_dir = &context.get_target_path(target).join(bin_dir);
+        let res_dir = &context.get_target_path(target).join(res_dir);
+        let module_dir = &context.get_target_path(target).join(module_dir);
+        if framework_dir.exists() {
+            std::fs::remove_dir_all(framework_dir)?;
+        }
+        std::fs::create_dir_all(bin_dir)?;
+        std::fs::create_dir(res_dir)?;
+        std::fs::create_dir(module_dir)?;
+        let code = Command::new("lipo")
+            .arg("-create")
+            .arg(context.get_bin_path(target))
+            .arg("-output")
+            .arg(bin_dir.join(&self.name))
+            .status()?;
+        if !code.success() {
+            return Err(Error::Lipo);
+        }
+        let code = Command::new("install_name_tool")
+            .arg("-id")
+            .arg(format!("@rpath/{}.framework/{}", self.name, self.name))
+            .arg(&self.name)
+            .current_dir(bin_dir)
+            .status()?;
+        if !code.success() {
+            return Err(Error::InstallNameTool);
+        }
+        if target.contains("darwin") {
+            std::os::unix::fs::symlink("A", framework_dir.join("Versions/Current"))?;
+            std::os::unix::fs::symlink(format!("Versions/Current/{}", self.name), framework_dir.join(&self.name))?;
+            std::os::unix::fs::symlink("Versions/Current/Resources", framework_dir.join("Resources"))?;
+            std::os::unix::fs::symlink("Versions/Current/Modules", framework_dir.join("Modules"))?;
+        }
+        if let Some(includes) = &self.includes {
+            if !context.root.join(includes).exists() {
+                println!("Warning: Header directory {} not found in crate root!", includes);
+            }
+            copy_dir::copy_dir(context.root.join(includes), bin_dir.join("Headers"))?;
+        } else {
+            std::fs::create_dir(bin_dir.join("Headers"))?;
+        }
+        if target.contains("darwin") {
+            std::os::unix::fs::symlink("Versions/Current/Headers", framework_dir.join("Headers"))?;
+        }
+        let motherfuckingrust = format!("{}.h", self.name);
+        let umbrella = self.umbrella.as_ref().unwrap_or(&motherfuckingrust);
+        let umbrella_path = bin_dir.join("Headers").join(umbrella);
+        if !umbrella_path.exists() {
+            std::fs::write(umbrella_path, "/* Empty generated umbrella header to ensure Xcode can link the framework. */")?;
+        }
+        std::fs::write(module_dir.join("module.modulemap"), format!("framework module {} {{
+    umbrella header \"{}\"
+
+    export *
+    module * {{
+        export *
+    }}
+}}
+
+", self.name, umbrella))?;
+        let platforms = if target.contains("darwin") {
+            "<string>MacOSX</string>"
+        } else {
+            "<string>iPhoneOS</string>\n<string>iPadOS</string>"
+        };
+        let build_number = String::from_utf8_lossy(&Command::new("sw_vers").arg("-buildVersion").output()?.stdout).replace("\n", "");
+        let version = context.get_version().split("-").next().unwrap();
+        std::fs::write(res_dir.join("Info.plist"), format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+    <key>BuildMachineOSBuild</key>
+    <string>{}</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>{}</string>
+    <key>CFBundleIdentifier</key>
+    <string>{}</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>{}</string>
+    <key>CFBundlePackageType</key>
+    <string>FMWK</string>
+    <key>CFBundleShortVersionString</key>
+    <string>{}</string>
+    <key>CFBundleSupportedPlatforms</key>
+    <array>
+        {}
+    </array>
+    <key>CFBundleVersion</key>
+    <string>{}</string>
+    <key>MinimumOSVersion</key>
+    <string>11.0</string>
+    <key>UIDeviceFamily</key>
+    <array>
+        <integer>1</integer>
+        <integer>2</integer>
+    </array>
+</dict>
+</plist>
+", build_number, self.name, self.identifier, self.name, version, platforms, version))?;
+        Ok(())
+    }
 }
