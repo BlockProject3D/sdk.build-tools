@@ -26,31 +26,22 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod packager;
-mod manifest_ext;
-mod core;
-mod args;
-
 use std::path::PathBuf;
-use cargo_toml::Manifest;
 use clap::Parser;
-use current_platform::CURRENT_PLATFORM;
-use crate::args::Args;
-use crate::core::ResultExt;
-use crate::packager::interface::{Config, Context};
+use crate::packager::PackagerType;
 
-fn main() {
-    let mut args = Args::parse();
-    if args.target_list.len() == 0 {
-        args.target_list.push(CURRENT_PLATFORM.into());
-    }
-    let collected: Vec<&str> = args.target_list.iter().map(|v| &**v).collect();
-    let root = args.root.unwrap_or(PathBuf::from("./"));
-    let ctx = Context {
-        root: &root,
-        manifest: Manifest::from_path(&root.join("Cargo.toml")).expect_exit("Failed to load root manifest"),
-        config: if args.release { Config::Release } else { Config::Debug },
-        targets: &collected
-    };
-    args.package_type.call(&ctx);
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Args {
+    #[arg(short = 't', long = "target", help = "Specify which target(s) to build for.")]
+    pub target_list: Vec<String>,
+
+    #[arg(long, help = "Build rust targets in release mode.")]
+    pub release: bool,
+
+    #[arg(short = 'p', long = "package", required = true, help = "The packager engine to use.")]
+    pub package_type: PackagerType,
+
+    #[arg(help = "Root path of the crate, where to find the manifest (Cargo.toml).")]
+    pub root: Option<PathBuf>
 }

@@ -26,31 +26,43 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod packager;
-mod manifest_ext;
-mod core;
-mod args;
+use std::error::Error;
+use serde::de::DeserializeOwned;
+use crate::manifest_ext::parse_manifest;
+use crate::packager::interface::{Context, Packager};
 
-use std::path::PathBuf;
-use cargo_toml::Manifest;
-use clap::Parser;
-use current_platform::CURRENT_PLATFORM;
-use crate::args::Args;
-use crate::core::ResultExt;
-use crate::packager::interface::{Config, Context};
+pub trait ResultExt<T> {
+    fn expect_exit(self, msg: &str) -> T;
+}
 
-fn main() {
-    let mut args = Args::parse();
-    if args.target_list.len() == 0 {
-        args.target_list.push(CURRENT_PLATFORM.into());
+impl<T, E: Error> ResultExt<T> for Result<T, E> {
+    fn expect_exit(self, msg: &str) -> T {
+        match self {
+            Ok(v) => v,
+            Err(e) => {
+                eprintln!("{}: {}", msg, e);
+                std::process::exit(1);
+            }
+        }
     }
-    let collected: Vec<&str> = args.target_list.iter().map(|v| &**v).collect();
-    let root = args.root.unwrap_or(PathBuf::from("./"));
-    let ctx = Context {
-        root: &root,
-        manifest: Manifest::from_path(&root.join("Cargo.toml")).expect_exit("Failed to load root manifest"),
-        config: if args.release { Config::Release } else { Config::Debug },
-        targets: &collected
-    };
-    args.package_type.call(&ctx);
+}
+
+pub fn run_packager<T: Packager + DeserializeOwned>(context: &Context) {
+    println!("Initializing packager {}...", T::NAME);
+    let packager: T = parse_manifest(context.root)
+        .expect_exit("Failed to load packager configuration from root manifest");
+    println!("Building targets...");
+    for target in context.targets {
+        println!("Building target '{}'...", target);
+        packager.do_build_target(target, context).expect_exit("Failed to build target");
+    }
+    println!("Running post build phase...");
+    packager.do_build(context).expect_exit("Failed to run post-build phase");
+    println!("Packaging targets...");
+    for target in context.targets {
+        println!("Packaging target '{}'...", target);
+        packager.do_package_target(target, context).expect_exit("Failed to package target");
+    }
+    println!("Generating full package...");
+    packager.do_package(context).expect_exit("Failed to generate full package");
 }

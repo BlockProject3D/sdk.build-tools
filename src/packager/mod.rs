@@ -26,74 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod framework;
+pub mod interface;
+mod util;
 
-pub use framework::Framework;
+use crate::packager::util::packager_registry;
 
-use std::error::Error;
-use std::path::{Path, PathBuf};
-use std::process::Command;
-use cargo_toml::Manifest;
-
-#[derive(Copy, Clone, Eq, PartialEq)]
-pub enum Config {
-    Debug,
-    Release
-}
-
-pub struct Context<'a> {
-    pub root: &'a Path,
-    pub manifest: Manifest,
-    pub config: Config,
-    pub targets: &'a [&'a str]
-}
-
-impl<'a> Context<'a> {
-    pub fn get_target_path(&self, target: &str) -> PathBuf {
-        let config_path_name = match self.config {
-            Config::Debug => "debug",
-            Config::Release => "release"
-        };
-        self.root.join("target").join(target).join(config_path_name)
-    }
-
-    pub fn get_package_name(&self) -> &str {
-        &self.manifest.package().name
-    }
-
-    pub fn get_version(&self) -> &str {
-        self.manifest.package().version()
-    }
-
-    pub fn get_bin_path(&self, target: &str) -> PathBuf {
-        self.get_target_path(target).join(format!("lib{}.dylib", self.get_package_name().replace("-", "_")))
-    }
-}
-
-pub trait Packager {
-    const NAME: &'static str;
-
-    type Error: Error + From<std::io::Error>;
-
-    fn do_build_target(&self, target: &str, context: &Context) -> Result<(), Self::Error> {
-        Command::new("cargo")
-            .arg("build")
-            .arg("--target")
-            .arg(target)
-            .current_dir(context.root)
-            .status()?;
-        Ok(())
-    }
-
-    fn do_build(&self, _context: &Context) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
-    fn do_package_target(&self, _target: &str, _context: &Context) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
-    fn do_package(&self, _context: &Context) -> Result<(), Self::Error> {
-        Ok(())
-    }
+packager_registry! {
+    framework::Framework
 }

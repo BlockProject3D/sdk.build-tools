@@ -29,7 +29,8 @@
 use std::fmt::{Display, Formatter};
 use std::process::Command;
 use serde::Deserialize;
-use crate::packager::{Context, Packager};
+use crate::packager::interface::{Context, Packager};
+use crate::packager::util::{CommandExt, ensure_clean_directories, packager_error};
 
 #[derive(Deserialize)]
 pub struct Framework {
@@ -39,30 +40,12 @@ pub struct Framework {
     umbrella: Option<String>
 }
 
-#[derive(Debug)]
-pub enum Error {
-    Io(std::io::Error),
-    Lipo,
-    InstallNameTool
-}
-
-impl From<std::io::Error> for Error {
-    fn from(value: std::io::Error) -> Self {
-        Self::Io(value)
+packager_error! {
+    Error {
+        Lipo => "failed to run lipo tool",
+        InstallNameTool => "failed to run install_name_tool"
     }
 }
-
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::Io(e) => write!(f, "io error: {}", e),
-            Error::Lipo => write!(f, "failed to run lipo tool"),
-            Error::InstallNameTool => write!(f, "failed to run install_name_tool")
-        }
-    }
-}
-
-impl std::error::Error for Error {}
 
 impl Packager for Framework {
     const NAME: &'static str = "Framework";
@@ -85,30 +68,19 @@ impl Packager for Framework {
         let bin_dir = &context.get_target_path(target).join(bin_dir);
         let res_dir = &context.get_target_path(target).join(res_dir);
         let module_dir = &context.get_target_path(target).join(module_dir);
-        if framework_dir.exists() {
-            std::fs::remove_dir_all(framework_dir)?;
-        }
-        std::fs::create_dir_all(bin_dir)?;
-        std::fs::create_dir(res_dir)?;
-        std::fs::create_dir(module_dir)?;
-        let code = Command::new("lipo")
+        ensure_clean_directories([&**framework_dir, &bin_dir, &res_dir, &module_dir])?;
+        Command::new("lipo")
             .arg("-create")
             .arg(context.get_bin_path(target))
             .arg("-output")
             .arg(bin_dir.join(&self.name))
-            .status()?;
-        if !code.success() {
-            return Err(Error::Lipo);
-        }
-        let code = Command::new("install_name_tool")
+            .ensure(Error::Lipo)?;
+        Command::new("install_name_tool")
             .arg("-id")
             .arg(format!("@rpath/{}.framework/{}", self.name, self.name))
             .arg(&self.name)
             .current_dir(bin_dir)
-            .status()?;
-        if !code.success() {
-            return Err(Error::InstallNameTool);
-        }
+            .ensure(Error::InstallNameTool)?;
         if target.contains("darwin") {
             std::os::unix::fs::symlink("A", framework_dir.join("Versions/Current"))?;
             std::os::unix::fs::symlink(format!("Versions/Current/{}", self.name), framework_dir.join(&self.name))?;
@@ -120,19 +92,16 @@ impl Packager for Framework {
                 println!("Warning: Header directory {} not found in crate root!", includes);
             }
             copy_dir::copy_dir(context.root.join(includes), bin_dir.join("Headers"))?;
-        } else {
-            std::fs::create_dir(bin_dir.join("Headers"))?;
-        }
-        if target.contains("darwin") {
-            std::os::unix::fs::symlink("Versions/Current/Headers", framework_dir.join("Headers"))?;
-        }
-        let motherfuckingrust = format!("{}.h", self.name);
-        let umbrella = self.umbrella.as_ref().unwrap_or(&motherfuckingrust);
-        let umbrella_path = bin_dir.join("Headers").join(umbrella);
-        if !umbrella_path.exists() {
-            std::fs::write(umbrella_path, "/* Empty generated umbrella header to ensure Xcode can link the framework. */")?;
-        }
-        std::fs::write(module_dir.join("module.modulemap"), format!("framework module {} {{
+            if target.contains("darwin") {
+                std::os::unix::fs::symlink("Versions/Current/Headers", framework_dir.join("Headers"))?;
+            }
+            let motherfuckingrust = format!("{}.h", self.name);
+            let umbrella = self.umbrella.as_ref().unwrap_or(&motherfuckingrust);
+            let umbrella_path = bin_dir.join("Headers").join(umbrella);
+            if !umbrella_path.exists() {
+                std::fs::write(umbrella_path, "/* Empty generated umbrella header to ensure Xcode can link the framework. */")?;
+            }
+            std::fs::write(module_dir.join("module.modulemap"), format!("framework module {} {{
     umbrella header \"{}\"
 
     export *
@@ -142,12 +111,13 @@ impl Packager for Framework {
 }}
 
 ", self.name, umbrella))?;
+        }
         let platforms = if target.contains("darwin") {
             "<string>MacOSX</string>"
         } else {
             "<string>iPhoneOS</string>\n<string>iPadOS</string>"
         };
-        let build_number = String::from_utf8_lossy(&Command::new("sw_vers").arg("-buildVersion").output()?.stdout).replace("\n", "");
+        let build_number = Command::new("sw_vers").arg("-buildVersion").output_string()?.replace("\n", "");
         let version = context.get_version().split("-").next().unwrap();
         std::fs::write(res_dir.join("Info.plist"), format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
