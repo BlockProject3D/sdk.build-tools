@@ -115,7 +115,7 @@ impl Packager for Framework {
         let platforms = if target.contains("darwin") {
             "<string>MacOSX</string>"
         } else {
-            "<string>iPhoneOS</string>\n<string>iPadOS</string>"
+            "<string>iPhoneOS</string>\n        <string>iPadOS</string>"
         };
         let build_number = Command::new("sw_vers").arg("-buildVersion").output_string()?.replace("\n", "");
         let version = context.get_version().split("-").next().unwrap();
@@ -155,6 +155,18 @@ impl Packager for Framework {
 </dict>
 </plist>
 ", build_number, self.name, self.identifier, self.name, version, platforms, version))?;
+        Ok(())
+    }
+
+    fn do_package(&self, context: &Context) -> Result<(), Self::Error> {
+        let mut cmd = Command::new("xcrun")
+            .arg("xcodebuild")
+            .arg("-create-xcframework");
+        for target in context.targets {
+            let framework_dir = &context.get_target_path(target).join(format!("{}.framework", self.name));
+            //Well too bad this part is impossible because rust is not able to build a command using dynamically created arguments.
+            //cmd.arg("-framework").arg(framework_dir);
+        }
         Ok(())
     }
 }
