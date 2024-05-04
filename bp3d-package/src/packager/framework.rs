@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::fmt::{Display, Formatter};
+use std::path::PathBuf;
 use std::process::Command;
 use serde::Deserialize;
 use crate::packager::interface::{Context, Packager};
@@ -43,7 +44,8 @@ pub struct Framework {
 packager_error! {
     Error {
         Lipo => "failed to run lipo tool",
-        InstallNameTool => "failed to run install_name_tool"
+        InstallNameTool => "failed to run install_name_tool",
+        CreateXcFramework => "failed to generate combined XCFramework package"
     }
 }
 
@@ -159,14 +161,17 @@ impl Packager for Framework {
     }
 
     fn do_package(&self, context: &Context) -> Result<(), Self::Error> {
-        let mut cmd = Command::new("xcrun")
-            .arg("xcodebuild")
-            .arg("-create-xcframework");
-        for target in context.targets {
-            let framework_dir = &context.get_target_path(target).join(format!("{}.framework", self.name));
-            //Well too bad this part is impossible because rust is not able to build a command using dynamically created arguments.
-            //cmd.arg("-framework").arg(framework_dir);
+        let mut cmd = Command::new("xcrun");
+        cmd.arg("xcodebuild").arg("-create-xcframework");
+        let framework_dirs: Vec<PathBuf> = context.targets.iter()
+            .map(|target| context.get_target_path(target)
+                .join(format!("{}.framework", self.name)))
+            .collect();
+        for dir in &framework_dirs {
+            cmd.arg("-framework").arg(dir);
         }
+        cmd.arg("-output").arg(context.root.join(format!("target/{}.xcframework", self.name)));
+        cmd.ensure(Error::CreateXcFramework)?;
         Ok(())
     }
 }
