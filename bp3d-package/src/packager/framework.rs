@@ -30,7 +30,7 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::process::Command;
 use serde::Deserialize;
-use crate::packager::interface::{Context, Packager};
+use crate::packager::interface::{Context, Output, Package, Packager};
 use crate::packager::util::{CommandExt, ensure_clean_directories, packager_error};
 
 #[derive(Deserialize)]
@@ -45,15 +45,23 @@ packager_error! {
     Error {
         Lipo => "failed to run lipo tool",
         InstallNameTool => "failed to run install_name_tool",
-        CreateXcFramework => "failed to generate combined XCFramework package"
+        CreateXcFramework => "failed to generate combined XCFramework package",
+        NoLib => "this package does not produce any libraries"
     }
+}
+
+fn filter_lib<P: Package>(context: &Context<P>, target: &str) -> Option<PathBuf> {
+    context.package.get_outputs().find(|v| match v {
+        Output::Lib(_) => true,
+        _ => false
+    }).map(|v| context.get_target_path(target).join(format!("lib{}.dylib", v.name())))
 }
 
 impl Packager for Framework {
     const NAME: &'static str = "Framework";
     type Error = Error;
 
-    fn do_package_target(&self, target: &str, context: &Context) -> Result<(), Self::Error> {
+    fn do_package_target<P: Package>(&self, target: &str, context: &Context<P>) -> Result<(), Self::Error> {
         let bin_dir;
         let res_dir;
         let module_dir;
@@ -73,7 +81,7 @@ impl Packager for Framework {
         ensure_clean_directories([&**framework_dir, &bin_dir, &res_dir, &module_dir])?;
         Command::new("lipo")
             .arg("-create")
-            .arg(context.get_bin_path(target))
+            .arg(filter_lib(context, target).ok_or(Error::NoLib)?)
             .arg("-output")
             .arg(bin_dir.join(&self.name))
             .ensure(Error::Lipo)?;
@@ -120,7 +128,7 @@ impl Packager for Framework {
             "<string>iPhoneOS</string>\n        <string>iPadOS</string>"
         };
         let build_number = Command::new("sw_vers").arg("-buildVersion").output_string()?.replace("\n", "");
-        let version = context.get_version().split("-").next().unwrap();
+        let version = context.package.get_version().split("-").next().unwrap();
         std::fs::write(res_dir.join("Info.plist"), format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
 <plist version=\"1.0\">
@@ -160,7 +168,7 @@ impl Packager for Framework {
         Ok(())
     }
 
-    fn do_package(&self, context: &Context) -> Result<(), Self::Error> {
+    fn do_package<P: Package>(&self, context: &Context<P>) -> Result<(), Self::Error> {
         let mut cmd = Command::new("xcrun");
         cmd.arg("xcodebuild").arg("-create-xcframework");
         let framework_dirs: Vec<PathBuf> = context.targets.iter()

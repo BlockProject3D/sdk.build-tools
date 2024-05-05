@@ -27,9 +27,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::error::Error;
+use cargo_toml::Manifest;
 use serde::de::DeserializeOwned;
 use crate::manifest_ext::parse_manifest;
-use crate::packager::interface::{Context, Packager};
+use crate::packager::interface::{Context, Output, Package, Packager};
 
 pub trait ResultExt<T> {
     fn expect_exit(self, msg: &str) -> T;
@@ -47,7 +48,21 @@ impl<T, E: Error> ResultExt<T> for Result<T, E> {
     }
 }
 
-pub fn run_packager<T: Packager + DeserializeOwned>(context: &Context) {
+impl Package for Manifest {
+    fn get_name(&self) -> &str {
+        self.package().name()
+    }
+
+    fn get_version(&self) -> &str {
+        self.package().version()
+    }
+
+    fn get_outputs(&self) -> impl Iterator<Item = Output> {
+        self.bin.iter().map(|v| Output::Bin(v.name.as_deref().unwrap_or(self.get_name()))).chain(self.lib.iter().map(|v| Output::Lib(v.name.as_deref().unwrap_or(self.get_name()))))
+    }
+}
+
+pub fn run_packager<P: Package, T: Packager + DeserializeOwned>(context: &Context<P>) {
     println!("Initializing packager {}...", T::NAME);
     let packager: T = parse_manifest(context.root)
         .expect_exit("Failed to load packager configuration from root manifest");

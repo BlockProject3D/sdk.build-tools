@@ -48,7 +48,7 @@ fn main() {
     let root = args.root.unwrap_or(PathBuf::from("./"));
     let ctx = Context {
         root: &root,
-        manifest: Manifest::from_path(&root.join("Cargo.toml")).expect_exit("Failed to load root manifest"),
+        package: Manifest::from_path(&root.join("Cargo.toml")).expect_exit("Failed to load root manifest"),
         config: if args.release { Config::Release } else { Config::Debug },
         targets: &collected
     };

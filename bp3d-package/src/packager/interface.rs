@@ -37,32 +37,49 @@ pub enum Config {
     Release
 }
 
-pub struct Context<'a> {
+pub enum Output<'a> {
+    Bin(&'a str),
+    Lib(&'a str),
+    Config(&'a str),
+    Other(&'a str)
+}
+
+impl<'a> Output<'a> {
+    pub fn name(&self) -> &str {
+        match self {
+            Output::Bin(v) => v,
+            Output::Lib(v) => v,
+            Output::Config(v) => v,
+            Output::Other(v) => v
+        }
+    }
+}
+
+pub trait Package {
+    /// Returns the name of the package.
+    fn get_name(&self) -> &str;
+
+    /// Returns the version of this package.
+    fn get_version(&self) -> &str;
+
+    /// Returns an iterator over all outputs of this package.
+    fn get_outputs(&self) -> impl Iterator<Item = Output>;
+}
+
+pub struct Context<'a, P: Package> {
     pub root: &'a Path,
-    pub manifest: Manifest,
+    pub package: P,
     pub config: Config,
     pub targets: &'a [&'a str]
 }
 
-impl<'a> Context<'a> {
+impl<'a, P: Package> Context<'a, P> {
     pub fn get_target_path(&self, target: &str) -> PathBuf {
         let config_path_name = match self.config {
             Config::Debug => "debug",
             Config::Release => "release"
         };
         self.root.join("target").join(target).join(config_path_name)
-    }
-
-    pub fn get_package_name(&self) -> &str {
-        &self.manifest.package().name
-    }
-
-    pub fn get_version(&self) -> &str {
-        self.manifest.package().version()
-    }
-
-    pub fn get_bin_path(&self, target: &str) -> PathBuf {
-        self.get_target_path(target).join(format!("lib{}.dylib", self.get_package_name().replace("-", "_")))
     }
 }
 
@@ -71,7 +88,7 @@ pub trait Packager {
 
     type Error: Error + From<std::io::Error>;
 
-    fn do_build_target(&self, target: &str, context: &Context) -> Result<(), Self::Error> {
+    fn do_build_target<P: Package>(&self, target: &str, context: &Context<P>) -> Result<(), Self::Error> {
         Command::new("cargo")
             .arg("build")
             .arg("--target")
@@ -81,15 +98,15 @@ pub trait Packager {
         Ok(())
     }
 
-    fn do_build(&self, _context: &Context) -> Result<(), Self::Error> {
+    fn do_build<P: Package>(&self, _context: &Context<P>) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn do_package_target(&self, _target: &str, _context: &Context) -> Result<(), Self::Error> {
+    fn do_package_target<P: Package>(&self, _target: &str, _context: &Context<P>) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn do_package(&self, _context: &Context) -> Result<(), Self::Error> {
+    fn do_package<P: Package>(&self, _context: &Context<P>) -> Result<(), Self::Error> {
         Ok(())
     }
 }

@@ -106,9 +106,9 @@ macro_rules! packager_registry {
         }
 
         impl PackagerType {
-            pub fn call(&self, context: &crate::packager::interface::Context) {
+            pub fn call<P: crate::packager::interface::Package>(&self, context: &crate::packager::interface::Context<P>) {
                 match self {
-                    $(PackagerType::$name => crate::core::run_packager::<$module::$name>(context))*
+                    $(PackagerType::$name => crate::core::run_packager::<P, $module::$name>(context))*
                 }
             }
         }
