@@ -41,7 +41,30 @@ simple_error! {
 }
 
 pub struct Cargo {
-    manifest: Manifest
+    manifests: Vec<Manifest>
+}
+
+fn list_outputs(manifest: &Manifest, context: &Context, module: &Module, outputs: &mut OutputList) -> Result<(), Error> {
+    for bin in &manifest.bin {
+        let bin_name = String::from(bin.name.as_deref().unwrap_or(manifest.package().name())) + context.get_exe_extension();
+        let path = module.path.join("target").join(context.target)
+            .join(bin_name);
+        outputs.add_bin(path.into());
+    }
+    if let Some(lib) = &manifest.lib {
+        let mut bin_name = None;
+        if lib.crate_type.contains(&"staticlib".into()) {
+            bin_name = Some(String::from(lib.name.as_deref().unwrap_or(manifest.package().name())) + context.get_staticlib_extension());
+        } else if lib.crate_type.contains(&"cdylib".into()) || lib.crate_type.contains(&"dylib".into()) {
+            bin_name = Some(String::from(lib.name.as_deref().unwrap_or(manifest.package().name())) + context.get_dynlib_extension());
+        }
+        if let Some(bin_name) = bin_name {
+            let path = module.path.join("target").join(context.target)
+                .join(bin_name);
+            outputs.add_lib(path.into());
+        }
+    }
+    Ok(())
 }
 
 impl Builder for Cargo {
@@ -51,8 +74,17 @@ impl Builder for Cargo {
     fn do_configure(_: &Context, module: &Module) -> Result<Self, Self::Error> {
         let manifest = Manifest::from_path(module.path.join("Cargo.toml"))
             .map_err(Error::Cargo)?;
+        let mut manifests = Vec::new();
+        if let Some(workspace) = &manifest.workspace {
+            for member in &workspace.members {
+                let manifest = Manifest::from_path(module.path.join(member).join("Cargo.toml"))
+                    .map_err(Error::Cargo)?;
+                manifests.push(manifest);
+            }
+        }
+        manifests.push(manifest);
         Ok(Cargo {
-            manifest
+            manifests
         })
     }
 
@@ -75,24 +107,8 @@ impl Builder for Cargo {
     }
 
     fn list_outputs(&self, context: &Context, module: &Module, outputs: &mut OutputList) -> Result<(), Self::Error> {
-        for bin in &self.manifest.bin {
-            let bin_name = String::from(bin.name.as_deref().unwrap_or(self.manifest.package().name())) + context.get_exe_extension();
-            let path = module.path.join("target").join(context.target)
-                .join(bin_name);
-            outputs.add_bin(path.into());
-        }
-        if let Some(lib) = &self.manifest.lib {
-            let mut bin_name = None;
-            if lib.crate_type.contains(&"staticlib".into()) {
-                bin_name = Some(String::from(lib.name.as_deref().unwrap_or(self.manifest.package().name())) + context.get_staticlib_extension());
-            } else if lib.crate_type.contains(&"cdylib".into()) || lib.crate_type.contains(&"dylib".into()) {
-                bin_name = Some(String::from(lib.name.as_deref().unwrap_or(self.manifest.package().name())) + context.get_dynlib_extension());
-            }
-            if let Some(bin_name) = bin_name {
-                let path = module.path.join("target").join(context.target)
-                    .join(bin_name);
-                outputs.add_lib(path.into());
-            }
+        for manifest in &self.manifests {
+            list_outputs(manifest, context, module, outputs)?;
         }
         Ok(())
     }

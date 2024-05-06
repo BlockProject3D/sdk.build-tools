@@ -30,6 +30,7 @@ use std::borrow::Cow;
 use std::error::Error;
 use std::path::Path;
 
+#[derive(Debug)]
 pub enum Output<'a> {
     Bin(Cow<'a, Path>),
     Lib(Cow<'a, Path>),
