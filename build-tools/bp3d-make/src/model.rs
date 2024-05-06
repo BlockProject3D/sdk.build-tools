@@ -46,5 +46,5 @@ pub struct Workspace {
 
     /// Workspace members as a set of key-value pairs where the key is the folder name in the
     /// workspace and the value is the type of module.
-    pub members: HashMap<String, Member>
+    pub modules: HashMap<String, Member>
 }

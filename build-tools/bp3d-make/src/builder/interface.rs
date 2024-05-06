@@ -26,14 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::borrow::Cow;
 use std::error::Error;
 use std::path::Path;
 
 pub enum Output<'a> {
-    Bin(&'a Path),
-    Lib(&'a Path),
-    Config(&'a Path),
-    Other(&'a Path)
+    Bin(Cow<'a, Path>),
+    Lib(Cow<'a, Path>),
+    Config(Cow<'a, Path>),
+    Other(Cow<'a, Path>)
 }
 
 pub struct OutputList<'a>(Vec<Output<'a>>);
@@ -43,16 +44,16 @@ impl<'a> OutputList<'a> {
         Self(Vec::new())
     }
 
-    pub fn add_bin(&mut self, path: &'a Path) {
+    pub fn add_bin(&mut self, path: Cow<'a, Path>) {
         self.0.push(Output::Bin(path));
     }
-    pub fn add_lib(&mut self, path: &'a Path) {
+    pub fn add_lib(&mut self, path: Cow<'a, Path>) {
         self.0.push(Output::Lib(path));
     }
-    pub fn add_config(&mut self, path: &'a Path) {
+    pub fn add_config(&mut self, path: Cow<'a, Path>) {
         self.0.push(Output::Config(path));
     }
-    pub fn add_other(&mut self, path: &'a Path) {
+    pub fn add_other(&mut self, path: Cow<'a, Path>) {
         self.0.push(Output::Other(path));
     }
 }
@@ -72,7 +73,36 @@ pub struct Context<'a> {
     pub root: &'a Path,
     pub target: &'a str,
     pub release: bool,
+    pub all_features: bool,
     pub features: &'a[&'a str]
+}
+
+impl<'a> Context<'a> {
+    pub fn get_dynlib_extension(&self) -> &str {
+        if self.target.contains("apple") {
+            ".dylib"
+        } else if self.target.contains("windows") {
+            ".dll"
+        } else {
+            ".so"
+        }
+    }
+
+    pub fn get_staticlib_extension(&self) -> &str {
+        if self.target.contains("windows") {
+            ".lib"
+        } else {
+            ".a"
+        }
+    }
+
+    pub fn get_exe_extension(&self) -> &str {
+        if self.target.contains("windows") {
+            ".exe"
+        } else {
+            ""
+        }
+    }
 }
 
 pub trait Builder: Sized {
@@ -81,5 +111,5 @@ pub trait Builder: Sized {
 
     fn do_configure(context: &Context, module: &Module) -> Result<Self, Self::Error>;
     fn do_compile(&self, context: &Context, module: &Module) -> Result<(), Self::Error>;
-    fn list_outputs(&self, context: &Context, module: &Module, paths: &mut OutputList) -> Result<(), Self::Error>;
+    fn list_outputs(&self, context: &Context, module: &Module, outputs: &mut OutputList) -> Result<(), Self::Error>;
 }

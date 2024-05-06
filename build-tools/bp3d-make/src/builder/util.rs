@@ -31,6 +31,7 @@ macro_rules! builder_registry {
         $(mod $module;)*
 
         #[derive(serde::Deserialize, Debug, Copy, Clone)]
+        #[serde(rename_all = "snake_case")]
         pub enum BuilderType {
             $($name),*
         }

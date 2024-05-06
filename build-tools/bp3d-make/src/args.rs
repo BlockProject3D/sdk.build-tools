@@ -41,6 +41,9 @@ pub struct Args {
     #[arg(long, help = "Build rust target in release mode.")]
     pub release: bool,
 
+    #[arg(short = 'a', long = "all-features", help = "Build with all features.")]
+    pub all_features: bool,
+
     #[arg(help = "Root path of the project, where to find the manifest (bp3d-make.toml).")]
     pub root: Option<PathBuf>
 }

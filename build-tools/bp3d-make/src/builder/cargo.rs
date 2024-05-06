@@ -30,11 +30,13 @@ use cargo_toml::Manifest;
 use crate::builder::interface::{Builder, Context, Module, OutputList};
 use std::fmt::Display;
 use std::fmt::Formatter;
+use std::process::Command;
 use bp3d_sdk_util::simple_error;
 
 simple_error! {
     Error {
-        Io(std::io::Error) => "io error: {}"
+        Io(std::io::Error) => "io error: {}",
+        Cargo(cargo_toml::Error) => "cargo manifest error: {}"
     }
 }
 
@@ -44,18 +46,54 @@ pub struct Cargo {
 
 impl Builder for Cargo {
     const NAME: &'static str = "Cargo";
-    type Error = std::io::Error;
+    type Error = Error;
 
-    fn do_configure(context: &Context, module: &Module) -> Result<Self, Self::Error> {
-        let manifest = Manifest::from_path(module.path);
-        todo!()
+    fn do_configure(_: &Context, module: &Module) -> Result<Self, Self::Error> {
+        let manifest = Manifest::from_path(module.path.join("Cargo.toml"))
+            .map_err(Error::Cargo)?;
+        Ok(Cargo {
+            manifest
+        })
     }
 
     fn do_compile(&self, context: &Context, module: &Module) -> Result<(), Self::Error> {
-        todo!()
+        let mut cmd = Command::new("cargo");
+        cmd.arg("build");
+        if context.release {
+            cmd.arg("--release");
+        }
+        if context.all_features {
+            cmd.arg("--all-features");
+        } else if context.features.len() > 0 {
+            cmd.arg("--features").args(context.features);
+        }
+        cmd.arg("--target").arg(context.target)
+            .current_dir(module.path)
+            .status()
+            .map_err(Error::Io)?;
+        Ok(())
     }
 
-    fn list_outputs(&self, context: &Context, module: &Module, paths: &mut OutputList) -> Result<(), Self::Error> {
-        todo!()
+    fn list_outputs(&self, context: &Context, module: &Module, outputs: &mut OutputList) -> Result<(), Self::Error> {
+        for bin in &self.manifest.bin {
+            let bin_name = String::from(bin.name.as_deref().unwrap_or(self.manifest.package().name())) + context.get_exe_extension();
+            let path = module.path.join("target").join(context.target)
+                .join(bin_name);
+            outputs.add_bin(path.into());
+        }
+        if let Some(lib) = &self.manifest.lib {
+            let mut bin_name = None;
+            if lib.crate_type.contains(&"staticlib".into()) {
+                bin_name = Some(String::from(lib.name.as_deref().unwrap_or(self.manifest.package().name())) + context.get_staticlib_extension());
+            } else if lib.crate_type.contains(&"cdylib".into()) || lib.crate_type.contains(&"dylib".into()) {
+                bin_name = Some(String::from(lib.name.as_deref().unwrap_or(self.manifest.package().name())) + context.get_dynlib_extension());
+            }
+            if let Some(bin_name) = bin_name {
+                let path = module.path.join("target").join(context.target)
+                    .join(bin_name);
+                outputs.add_lib(path.into());
+            }
+        }
+        Ok(())
     }
 }

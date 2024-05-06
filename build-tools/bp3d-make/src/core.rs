@@ -43,7 +43,7 @@ pub fn run_workspace(context: &Context) {
     let data = std::fs::read_to_string(context.root.join("bp3d-make.toml")).expect_exit("Failed to load workspace configuration", 1);
     let workspace: Workspace = toml::from_str(&data).expect_exit("Failed to read workspace configuration", 1);
     let mut outputs = OutputList::new();
-    for (name, member) in workspace.members {
+    for (name, member) in workspace.modules {
         let path = context.root.join(member.path.as_deref().unwrap_or(&name));
         let module = Module {
             name: &name,

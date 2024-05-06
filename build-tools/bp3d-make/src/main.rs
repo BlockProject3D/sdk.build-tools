@@ -47,6 +47,7 @@ fn main() {
         target: &target,
         release: args.release,
         features: &*features,
+        all_features: args.all_features
     };
     run_workspace(&ctx);
     println!("Hello, world!");
