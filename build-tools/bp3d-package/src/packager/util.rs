@@ -61,41 +61,6 @@ pub fn ensure_clean_directories<'a>(directories: impl IntoIterator<Item = &'a Pa
     Ok(())
 }
 
-macro_rules! typed_ident {
-    ($t: ty, $name: ident) => { $name };
-}
-
-macro_rules! packager_error {
-    (
-        $name: ident {
-            $($ty: ident $(($data: ty))? => $desc: literal),*
-        }
-    ) => {
-        #[derive(Debug)]
-        pub enum $name {
-            Io(std::io::Error),
-            $($ty $(($data))?),*
-        }
-
-        impl From<std::io::Error> for $name {
-            fn from(value: std::io::Error) -> Self {
-                Self::Io(value)
-            }
-        }
-
-        impl Display for $name {
-            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-                match self {
-                    $name::Io(e) => write!(f, "io error: {}", e),
-                    $($name::$ty $((crate::packager::util::typed_ident!($data, e)))? => write!(f, $desc $(, crate::packager::util::typed_ident!($data, e))?) ),*
-                }
-            }
-        }
-
-        impl std::error::Error for $name {}
-    };
-}
-
 macro_rules! packager_registry {
     ($($module: ident::$name: ident),*) => {
         $(mod $module;)*
@@ -116,5 +81,3 @@ macro_rules! packager_registry {
 }
 
 pub(crate) use packager_registry;
-pub(crate) use typed_ident;
-pub(crate) use packager_error;

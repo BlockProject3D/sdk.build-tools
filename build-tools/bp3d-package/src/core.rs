@@ -26,27 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::error::Error;
 use cargo_toml::Manifest;
 use serde::de::DeserializeOwned;
+use bp3d_sdk_util::ResultExt;
 use crate::manifest_ext::parse_manifest;
 use crate::packager::interface::{Context, Output, Package, Packager};
-
-pub trait ResultExt<T> {
-    fn expect_exit(self, msg: &str) -> T;
-}
-
-impl<T, E: Error> ResultExt<T> for Result<T, E> {
-    fn expect_exit(self, msg: &str) -> T {
-        match self {
-            Ok(v) => v,
-            Err(e) => {
-                eprintln!("{}: {}", msg, e);
-                std::process::exit(1);
-            }
-        }
-    }
-}
 
 impl Package for Manifest {
     fn get_name(&self) -> &str {
@@ -68,19 +52,19 @@ impl Package for Manifest {
 pub fn run_packager<P: Package, T: Packager + DeserializeOwned>(context: &Context<P>) {
     println!("Initializing packager {}...", T::NAME);
     let packager: T = parse_manifest(context.root)
-        .expect_exit("Failed to load packager configuration from root manifest");
+        .expect_exit("Failed to load packager configuration from root manifest", 1);
     println!("Building targets...");
     for target in context.targets {
         println!("Building target '{}'...", target);
-        packager.do_build_target(target, context).expect_exit("Failed to build target");
+        packager.do_build_target(target, context).expect_exit("Failed to build target", 1);
     }
     println!("Running post build phase...");
-    packager.do_build(context).expect_exit("Failed to run post-build phase");
+    packager.do_build(context).expect_exit("Failed to run post-build phase", 1);
     println!("Packaging targets...");
     for target in context.targets {
         println!("Packaging target '{}'...", target);
-        packager.do_package_target(target, context).expect_exit("Failed to package target");
+        packager.do_package_target(target, context).expect_exit("Failed to package target", 1);
     }
     println!("Generating full package...");
-    packager.do_package(context).expect_exit("Failed to generate full package");
+    packager.do_package(context).expect_exit("Failed to generate full package", 1);
 }

@@ -30,8 +30,9 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::process::Command;
 use serde::Deserialize;
+use bp3d_sdk_util::simple_error;
 use crate::packager::interface::{Context, Output, Package, Packager};
-use crate::packager::util::{CommandExt, ensure_clean_directories, packager_error};
+use crate::packager::util::{CommandExt, ensure_clean_directories};
 
 #[derive(Deserialize)]
 pub struct Framework {
@@ -41,8 +42,9 @@ pub struct Framework {
     umbrella: Option<String>
 }
 
-packager_error! {
+simple_error! {
     Error {
+        (impl From) Io(std::io::Error) => "io error: {}",
         Lipo => "failed to run lipo tool",
         InstallNameTool => "failed to run install_name_tool",
         CreateXcFramework => "failed to generate combined XCFramework package",
