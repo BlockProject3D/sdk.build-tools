@@ -35,8 +35,8 @@ use std::path::PathBuf;
 use cargo_toml::Manifest;
 use clap::Parser;
 use current_platform::CURRENT_PLATFORM;
+use bp3d_sdk_util::ResultExt;
 use crate::args::Args;
-use crate::core::ResultExt;
 use crate::packager::interface::{Config, Context};
 
 fn main() {
@@ -48,7 +48,7 @@ fn main() {
     let root = args.root.unwrap_or(PathBuf::from("./"));
     let ctx = Context {
         root: &root,
-        package: Manifest::from_path(&root.join("Cargo.toml")).expect_exit("Failed to load root manifest"),
+        package: Manifest::from_path(&root.join("Cargo.toml")).expect_exit("Failed to load root manifest", 1),
         config: if args.release { Config::Release } else { Config::Debug },
         targets: &collected
     };
