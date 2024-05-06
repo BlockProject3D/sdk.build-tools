@@ -1,0 +1,5 @@
+name = "BP3D SDK"
+version = "1.0.0"
+
+[modules]
+build-tools = { ty = "cargo" }
