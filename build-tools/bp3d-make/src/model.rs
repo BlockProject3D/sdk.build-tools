@@ -26,4 +26,25 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashMap;
+use serde::Deserialize;
+use crate::builder::BuilderType;
 
+#[derive(Deserialize)]
+pub struct Member {
+    pub ty: BuilderType,
+    pub path: Option<String>
+}
+
+#[derive(Deserialize)]
+pub struct Workspace {
+    /// The name of the workspace being built.
+    pub name: String,
+
+    /// The version of the workspace being built.
+    pub version: String,
+
+    /// Workspace members as a set of key-value pairs where the key is the folder name in the
+    /// workspace and the value is the type of module.
+    pub members: HashMap<String, Member>
+}

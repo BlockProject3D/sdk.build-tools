@@ -26,21 +26,28 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
+use std::path::Path;
+use clap::Parser;
+use crate::args::Args;
+use crate::builder::interface::Context;
+use crate::core::run_workspace;
 
-pub enum MemberType {
-    /// A cargo based workspace member.
-    Cargo,
+mod model;
+mod lua;
+mod args;
+mod builder;
+mod core;
 
-    /// A workspace member type using a Lua script to build.
-    Lua
-}
-
-pub struct Workspace<'a> {
-    /// The name of the workspace being built.
-    pub name: &'a str,
-
-    /// Workspace members as a set of key-value pairs where the key is the folder name in the
-    /// workspace and the value is the type of module.
-    pub members: HashMap<&'a str, MemberType>
+fn main() {
+    let args = Args::parse();
+    let target = args.target.unwrap_or(current_platform::CURRENT_PLATFORM.into());
+    let features: Vec<&str> = args.features.iter().map(|v| &**v).collect();
+    let ctx = Context {
+        root: args.root.as_deref().unwrap_or(Path::new("./")),
+        target: &target,
+        release: args.release,
+        features: &*features,
+    };
+    run_workspace(&ctx);
+    println!("Hello, world!");
 }

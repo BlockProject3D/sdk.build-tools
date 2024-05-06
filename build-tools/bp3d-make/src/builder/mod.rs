@@ -26,17 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use clap::Parser;
-use crate::args::Args;
+pub mod interface;
+mod util;
 
-mod model;
-mod lua;
-mod lua_command_lib;
-mod args;
-mod builder;
-
-fn main() {
-    let mut args = Args::parse();
-    let target = args.target.unwrap_or(current_platform::CURRENT_PLATFORM.into());
-    println!("Hello, world!");
+util::builder_registry! {
+    cargo::Cargo
 }

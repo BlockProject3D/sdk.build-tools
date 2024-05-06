@@ -9,3 +9,6 @@ edition = "2021"
 mlua = { version = "0.9.7", features = ["lua51", "vendored"] }
 clap = { version = "4.5.4", features = ["derive"] }
 current_platform = "0.2.0"
+serde = { version = "1.0.200", features = ["derive"] }
+toml = "0.8.12"
+cargo_toml = "0.20.2"
