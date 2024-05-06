@@ -44,16 +44,30 @@ impl<T, E: Error> ResultExt<T> for Result<T, E> {
     }
 }
 
+//Because Rust macros are a peace of shit.
 #[macro_export]
 macro_rules! typed_ident {
     ($t: ty, $name: ident) => { $name };
+}
+
+//Because Rust macros are a peace of shit.
+#[macro_export]
+macro_rules! hack_rust_buggy_macros {
+    ($name: ident, $ty: ident, $e: ident, $data: ty) => {
+        impl $e<$data> for $name {
+            fn from(value: $data) -> Self {
+                Self::$ty(value)
+            }
+        }
+    };
+    ($name: ident, $ty: ty, $($e: ident)?, $($data: ty)?) => {};
 }
 
 #[macro_export]
 macro_rules! simple_error {
     (
         $name: ident {
-            $($((impl From))? $ty: ident $(($data: ty))? => $desc: literal),*
+            $($((impl $e: ident))? $ty: ident $(($data: ty))? => $desc: literal),*
         }
     ) => {
         #[derive(Debug)]
@@ -62,13 +76,14 @@ macro_rules! simple_error {
         }
 
         $(
-            $(
-                impl From<$data> for $name {
+            /*$(
+                impl $e<$data> for $name {
                     fn from(value: $data) -> Self {
                         Self::$ty(value)
                     }
                 }
-            )?
+            )?*/
+            $crate::hack_rust_buggy_macros!($name, $ty, $($e)?, $($data)?);
         )*
 
         impl Display for $name {
