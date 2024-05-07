@@ -32,6 +32,7 @@ use std::fmt::Display;
 use std::fmt::Formatter;
 use std::process::Command;
 use bp3d_sdk_util::simple_error;
+use crate::builder::util::PathExt;
 
 simple_error! {
     Error {
@@ -45,10 +46,11 @@ pub struct Cargo {
 }
 
 fn list_outputs(manifest: &Manifest, context: &Context, module: &Module, outputs: &mut OutputList) -> Result<(), Error> {
+    let base_path = module.path.join("target").join_option(context.target)
+        .join(if context.release { "release" } else { "debug" });
     for bin in &manifest.bin {
         let bin_name = String::from(bin.name.as_deref().unwrap_or(manifest.package().name())) + context.get_exe_extension();
-        let path = module.path.join("target").join(context.target)
-            .join(bin_name);
+        let path = base_path.join(bin_name);
         outputs.add_bin(path.into());
     }
     if let Some(lib) = &manifest.lib {
@@ -59,8 +61,7 @@ fn list_outputs(manifest: &Manifest, context: &Context, module: &Module, outputs
             bin_name = Some(String::from(lib.name.as_deref().unwrap_or(manifest.package().name())) + context.get_dynlib_extension());
         }
         if let Some(bin_name) = bin_name {
-            let path = module.path.join("target").join(context.target)
-                .join(bin_name);
+            let path = base_path.join(bin_name);
             outputs.add_lib(path.into());
         }
     }
@@ -99,8 +100,10 @@ impl Builder for Cargo {
         } else if context.features.len() > 0 {
             cmd.arg("--features").args(context.features);
         }
-        cmd.arg("--target").arg(context.target)
-            .current_dir(module.path)
+        if let Some(target) = context.target {
+            cmd.arg("--target").arg(target);
+        }
+        cmd.current_dir(module.path)
             .status()
             .map_err(Error::Io)?;
         Ok(())

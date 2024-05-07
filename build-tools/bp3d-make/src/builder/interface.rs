@@ -72,17 +72,21 @@ pub struct Module<'a> {
 
 pub struct Context<'a> {
     pub root: &'a Path,
-    pub target: &'a str,
+    pub target: Option<&'a str>,
     pub release: bool,
     pub all_features: bool,
     pub features: &'a[&'a str]
 }
 
 impl<'a> Context<'a> {
+    pub fn target(&self) -> &str {
+        self.target.unwrap_or(current_platform::CURRENT_PLATFORM)
+    } 
+
     pub fn get_dynlib_extension(&self) -> &str {
-        if self.target.contains("apple") {
+        if self.target().contains("apple") {
             ".dylib"
-        } else if self.target.contains("windows") {
+        } else if self.target().contains("windows") {
             ".dll"
         } else {
             ".so"
@@ -90,7 +94,7 @@ impl<'a> Context<'a> {
     }
 
     pub fn get_staticlib_extension(&self) -> &str {
-        if self.target.contains("windows") {
+        if self.target().contains("windows") {
             ".lib"
         } else {
             ".a"
@@ -98,7 +102,7 @@ impl<'a> Context<'a> {
     }
 
     pub fn get_exe_extension(&self) -> &str {
-        if self.target.contains("windows") {
+        if self.target().contains("windows") {
             ".exe"
         } else {
             ""

@@ -40,11 +40,10 @@ mod core;
 
 fn main() {
     let args = Args::parse();
-    let target = args.target.unwrap_or(current_platform::CURRENT_PLATFORM.into());
     let features: Vec<&str> = args.features.iter().map(|v| &**v).collect();
     let ctx = Context {
         root: args.root.as_deref().unwrap_or(Path::new("./")),
-        target: &target,
+        target: args.target.as_deref(),
         release: args.release,
         features: &*features,
         all_features: args.all_features

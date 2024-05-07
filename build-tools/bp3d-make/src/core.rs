@@ -51,4 +51,5 @@ pub fn run_workspace(context: &Context) {
         };
         member.ty.call(context, &module, &mut outputs);
     }
+    println!("List of outputs: {:?}", outputs.as_ref());
 }

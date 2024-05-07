@@ -26,6 +26,21 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::path::{Path, PathBuf};
+
+pub trait PathExt {
+    fn join_option<P: AsRef<Path>>(&self, path: Option<P>) -> PathBuf;
+}
+
+impl PathExt for Path {
+    fn join_option<P: AsRef<Path>>(&self, path: Option<P>) -> PathBuf {
+        match path {
+            None => self.into(),
+            Some(v) => self.join(v)
+        }
+    }
+}
+
 macro_rules! builder_registry {
     ($($module: ident::$name: ident),*) => {
         $(mod $module;)*
