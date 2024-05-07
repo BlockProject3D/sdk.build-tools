@@ -28,6 +28,7 @@
 
 use bp3d_sdk_util::ResultExt;
 use crate::builder::interface::{Builder, Context, Module, OutputList};
+use crate::builder::util::PathExt;
 use crate::model::Workspace;
 
 pub fn run_builder<B: Builder>(context: &Context, module: &Module, outputs: &mut OutputList) {
@@ -51,5 +52,37 @@ pub fn run_workspace(context: &Context) {
         };
         member.ty.call(context, &module, &mut outputs);
     }
+    println!("Creating output target directory...");
     println!("List of outputs: {:?}", outputs.as_ref());
+    let root_target = context.root.join("target").join_option(context.target)
+        .join(if context.release { "release" } else { "debug" });
+    #[cfg(unix)]
+    {
+        if !root_target.exists() {
+            std::fs::create_dir_all(&root_target).expect_exit("Failed to create root target directory", 1);
+        }
+        for output in outputs.as_ref() {
+            if let Some(file_name) = output.path().file_name() {
+                let dst = root_target.join(file_name);
+                if !dst.exists() {
+                    std::os::unix::fs::symlink(
+                        std::fs::canonicalize(output.path()).expect_exit("Failed to get absolute path", 1),
+                        dst
+                    ).expect_exit("Failed to link target file", 1)
+                }
+            }
+        }
+    }
+    #[cfg(windows)]
+    {
+        if root_target.exists() {
+            std::fs::remove_dir_all(&root_target).expect_exit("Failed to remove root target directory", 1);
+        }
+        std::fs::create_dir_all(&root_target).expect_exit("Failed to create root target directory", 1);
+        for output in outputs.as_ref() {
+            if let Some(file_name) = output.path().file_name() {
+                std::fs::copy(output.path(), root_target.join(file_name)).expect_exit("Failed to copy target file", 1);
+            }
+        }
+    }
 }

@@ -49,5 +49,4 @@ fn main() {
         all_features: args.all_features
     };
     run_workspace(&ctx);
-    println!("Hello, world!");
 }

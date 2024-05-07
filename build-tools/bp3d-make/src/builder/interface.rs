@@ -38,6 +38,17 @@ pub enum Output<'a> {
     Other(Cow<'a, Path>)
 }
 
+impl<'a> Output<'a> {
+    pub fn path(&self) -> &Cow<Path> {
+        match self {
+            Output::Bin(v) => v,
+            Output::Lib(v) => v,
+            Output::Config(v) => v,
+            Output::Other(v) => v
+        }
+    }
+}
+
 pub struct OutputList<'a>(Vec<Output<'a>>);
 
 impl<'a> OutputList<'a> {
@@ -81,7 +92,7 @@ pub struct Context<'a> {
 impl<'a> Context<'a> {
     pub fn target(&self) -> &str {
         self.target.unwrap_or(current_platform::CURRENT_PLATFORM)
-    } 
+    }
 
     pub fn get_dynlib_extension(&self) -> &str {
         if self.target().contains("apple") {

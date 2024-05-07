@@ -3,3 +3,4 @@ version = "1.0.0"
 
 [modules]
 build-tools = { ty = "cargo" }
+util = { ty = "cargo" }

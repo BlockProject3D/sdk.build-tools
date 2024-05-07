@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod interface;
-mod util;
+pub mod util;
 
 util::builder_registry! {
     cargo::Cargo
