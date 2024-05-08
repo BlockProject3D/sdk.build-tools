@@ -28,7 +28,7 @@
 
 use std::borrow::Cow;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Output<'a> {
     Bin(Cow<'a, str>),
     Lib(Cow<'a, str>),
