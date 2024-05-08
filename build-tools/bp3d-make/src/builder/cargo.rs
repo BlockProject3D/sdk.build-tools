@@ -45,7 +45,7 @@ pub struct Cargo {
     manifests: Vec<Manifest>
 }
 
-fn list_outputs(manifest: &Manifest, context: &Context, module: &Module, outputs: &mut OutputList) -> Result<(), Error> {
+fn list_outputs<'a>(manifest: &'a Manifest, context: &Context, module: &Module, outputs: &mut OutputList<'a>) -> Result<(), Error> {
     let base_path = module.path.join("target").join_option(context.target)
         .join(if context.release { "release" } else { "debug" });
     outputs.add_target_path(base_path);
