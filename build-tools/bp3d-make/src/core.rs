@@ -26,11 +26,24 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
+use std::borrow::Cow;
+use std::path::{Path, PathBuf};
+use bp3d_build_common::finder::Finder;
+use bp3d_build_common::output::Output;
 use bp3d_sdk_util::ResultExt;
-use crate::builder::interface::{Builder, Context, Module, OutputList};
+use crate::builder::interface::{Builder, Context, Module, PathOutputList};
 use crate::builder::util::PathExt;
 use crate::model::Workspace;
+
+impl<'a> bp3d_build_common::finder::Context for PathOutputList<'a> {
+    fn get_target_path(&self, _: &str) -> Cow<'_, Path> {
+        self.path.into()
+    }
+
+    fn get_outputs(&self) -> impl Iterator<Item = Output> {
+        self.outputs.iter().cloned()
+    }
+}
 
 pub fn run_builder<B: Builder>(context: &Context, module: &Module, paths: &mut Vec<PathBuf>) {
     println!("Configuring module {} using builder {}...", module.name, B::NAME);
@@ -39,7 +52,15 @@ pub fn run_builder<B: Builder>(context: &Context, module: &Module, paths: &mut V
     builder.do_compile(context, module).expect_exit("Failed to compile module", 1);
     println!("Adding output files...");
     let outputs = builder.list_outputs(context, module).expect_exit("Failed to get module outputs", 1);
-    //TODO: Resolve outputs and fill the path list passed as argument.
+    let iter = outputs.iter()
+        .map(|o| o.outputs.iter()
+            .map(move |v| Finder::new(&o, "").resolve_output_all(v))
+            .flatten())
+        .flatten()
+        .map(|v| v.path.into_iter().chain(v.exports.into_iter()).chain(v.debug_info.into_iter())).flatten();
+    for item in iter {
+        paths.push(item);
+    }
 }
 
 pub fn run_workspace(context: &Context) {
@@ -55,7 +76,7 @@ pub fn run_workspace(context: &Context) {
         member.ty.call(context, &module, &mut paths);
     }
     println!("Creating output target directory...");
-    println!("List of outputs: {:?}", paths);
+    println!("Complete list of paths resolved from workspace outputs: {:?}", paths);
     let root_target = context.root.join("target").join_option(context.target)
         .join(if context.release { "release" } else { "debug" });
     #[cfg(unix)]

@@ -29,27 +29,7 @@
 use std::borrow::Cow;
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use serde::Serialize;
-
-#[derive(Debug, Serialize)]
-#[serde(tag = "type", content = "path")]
-pub enum Output<'a> {
-    Bin(Cow<'a, str>),
-    Lib(Cow<'a, str>),
-    Config(Cow<'a, str>),
-    Other(Cow<'a, str>)
-}
-
-impl<'a> Output<'a> {
-    pub fn name(&self) -> &str {
-        match self {
-            Output::Bin(v) => v,
-            Output::Lib(v) => v,
-            Output::Config(v) => v,
-            Output::Other(v) => v
-        }
-    }
-}
+use bp3d_build_common::output::Output;
 
 pub struct OutputList<'a> {
     outputs: Vec<Output<'a>>,
@@ -82,9 +62,17 @@ impl<'a> OutputList<'a> {
     }
 }
 
-impl<'a> AsRef<Vec<Output<'a>>> for OutputList<'a> {
-    fn as_ref(&self) -> &Vec<Output<'a>> {
-        &self.outputs
+pub struct PathOutputList<'a> {
+    pub outputs: &'a Vec<Output<'a>>,
+    pub path: &'a Path
+}
+
+impl<'a> OutputList<'a> {
+    pub fn iter(&'a self) -> impl Iterator<Item = PathOutputList<'a>> {
+        self.paths.iter().map(|v| PathOutputList {
+            outputs: &self.outputs,
+            path: &*v
+        })
     }
 }
 
@@ -104,32 +92,6 @@ pub struct Context<'a> {
 impl<'a> Context<'a> {
     pub fn target(&self) -> &str {
         self.target.unwrap_or(current_platform::CURRENT_PLATFORM)
-    }
-
-    pub fn get_dynlib_extension(&self) -> &str {
-        if self.target().contains("apple") {
-            ".dylib"
-        } else if self.target().contains("windows") {
-            ".dll"
-        } else {
-            ".so"
-        }
-    }
-
-    pub fn get_staticlib_extension(&self) -> &str {
-        if self.target().contains("windows") {
-            ".lib"
-        } else {
-            ".a"
-        }
-    }
-
-    pub fn get_exe_extension(&self) -> &str {
-        if self.target().contains("windows") {
-            ".exe"
-        } else {
-            ""
-        }
     }
 }
 

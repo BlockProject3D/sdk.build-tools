@@ -14,3 +14,4 @@ toml = "0.8.12"
 cargo_toml = "0.20.2"
 bp3d-sdk-util = { path = "../../util" }
 serde_json = "1.0.117"
+bp3d-build-common = { path = "../common" }
