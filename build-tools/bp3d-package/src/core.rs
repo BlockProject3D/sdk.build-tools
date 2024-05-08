@@ -44,8 +44,16 @@ impl Package for Manifest {
     fn get_outputs(&self) -> impl Iterator<Item = Output> {
         self.bin.iter().map(|v| Output::Bin(v.name.as_deref()
             .unwrap_or(self.get_name())))
-            .chain(self.lib.iter().map(|v| Output::Lib(v.name.as_deref()
-                .unwrap_or(self.get_name()))))
+            .chain(
+                self.lib.iter()
+                    .filter(|v| v.crate_type.contains(&"dylib".into()) || v.crate_type.contains(&"cdylib".into()))
+                    .map(|v| Output::DynamicLib(v.name.as_deref().unwrap_or(self.get_name())))
+            )
+            .chain(
+                self.lib.iter()
+                    .filter(|v| v.crate_type.contains(&"staticlib".into()))
+                    .map(|v| Output::StaticLib(v.name.as_deref().unwrap_or(self.get_name())))
+            )
     }
 }
 

@@ -27,8 +27,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::error::Error;
-use std::path::Path;
-use std::process::Command;
+use std::path::{Path, PathBuf};
+use std::process::{Command};
 
 pub trait CommandExt {
     fn ensure<E: Error + From<std::io::Error>>(&mut self, fail_value: E) -> Result<(), E>;
@@ -61,6 +61,117 @@ pub fn ensure_clean_directories<'a>(directories: impl IntoIterator<Item = &'a Pa
     Ok(())
 }
 
+pub struct FinderResult {
+    pub path: Option<PathBuf>,
+    pub debug_info: Option<PathBuf>,
+    pub exports: Option<PathBuf>
+}
+
+pub struct Finder<'a, P: Package> {
+    context: &'a Context<'a, P>,
+    target: &'a str
+}
+
+impl<'a, P: Package> Finder<'a, P> {
+    pub fn new(context: &'a Context<'a, P>, target: &'a str) -> Self {
+        Self {
+            context,
+            target
+        }
+    }
+
+    pub fn get_path(&self, file_name: &str) -> Option<PathBuf> {
+        let path = self.context.get_target_path(self.target).join(file_name);
+        if path.exists() {
+            Some(path)
+        } else {
+            None
+        }
+    }
+
+    pub fn find_first<F: Fn(&Output) -> bool>(&self, predicate: F) -> FinderResult {
+        let value = self.context.package.get_outputs().find(predicate);
+        match value {
+            None => FinderResult {
+                path: None,
+                debug_info: None,
+                exports: None
+            },
+            Some(v) => self.find_output(&v)
+        }
+    }
+
+    pub fn find_output(&self, output: &Output) -> FinderResult {
+        match output {
+            Output::Bin(name) => {
+                #[cfg(unix)]
+                return FinderResult {
+                    path: self.get_path(name),
+                    debug_info: self.get_path(&format!("{}.d", name)),
+                    exports: None
+                };
+                #[cfg(windows)]
+                return FinderResult {
+                    path: self.get_path(&format!("{}.exe", name)),
+                    debug_info: self.get_path(&format!("{}.pdb", name)),
+                    exports: None
+                };
+            },
+            Output::StaticLib(name) => {
+                #[cfg(unix)]
+                return FinderResult {
+                    path: self.get_path(&format!("lib{}.a", name))
+                        .or_else(|| self.get_path(&format!("{}.a", name))),
+                    debug_info: self.get_path(&format!("lib{}.d", name))
+                        .or_else(|| self.get_path(&format!("{}.d", name))),
+                    exports: None
+                };
+                #[cfg(windows)]
+                return FinderResult {
+                    path: self.get_path(&format!("{}.lib", name))
+                        .or_else(|| self.get_path(&format!("lib{}.lib", name))),
+                    debug_info: self.get_path(&format!("{}.pdb", name))
+                        .or_else(|| self.get_path(&format!("lib{}.pdb", name))),
+                    exports: None
+                };
+            },
+            Output::DynamicLib(name) => {
+                #[cfg(unix)]
+                return FinderResult {
+                    path: self.get_path(&format!("lib{}.dylib", name))
+                        .or_else(|| self.get_path(&format!("lib{}.so", name)))
+                        .or_else(|| self.get_path(&format!("{}.dylib", name)))
+                        .or_else(|| self.get_path(&format!("{}.so", name))),
+                    debug_info: self.get_path(&format!("lib{}.d", name))
+                        .or_else(|| self.get_path(&format!("{}.d", name))),
+                    exports: None
+                };
+                #[cfg(windows)]
+                return FinderResult {
+                    path: self.get_path(&format!("{}.dll", name))
+                        .or_else(|| self.get_path(&format!("lib{}.dll", name))),
+                    debug_info: self.get_path(&format!("{}.pdb", name))
+                        .or_else(|| self.get_path(&format!("lib{}.pdb", name))),
+                    exports: self.get_path(&format!("{}.dll.lib", name))
+                        .or_else(|| self.get_path(&format!("lib{}.dll.lib", name)))
+                        .or_else(|| self.get_path(&format!("{}.lib", name)))
+                        .or_else(|| self.get_path(&format!("lib{}.lib", name)))
+                };
+            }
+            Output::Config(name) => FinderResult {
+                path: self.get_path(name),
+                debug_info: None,
+                exports: None
+            },
+            Output::Other(name) => FinderResult {
+                path: self.get_path(name),
+                debug_info: None,
+                exports: None
+            }
+        }
+    }
+}
+
 macro_rules! packager_registry {
     ($($module: ident::$name: ident),*) => {
         $(mod $module;)*
@@ -81,3 +192,4 @@ macro_rules! packager_registry {
 }
 
 pub(crate) use packager_registry;
+use crate::packager::interface::{Context, Output, Package};

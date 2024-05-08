@@ -29,7 +29,6 @@
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use cargo_toml::Manifest;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Config {
@@ -39,16 +38,25 @@ pub enum Config {
 
 pub enum Output<'a> {
     Bin(&'a str),
-    Lib(&'a str),
+    DynamicLib(&'a str),
+    StaticLib(&'a str),
     Config(&'a str),
     Other(&'a str)
 }
 
 impl<'a> Output<'a> {
+    pub fn is_dynamic_lib(&self) -> bool {
+        match self {
+            Output::DynamicLib(_) => true,
+            _ => false
+        }
+    }
+
     pub fn name(&self) -> &str {
         match self {
             Output::Bin(v) => v,
-            Output::Lib(v) => v,
+            Output::DynamicLib(v) => v,
+            Output::StaticLib(v) => v,
             Output::Config(v) => v,
             Output::Other(v) => v
         }

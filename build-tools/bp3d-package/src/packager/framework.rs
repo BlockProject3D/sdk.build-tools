@@ -31,8 +31,8 @@ use std::path::PathBuf;
 use std::process::Command;
 use serde::Deserialize;
 use bp3d_sdk_util::simple_error;
-use crate::packager::interface::{Context, Output, Package, Packager};
-use crate::packager::util::{CommandExt, ensure_clean_directories};
+use crate::packager::interface::{Context, Package, Packager};
+use crate::packager::util::{CommandExt, ensure_clean_directories, Finder};
 
 #[derive(Deserialize)]
 pub struct Framework {
@@ -50,13 +50,6 @@ simple_error! {
         CreateXcFramework => "failed to generate combined XCFramework package",
         NoLib => "this package does not produce any libraries"
     }
-}
-
-fn filter_lib<P: Package>(context: &Context<P>, target: &str) -> Option<PathBuf> {
-    context.package.get_outputs().find(|v| match v {
-        Output::Lib(_) => true,
-        _ => false
-    }).map(|v| context.get_target_path(target).join(format!("lib{}.dylib", v.name())))
 }
 
 impl Packager for Framework {
@@ -83,7 +76,7 @@ impl Packager for Framework {
         ensure_clean_directories([&**framework_dir, &bin_dir, &res_dir, &module_dir])?;
         Command::new("lipo")
             .arg("-create")
-            .arg(filter_lib(context, target).ok_or(Error::NoLib)?)
+            .arg(Finder::new(context, target).find_first(|v| v.is_dynamic_lib()).path.ok_or(Error::NoLib)?)
             .arg("-output")
             .arg(bin_dir.join(&self.name))
             .ensure(Error::Lipo)?;
