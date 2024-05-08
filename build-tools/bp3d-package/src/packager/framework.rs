@@ -171,6 +171,10 @@ impl Packager for Framework {
     }
 
     fn do_package<P: Package>(&self, context: &Context<P>) -> Result<(), Self::Error> {
+        let out = context.root.join(format!("target/{}.xcframework", self.name));
+        if out.exists() {
+            std::fs::remove_dir_all(&out)?;
+        }
         let mut cmd = Command::new("xcrun");
         cmd.arg("xcodebuild").arg("-create-xcframework");
         let framework_dirs: Vec<PathBuf> = context.targets.iter()
@@ -180,7 +184,7 @@ impl Packager for Framework {
         for dir in &framework_dirs {
             cmd.arg("-framework").arg(dir);
         }
-        cmd.arg("-output").arg(context.root.join(format!("target/{}.xcframework", self.name)));
+        cmd.arg("-output").arg(out);
         cmd.ensure(Error::CreateXcFramework)?;
         Ok(())
     }
