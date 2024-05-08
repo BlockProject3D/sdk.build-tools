@@ -14,3 +14,4 @@ serde = { version = "1.0.199", features = ["derive"] }
 current_platform = "0.2.0"
 copy_dir = "0.1.3"
 bp3d-sdk-util = { path = "../../util" }
+bp3d-build-common = { path = "../common" }

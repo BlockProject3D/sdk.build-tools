@@ -30,9 +30,10 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::process::Command;
 use serde::Deserialize;
+use bp3d_build_common::finder::{Finder, LibType};
 use bp3d_sdk_util::simple_error;
 use crate::packager::interface::{Context, Package, Packager};
-use crate::packager::util::{CommandExt, ensure_clean_directories, Finder, LibType};
+use crate::packager::util::{CommandExt, ensure_clean_directories};
 
 #[derive(Deserialize)]
 pub struct Framework {

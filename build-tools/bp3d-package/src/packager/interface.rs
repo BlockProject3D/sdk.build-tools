@@ -29,36 +29,12 @@
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use bp3d_build_common::output::Output;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Config {
     Debug,
     Release
-}
-
-pub enum Output<'a> {
-    Bin(&'a str),
-    Lib(&'a str),
-    Config(&'a str),
-    Other(&'a str)
-}
-
-impl<'a> Output<'a> {
-    pub fn is_lib(&self) -> bool {
-        match self {
-            Output::Lib(_) => true,
-            _ => false
-        }
-    }
-
-    pub fn name(&self) -> &str {
-        match self {
-            Output::Bin(v) => v,
-            Output::Lib(v) => v,
-            Output::Config(v) => v,
-            Output::Other(v) => v
-        }
-    }
 }
 
 pub trait Package {

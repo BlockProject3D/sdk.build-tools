@@ -30,7 +30,8 @@ use cargo_toml::Manifest;
 use serde::de::DeserializeOwned;
 use bp3d_sdk_util::ResultExt;
 use crate::manifest_ext::parse_manifest;
-use crate::packager::interface::{Context, Output, Package, Packager};
+use crate::packager::interface::{Context, Package, Packager};
+use bp3d_build_common::output::Output;
 
 impl Package for Manifest {
     fn get_name(&self) -> &str {
@@ -43,10 +44,10 @@ impl Package for Manifest {
 
     fn get_outputs(&self) -> impl Iterator<Item = Output> {
         self.bin.iter().map(|v| Output::Bin(v.name.as_deref()
-            .unwrap_or(self.get_name())))
+            .unwrap_or(self.get_name()).into()))
             .chain(
                 self.lib.iter()
-                    .map(|v| Output::Lib(v.name.as_deref().unwrap_or(self.get_name())))
+                    .map(|v| Output::Lib(v.name.as_deref().unwrap_or(self.get_name()).into()))
             )
     }
 }
