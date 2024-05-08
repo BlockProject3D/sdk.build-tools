@@ -46,13 +46,7 @@ impl Package for Manifest {
             .unwrap_or(self.get_name())))
             .chain(
                 self.lib.iter()
-                    .filter(|v| v.crate_type.contains(&"dylib".into()) || v.crate_type.contains(&"cdylib".into()))
-                    .map(|v| Output::DynamicLib(v.name.as_deref().unwrap_or(self.get_name())))
-            )
-            .chain(
-                self.lib.iter()
-                    .filter(|v| v.crate_type.contains(&"staticlib".into()))
-                    .map(|v| Output::StaticLib(v.name.as_deref().unwrap_or(self.get_name())))
+                    .map(|v| Output::Lib(v.name.as_deref().unwrap_or(self.get_name())))
             )
     }
 }

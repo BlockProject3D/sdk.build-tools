@@ -32,7 +32,7 @@ use std::process::Command;
 use serde::Deserialize;
 use bp3d_sdk_util::simple_error;
 use crate::packager::interface::{Context, Package, Packager};
-use crate::packager::util::{CommandExt, ensure_clean_directories, Finder};
+use crate::packager::util::{CommandExt, ensure_clean_directories, Finder, LibType};
 
 #[derive(Deserialize)]
 pub struct Framework {
@@ -76,7 +76,7 @@ impl Packager for Framework {
         ensure_clean_directories([&**framework_dir, &bin_dir, &res_dir, &module_dir])?;
         Command::new("lipo")
             .arg("-create")
-            .arg(Finder::new(context, target).find_first(|v| v.is_dynamic_lib()).path.ok_or(Error::NoLib)?)
+            .arg(Finder::new(context, target).find_first(LibType::Dynamic, |v| v.is_lib()).path.ok_or(Error::NoLib)?)
             .arg("-output")
             .arg(bin_dir.join(&self.name))
             .ensure(Error::Lipo)?;

@@ -67,6 +67,11 @@ pub struct FinderResult {
     pub exports: Option<PathBuf>
 }
 
+pub enum LibType {
+    Dynamic,
+    Static
+}
+
 pub struct Finder<'a, P: Package> {
     context: &'a Context<'a, P>,
     target: &'a str
@@ -89,7 +94,7 @@ impl<'a, P: Package> Finder<'a, P> {
         }
     }
 
-    pub fn find_first<F: Fn(&Output) -> bool>(&self, predicate: F) -> FinderResult {
+    pub fn find_first<F: Fn(&Output) -> bool>(&self, lib_type: LibType, predicate: F) -> FinderResult {
         let value = self.context.package.get_outputs().find(predicate);
         match value {
             None => FinderResult {
@@ -97,11 +102,11 @@ impl<'a, P: Package> Finder<'a, P> {
                 debug_info: None,
                 exports: None
             },
-            Some(v) => self.find_output(&v)
+            Some(v) => self.find_output(lib_type, &v)
         }
     }
 
-    pub fn find_output(&self, output: &Output) -> FinderResult {
+    pub fn find_output(&self, lib_type: LibType, output: &Output) -> FinderResult {
         match output {
             Output::Bin(name) => {
                 #[cfg(unix)]
@@ -117,47 +122,51 @@ impl<'a, P: Package> Finder<'a, P> {
                     exports: None
                 };
             },
-            Output::StaticLib(name) => {
-                #[cfg(unix)]
-                return FinderResult {
-                    path: self.get_path(&format!("lib{}.a", name))
-                        .or_else(|| self.get_path(&format!("{}.a", name))),
-                    debug_info: self.get_path(&format!("lib{}.d", name))
-                        .or_else(|| self.get_path(&format!("{}.d", name))),
-                    exports: None
-                };
-                #[cfg(windows)]
-                return FinderResult {
-                    path: self.get_path(&format!("{}.lib", name))
-                        .or_else(|| self.get_path(&format!("lib{}.lib", name))),
-                    debug_info: self.get_path(&format!("{}.pdb", name))
-                        .or_else(|| self.get_path(&format!("lib{}.pdb", name))),
-                    exports: None
-                };
+            Output::Lib(name) => {
+                match lib_type {
+                    LibType::Dynamic => {
+                        #[cfg(unix)]
+                        return FinderResult {
+                            path: self.get_path(&format!("lib{}.dylib", name))
+                                .or_else(|| self.get_path(&format!("lib{}.so", name)))
+                                .or_else(|| self.get_path(&format!("{}.dylib", name)))
+                                .or_else(|| self.get_path(&format!("{}.so", name))),
+                            debug_info: self.get_path(&format!("lib{}.d", name))
+                                .or_else(|| self.get_path(&format!("{}.d", name))),
+                            exports: None
+                        };
+                        #[cfg(windows)]
+                        return FinderResult {
+                            path: self.get_path(&format!("{}.dll", name))
+                                .or_else(|| self.get_path(&format!("lib{}.dll", name))),
+                            debug_info: self.get_path(&format!("{}.pdb", name))
+                                .or_else(|| self.get_path(&format!("lib{}.pdb", name))),
+                            exports: self.get_path(&format!("{}.dll.lib", name))
+                                .or_else(|| self.get_path(&format!("lib{}.dll.lib", name)))
+                                .or_else(|| self.get_path(&format!("{}.lib", name)))
+                                .or_else(|| self.get_path(&format!("lib{}.lib", name)))
+                        };
+                    },
+                    LibType::Static => {
+                        #[cfg(unix)]
+                        return FinderResult {
+                            path: self.get_path(&format!("lib{}.a", name))
+                                .or_else(|| self.get_path(&format!("{}.a", name))),
+                            debug_info: self.get_path(&format!("lib{}.d", name))
+                                .or_else(|| self.get_path(&format!("{}.d", name))),
+                            exports: None
+                        };
+                        #[cfg(windows)]
+                        return FinderResult {
+                            path: self.get_path(&format!("{}.lib", name))
+                                .or_else(|| self.get_path(&format!("lib{}.lib", name))),
+                            debug_info: self.get_path(&format!("{}.pdb", name))
+                                .or_else(|| self.get_path(&format!("lib{}.pdb", name))),
+                            exports: None
+                        };
+                    }
+                }
             },
-            Output::DynamicLib(name) => {
-                #[cfg(unix)]
-                return FinderResult {
-                    path: self.get_path(&format!("lib{}.dylib", name))
-                        .or_else(|| self.get_path(&format!("lib{}.so", name)))
-                        .or_else(|| self.get_path(&format!("{}.dylib", name)))
-                        .or_else(|| self.get_path(&format!("{}.so", name))),
-                    debug_info: self.get_path(&format!("lib{}.d", name))
-                        .or_else(|| self.get_path(&format!("{}.d", name))),
-                    exports: None
-                };
-                #[cfg(windows)]
-                return FinderResult {
-                    path: self.get_path(&format!("{}.dll", name))
-                        .or_else(|| self.get_path(&format!("lib{}.dll", name))),
-                    debug_info: self.get_path(&format!("{}.pdb", name))
-                        .or_else(|| self.get_path(&format!("lib{}.pdb", name))),
-                    exports: self.get_path(&format!("{}.dll.lib", name))
-                        .or_else(|| self.get_path(&format!("lib{}.dll.lib", name)))
-                        .or_else(|| self.get_path(&format!("{}.lib", name)))
-                        .or_else(|| self.get_path(&format!("lib{}.lib", name)))
-                };
-            }
             Output::Config(name) => FinderResult {
                 path: self.get_path(name),
                 debug_info: None,
