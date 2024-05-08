@@ -48,22 +48,25 @@ pub struct Cargo {
 fn list_outputs(manifest: &Manifest, context: &Context, module: &Module, outputs: &mut OutputList) -> Result<(), Error> {
     let base_path = module.path.join("target").join_option(context.target)
         .join(if context.release { "release" } else { "debug" });
+    outputs.add_target_path(base_path);
     for bin in &manifest.bin {
-        let bin_name = String::from(bin.name.as_deref().unwrap_or(manifest.package().name())) + context.get_exe_extension();
-        let path = base_path.join(bin_name);
-        outputs.add_bin(path.into());
+        //let bin_name = String::from(bin.name.as_deref().unwrap_or(manifest.package().name())) + context.get_exe_extension();
+        //let path = base_path.join(bin_name);
+        //outputs.add_bin(path.into());
+        outputs.add_bin(bin.name.as_deref().unwrap_or(manifest.package().name()));
     }
     if let Some(lib) = &manifest.lib {
-        let mut bin_name = None;
-        if lib.crate_type.contains(&"staticlib".into()) {
+        //let mut bin_name = None;
+        outputs.add_lib(lib.name.as_deref().unwrap_or(manifest.package().name()));
+        /*if lib.crate_type.contains(&"staticlib".into()) {
             bin_name = Some(String::from(lib.name.as_deref().unwrap_or(manifest.package().name())) + context.get_staticlib_extension());
         } else if lib.crate_type.contains(&"cdylib".into()) || lib.crate_type.contains(&"dylib".into()) {
             bin_name = Some(String::from(lib.name.as_deref().unwrap_or(manifest.package().name())) + context.get_dynlib_extension());
-        }
-        if let Some(bin_name) = bin_name {
+        }*/
+        /*if let Some(bin_name) = bin_name {
             let path = base_path.join(bin_name);
             outputs.add_lib(path.into());
-        }
+        }*/
     }
     Ok(())
 }
@@ -109,10 +112,11 @@ impl Builder for Cargo {
         Ok(())
     }
 
-    fn list_outputs(&self, context: &Context, module: &Module, outputs: &mut OutputList) -> Result<(), Self::Error> {
+    fn list_outputs(&self, context: &Context, module: &Module) -> Result<OutputList, Self::Error> {
+        let mut outputs = OutputList::new();
         for manifest in &self.manifests {
-            list_outputs(manifest, context, module, outputs)?;
+            list_outputs(manifest, context, module, &mut outputs)?;
         }
-        Ok(())
+        Ok(outputs)
     }
 }

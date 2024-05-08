@@ -28,18 +28,20 @@
 
 use std::borrow::Cow;
 use std::error::Error;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use serde::Serialize;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
+#[serde(tag = "type", content = "path")]
 pub enum Output<'a> {
-    Bin(Cow<'a, Path>),
-    Lib(Cow<'a, Path>),
-    Config(Cow<'a, Path>),
-    Other(Cow<'a, Path>)
+    Bin(Cow<'a, str>),
+    Lib(Cow<'a, str>),
+    Config(Cow<'a, str>),
+    Other(Cow<'a, str>)
 }
 
 impl<'a> Output<'a> {
-    pub fn path(&self) -> &Cow<Path> {
+    pub fn name(&self) -> &str {
         match self {
             Output::Bin(v) => v,
             Output::Lib(v) => v,
@@ -49,30 +51,40 @@ impl<'a> Output<'a> {
     }
 }
 
-pub struct OutputList<'a>(Vec<Output<'a>>);
+pub struct OutputList<'a> {
+    outputs: Vec<Output<'a>>,
+    paths: Vec<PathBuf>
+}
 
 impl<'a> OutputList<'a> {
     pub fn new() -> Self {
-        Self(Vec::new())
+        Self {
+            outputs: Vec::new(),
+            paths: Vec::new()
+        }
     }
 
-    pub fn add_bin(&mut self, path: Cow<'a, Path>) {
-        self.0.push(Output::Bin(path));
+    pub fn add_target_path(&mut self, path: PathBuf) {
+        self.paths.push(path);
     }
-    pub fn add_lib(&mut self, path: Cow<'a, Path>) {
-        self.0.push(Output::Lib(path));
+
+    pub fn add_bin(&mut self, name: impl Into<Cow<'a, str>>) {
+        self.outputs.push(Output::Bin(name.into()));
     }
-    pub fn add_config(&mut self, path: Cow<'a, Path>) {
-        self.0.push(Output::Config(path));
+    pub fn add_lib(&mut self, name: impl Into<Cow<'a, str>>) {
+        self.outputs.push(Output::Lib(name.into()));
     }
-    pub fn add_other(&mut self, path: Cow<'a, Path>) {
-        self.0.push(Output::Other(path));
+    pub fn add_config(&mut self, name: impl Into<Cow<'a, str>>) {
+        self.outputs.push(Output::Config(name.into()));
+    }
+    pub fn add_other(&mut self, name: impl Into<Cow<'a, str>>) {
+        self.outputs.push(Output::Other(name.into()));
     }
 }
 
 impl<'a> AsRef<Vec<Output<'a>>> for OutputList<'a> {
     fn as_ref(&self) -> &Vec<Output<'a>> {
-        &self.0
+        &self.outputs
     }
 }
 
@@ -127,5 +139,5 @@ pub trait Builder: Sized {
 
     fn do_configure(context: &Context, module: &Module) -> Result<Self, Self::Error>;
     fn do_compile(&self, context: &Context, module: &Module) -> Result<(), Self::Error>;
-    fn list_outputs(&self, context: &Context, module: &Module, outputs: &mut OutputList) -> Result<(), Self::Error>;
+    fn list_outputs(&self, context: &Context, module: &Module) -> Result<OutputList, Self::Error>;
 }
