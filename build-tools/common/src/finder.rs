@@ -26,11 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
+use std::borrow::Cow;
+use std::path::{Path, PathBuf};
 use crate::output::Output;
 
 pub trait Context {
-    fn get_target_path(&self, target: &str) -> PathBuf;
+    fn get_target_path(&self, target: &str) -> Cow<'_, Path>;
     fn get_outputs(&self) -> impl Iterator<Item = Output>;
 }
 

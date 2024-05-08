@@ -26,10 +26,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::borrow::Cow;
 use crate::packager::interface::{Context, Package};
 
 use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command};
 use bp3d_build_common::output::Output;
 
@@ -65,8 +66,8 @@ pub fn ensure_clean_directories<'a>(directories: impl IntoIterator<Item = &'a Pa
 }
 
 impl<'a, P: Package> bp3d_build_common::finder::Context for Context<'a, P> {
-    fn get_target_path(&self, target: &str) -> PathBuf {
-        self.get_target_path(target)
+    fn get_target_path(&self, target: &str) -> Cow<'_, Path> {
+        self.get_target_path(target).into()
     }
 
     fn get_outputs(&self) -> impl Iterator<Item = Output> {
