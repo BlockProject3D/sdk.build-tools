@@ -54,7 +54,7 @@ macro_rules! builder_registry {
         impl BuilderType {
             pub fn call(&self, context: &crate::builder::interface::Context, module: &crate::builder::interface::Module, paths: &mut Vec<std::path::PathBuf>) {
                 match self {
-                    $(BuilderType::$name => crate::core::run_builder::<$module::$name>(context, module, paths))*
+                    $(BuilderType::$name => crate::core::run_builder::<$module::$name>(context, module, paths)),*
                 }
             }
         }

@@ -26,10 +26,42 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod interface;
-pub mod util;
+use crate::builder::interface::{Builder, Context, Module, OutputList};
+use crate::lua::engine::LuaEngine;
 
-util::builder_registry! {
-    cargo::Cargo,
-    lua::Lua
+pub struct Lua {
+    engine: LuaEngine
+}
+
+impl Builder for Lua {
+    const NAME: &'static str = "Lua";
+    type Error = mlua::Error;
+
+    fn do_configure(context: &Context, module: &Module) -> Result<Self, Self::Error> {
+        let engine = LuaEngine::new()?;
+        engine.set_features(context.features.iter().map(|v| *v))?;
+        engine.set_release(context.release)?;
+        engine.set_target(context.target())?;
+        engine.set_all_features(context.all_features)?;
+        if module.path.extension()
+            .map(|v| v.to_str().map(|v| v.to_lowercase() == "lua").unwrap_or(false))
+            .unwrap_or(false) {
+            engine.load_script(module.path)?;
+        } else {
+            engine.load_script(&module.path.join("bp3d-make.lua"))?;
+        }
+        engine.call("doConfigure")?;
+        Ok(Lua {
+            engine
+        })
+    }
+
+    fn do_compile(&self, _: &Context, _: &Module) -> Result<(), Self::Error> {
+        self.engine.call("doCompile")?;
+        Ok(())
+    }
+
+    fn list_outputs(&self, _: &Context, _: &Module) -> Result<OutputList, Self::Error> {
+        self.engine.call_outputs("listOutputs")
+    }
 }

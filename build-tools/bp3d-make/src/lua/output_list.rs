@@ -26,10 +26,43 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod interface;
-pub mod util;
+use std::path::PathBuf;
+use mlua::{UserData, UserDataMethods};
+use crate::builder::interface::OutputList;
 
-util::builder_registry! {
-    cargo::Cargo,
-    lua::Lua
+pub struct OutputListWrapper(OutputList<'static>);
+
+impl OutputListWrapper {
+    pub fn new() -> Self {
+        Self(OutputList::new())
+    }
+
+    pub fn into_inner(self) -> OutputList<'static> {
+        self.0
+    }
+}
+
+impl UserData for OutputListWrapper {
+    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_method_mut("addTargetPath", |_, this, path: String| {
+            this.0.add_target_path(PathBuf::from(path));
+            Ok(())
+        });
+        methods.add_method_mut("addBin", |_, this, name: String| {
+            this.0.add_bin(name);
+            Ok(())
+        });
+        methods.add_method_mut("addLib", |_, this, name: String| {
+            this.0.add_lib(name);
+            Ok(())
+        });
+        methods.add_method_mut("addConfig", |_, this, name: String| {
+            this.0.add_config(name);
+            Ok(())
+        });
+        methods.add_method_mut("addOther", |_, this, name: String| {
+            this.0.add_other(name);
+            Ok(())
+        });
+    }
 }

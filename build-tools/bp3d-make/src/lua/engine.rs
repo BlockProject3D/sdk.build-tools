@@ -28,8 +28,10 @@
 
 
 use std::path::Path;
-use mlua::{FromLua, Function, Lua, LuaOptions, StdLib, Table};
+use mlua::{AnyUserData, FromLua, Function, Lua, LuaOptions, StdLib, Table};
+use crate::builder::interface::OutputList;
 use crate::lua::lib_command::CommandLib;
+use crate::lua::output_list::OutputListWrapper;
 
 pub trait Lib {
     const NAME: &'static str;
@@ -59,6 +61,10 @@ impl LuaEngine {
         let lua = Lua::new_with(StdLib::ALL_SAFE, LuaOptions::new())?;
         let engine = LuaEngine { lua };
         engine.load_lib(CommandLib)?;
+        let func = engine.lua.create_function(|lua, _: ()| {
+            lua.create_userdata(OutputListWrapper::new())
+        })?;
+        engine.lua.globals().set("OutputList", func)?;
         Ok(engine)
     }
 
@@ -92,5 +98,11 @@ impl LuaEngine {
         let function = Function::from_lua(self.lua.globals().get(name)?, &self.lua)?;
         function.call(())?;
         Ok(())
+    }
+
+    pub fn call_outputs(&self, name: &str) -> mlua::Result<OutputList> {
+        let function = Function::from_lua(self.lua.globals().get(name)?, &self.lua)?;
+        let res: AnyUserData = function.call(())?;
+        Ok(res.take::<OutputListWrapper>()?.into_inner())
     }
 }
