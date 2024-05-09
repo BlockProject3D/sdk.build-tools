@@ -28,6 +28,7 @@
 
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
+use itertools::Itertools;
 use bp3d_build_common::finder::Finder;
 use bp3d_build_common::output::Output;
 use bp3d_sdk_util::ResultExt;
@@ -57,7 +58,9 @@ pub fn run_builder<B: Builder>(context: &Context, module: &Module, paths: &mut V
             .map(move |v| Finder::new(&o, "").resolve_output_all(v))
             .flatten())
         .flatten()
-        .map(|v| v.path.into_iter().chain(v.exports.into_iter()).chain(v.debug_info.into_iter())).flatten();
+        .map(|v| v.path.into_iter().chain(v.exports.into_iter()).chain(v.debug_info.into_iter()))
+        .flatten()
+        .unique();
     for item in iter {
         paths.push(item);
     }

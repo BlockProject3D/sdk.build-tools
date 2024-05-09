@@ -38,6 +38,8 @@ mod args;
 mod builder;
 mod core;
 
+//TODO: Clippy support
+
 fn main() {
     let args = Args::parse();
     let features: Vec<&str> = args.features.iter().map(|v| &**v).collect();

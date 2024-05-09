@@ -82,13 +82,20 @@ impl<'a, C: Context> Finder<'a, C> {
 
     pub fn resolve_output_all(&self, output: &Output) -> Vec<FinderResult> {
         let mut results = Vec::new();
-        let rstatic = self.resolve_output(LibType::Static, output);
-        let rdynamic = self.resolve_output(LibType::Dynamic, output);
-        if rstatic.path.is_some() {
-            results.push(rstatic);
-        }
-        if rdynamic.path.is_some() {
-            results.push(rdynamic);
+        if output.is_lib() {
+            let rstatic = self.resolve_output(LibType::Static, output);
+            let rdynamic = self.resolve_output(LibType::Dynamic, output);
+            if rstatic.path.is_some() {
+                results.push(rstatic);
+            }
+            if rdynamic.path.is_some() {
+                results.push(rdynamic);
+            }
+        } else {
+            let rdynamic = self.resolve_output(LibType::Dynamic, output);
+            if rdynamic.path.is_some() {
+                results.push(rdynamic);
+            }
         }
         results
     }
