@@ -1,2 +1,0 @@
-[workspace]
-members = ["bp3d-make", "bp3d-package", "common"]

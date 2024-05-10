@@ -1,17 +1,18 @@
 [package]
-name = "bp3d-package"
-description = "BP3D Package is a tool used to package libraries and applications in OS native formats."
+name = "bp3d-make"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cargo_toml = "0.20.2"
+mlua = { version = "0.9.7", features = ["lua51", "vendored"] }
 clap = { version = "4.5.4", features = ["derive"] }
-toml = "0.8.12"
-serde = { version = "1.0.199", features = ["derive"] }
 current_platform = "0.2.0"
-copy_dir = "0.1.3"
-bp3d-sdk-util = { path = "../../util" }
+serde = { version = "1.0.200", features = ["derive"] }
+toml = "0.8.12"
+cargo_toml = "0.20.2"
+bp3d-sdk-util = { path = "../util" }
+serde_json = "1.0.117"
 bp3d-build-common = { path = "../common" }
+itertools = "0.12.1"

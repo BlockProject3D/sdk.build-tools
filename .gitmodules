@@ -1,6 +1,0 @@
-[submodule "texturec"]
-	path = texturec
-	url = https://github.com/BlockProject3D/sdk.texturec.git
-[submodule "shaderc"]
-	path = shaderc
-	url = https://github.com/BlockProject3D/sdk.shaderc.git
