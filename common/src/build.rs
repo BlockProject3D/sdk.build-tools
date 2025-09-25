@@ -26,34 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod packager;
-mod manifest_ext;
-mod core;
-mod args;
+use crate::package::Context;
 
-use std::path::PathBuf;
-use cargo_toml::Manifest;
-use clap::Parser;
-use current_platform::CURRENT_PLATFORM;
-use bp3d_sdk_util::ResultExt;
-use crate::args::Args;
-use crate::packager::interface::{Config, Context};
+/*impl Context {
+    pub fn pre_package(&self) {
 
-//On windows to build custom file names, use
-//cargo rustc -- --emit link=target/debug/BP3DNetIPCC
-//On linux maybe passing rustc -- -Wl,soname,<name of dylib> might work to avoid the need for patchelf on the build system
-fn main() {
-    let mut args = Args::parse();
-    if args.target_list.len() == 0 {
-        args.target_list.push(CURRENT_PLATFORM.into());
     }
-    let collected: Vec<&str> = args.target_list.iter().map(|v| &**v).collect();
-    let root = args.root.unwrap_or(PathBuf::from("./"));
-    let ctx = Context {
-        root: &root,
-        package: Manifest::from_path(&root.join("Cargo.toml")).expect_exit("Failed to load root manifest", 1),
-        config: if args.release { Config::Release } else { Config::Debug },
-        targets: &collected
-    };
-    args.package_type.call(&ctx);
-}
+}*/

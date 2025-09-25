@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -70,6 +70,8 @@ pub trait Packager {
 
     type Error: Error + From<std::io::Error>;
 
+    //TODO: Support more configurations like release not just debus
+    //TODO: Support bp3d-make build
     fn do_build_target<P: Package>(&self, target: &str, context: &Context<P>) -> Result<(), Self::Error> {
         Command::new("cargo")
             .arg("build")

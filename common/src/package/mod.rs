@@ -26,34 +26,37 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod packager;
-mod manifest_ext;
-mod core;
-mod args;
+mod interface;
+mod cargo;
+mod make;
 
-use std::path::PathBuf;
-use cargo_toml::Manifest;
-use clap::Parser;
-use current_platform::CURRENT_PLATFORM;
-use bp3d_sdk_util::ResultExt;
-use crate::args::Args;
-use crate::packager::interface::{Config, Context};
+pub use interface::*;
 
-//On windows to build custom file names, use
-//cargo rustc -- --emit link=target/debug/BP3DNetIPCC
-//On linux maybe passing rustc -- -Wl,soname,<name of dylib> might work to avoid the need for patchelf on the build system
-fn main() {
-    let mut args = Args::parse();
-    if args.target_list.len() == 0 {
-        args.target_list.push(CURRENT_PLATFORM.into());
+use std::path::Path;
+
+impl<'a> Context<'a> {
+    pub fn load(root: &'a Path, config: &'a str) -> Result<Context<'a>, Error> {
+        let mut res = match cargo::Cargo::load(root, config) {
+            Ok(v) => v,
+            Err(e) => return Err(e)
+        };
+        if let None = res {
+            res = match make::Make::load(root, config) {
+                Ok(v) => v,
+                Err(e) => return Err(e)
+            };
+        }
+        let res = match res {
+            Some(v) => v,
+            None => return Err(Error::UnknownPackage)
+        };
+        Ok(res)
     }
-    let collected: Vec<&str> = args.target_list.iter().map(|v| &**v).collect();
-    let root = args.root.unwrap_or(PathBuf::from("./"));
-    let ctx = Context {
-        root: &root,
-        package: Manifest::from_path(&root.join("Cargo.toml")).expect_exit("Failed to load root manifest", 1),
-        config: if args.release { Config::Release } else { Config::Debug },
-        targets: &collected
-    };
-    args.package_type.call(&ctx);
+
+    pub fn pre_build(&self, target: &str) -> Result<(), Error> {
+        if !self.package.is_valid_target(target) {
+            return Err(Error::InvalidTarget(target.into()))
+        }
+        self.package.pre_build(self, target)
+    }
 }

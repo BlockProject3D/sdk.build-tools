@@ -26,34 +26,45 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod packager;
-mod manifest_ext;
-mod core;
-mod args;
+use std::path::{Path, PathBuf};
+use bp3d_util::simple_error;
+use crate::output::Output;
 
-use std::path::PathBuf;
-use cargo_toml::Manifest;
-use clap::Parser;
-use current_platform::CURRENT_PLATFORM;
-use bp3d_sdk_util::ResultExt;
-use crate::args::Args;
-use crate::packager::interface::{Config, Context};
+pub trait Package {
+    /// Returns the name of the package.
+    fn get_name(&self) -> &str;
 
-//On windows to build custom file names, use
-//cargo rustc -- --emit link=target/debug/BP3DNetIPCC
-//On linux maybe passing rustc -- -Wl,soname,<name of dylib> might work to avoid the need for patchelf on the build system
-fn main() {
-    let mut args = Args::parse();
-    if args.target_list.len() == 0 {
-        args.target_list.push(CURRENT_PLATFORM.into());
+    /// Returns the version of this package.
+    fn get_version(&self) -> &str;
+
+    /// Returns an iterator over all outputs of this package.
+    fn get_outputs(&self) -> &[Output];
+
+    /// Pre-builds the package for the specified target and context combinations.
+    fn pre_build(&self, ctx: &Context, target: &str) -> Result<(), Error>;
+
+    /// Returns true if the given target triple is known to the package type or not.
+    fn is_valid_target(&self, target: &str) -> bool;
+}
+
+simple_error! {
+    pub Error {
+        Cargo(cargo_toml::Error) => "cargo manifest error: {}",
+        InvalidConfig(String) => "invalid configuration name: {}",
+        InvalidTarget(String) => "invalid target name: {}",
+        Io(std::io::Error) => "io error: {}",
+        UnknownPackage => "unknown package type"
     }
-    let collected: Vec<&str> = args.target_list.iter().map(|v| &**v).collect();
-    let root = args.root.unwrap_or(PathBuf::from("./"));
-    let ctx = Context {
-        root: &root,
-        package: Manifest::from_path(&root.join("Cargo.toml")).expect_exit("Failed to load root manifest", 1),
-        config: if args.release { Config::Release } else { Config::Debug },
-        targets: &collected
-    };
-    args.package_type.call(&ctx);
+}
+
+pub struct Context<'a> {
+    pub root: &'a Path,
+    pub package: Box<dyn Package>,
+    pub config: &'a str
+}
+
+impl<'a> Context<'a> {
+    pub fn get_target_path(&self, target: &str) -> PathBuf {
+        self.root.join("target").join(target).join(self.config)
+    }
 }

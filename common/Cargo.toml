@@ -6,3 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cargo_toml = "0.20.2"
+bp3d-util = { version="2.2.0", features = ["simple-error"] }
