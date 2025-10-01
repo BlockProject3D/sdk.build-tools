@@ -36,7 +36,7 @@ use super::Context;
 
 pub struct Cargo {
     manifest: Manifest,
-    outputs: Vec<Output<'static>>
+    outputs: Vec<Output>
 }
 
 impl Cargo {

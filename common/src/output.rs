@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -29,14 +29,15 @@
 use std::borrow::Cow;
 
 #[derive(Debug, Clone)]
-pub enum Output<'a> {
-    Bin(Cow<'a, str>),
-    Lib(Cow<'a, str>),
-    Config(Cow<'a, str>),
-    Other(Cow<'a, str>)
+pub enum Output {
+    Bin(String),
+    Lib(String),
+    Config(String),
+    Header(String),
+    Other(String)
 }
 
-impl<'a> Output<'a> {
+impl Output {
     pub fn is_lib(&self) -> bool {
         match self {
             Output::Lib(_) => true,
@@ -70,6 +71,7 @@ impl<'a> Output<'a> {
             Output::Bin(v) => v,
             Output::Lib(v) => v,
             Output::Config(v) => v,
+            Output::Header(v) => v,
             Output::Other(v) => v
         }
     }

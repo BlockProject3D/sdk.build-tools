@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,10 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod interface;
-pub mod util;
+mod interface;
+pub mod artifact;
+pub mod finder;
 
-util::builder_registry! {
-    cargo::Cargo,
-    lua::Lua
+pub use interface::*;
+
+pub const fn static_string(str: &'static str) -> std::borrow::Cow<str> {
+    std::borrow::Cow::Borrowed(str)
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,29 +26,28 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::Path;
+use std::path::PathBuf;
 use clap::Parser;
+use current_platform::CURRENT_PLATFORM;
 use crate::args::Args;
-use crate::builder::interface::Context;
-use crate::core::run_workspace;
 
-mod model;
-mod lua;
 mod args;
-mod builder;
 mod core;
-
-//TODO: Clippy support
+mod system;
+mod cargo;
 
 fn main() {
     let args = Args::parse();
     let features: Vec<&str> = args.features.iter().map(|v| &**v).collect();
-    let ctx = Context {
-        root: args.root.as_deref().unwrap_or(Path::new("./")),
-        target: args.target.as_deref(),
-        release: args.release,
-        features: &*features,
-        all_features: args.all_features
+    let path = args.root.unwrap_or(PathBuf::from("./"));
+    let ctx = system::Context {
+        path: &path,
+        target: args.target.as_deref().unwrap_or(CURRENT_PLATFORM),
+        features: if args.all_features { system::Features::All } else { system::Features::List(&features) },
+        configuration: args.configuration.as_deref().unwrap_or("debug")
     };
-    run_workspace(&ctx);
+    let output = core::dispatch_run(ctx, args.cmd);
+    if let Some(output) = output {
+        println!("{}", output);
+    }
 }

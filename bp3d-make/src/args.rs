@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -27,7 +27,14 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::path::PathBuf;
-use clap::Parser;
+use clap::{Parser, ValueEnum};
+
+#[derive(ValueEnum, Debug, Copy, Clone)]
+pub enum Command {
+    Configure,
+    Build,
+    PrePackage
+}
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -38,12 +45,17 @@ pub struct Args {
     #[arg(short = 'f', long = "feature", help = "Specify which feature(s) to build with.")]
     pub features: Vec<String>,
 
-    #[arg(long, help = "Build rust target in release mode.")]
-    pub release: bool,
+    #[arg(short = 'c', long = "config", help = "Build rust target in release mode.")]
+    pub configuration: Option<String>,
 
     #[arg(short = 'a', long = "all-features", help = "Build with all features.")]
     pub all_features: bool,
 
-    #[arg(help = "Root path of the project, where to find the manifest (bp3d-make.toml).")]
-    pub root: Option<PathBuf>
+    #[arg(long="root", help = "Root path of the project, where to find the manifest.")]
+    pub root: Option<PathBuf>,
+
+    #[arg(long = "json", help = "Json output.")]
+    pub json: bool,
+
+    pub cmd: Command
 }

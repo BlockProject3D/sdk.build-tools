@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -167,6 +167,11 @@ impl<'a, C: Context> Finder<'a, C> {
                 exports: None
             },
             Output::Other(name) => FinderResult {
+                path: self.get_path(name),
+                debug_info: None,
+                exports: None
+            },
+            Output::Header(name) => FinderResult {
                 path: self.get_path(name),
                 debug_info: None,
                 exports: None

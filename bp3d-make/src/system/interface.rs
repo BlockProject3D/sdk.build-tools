@@ -26,7 +26,64 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod output;
-pub mod finder;
-mod build;
-pub mod package;
+use std::borrow::Cow;
+use std::ops::Deref;
+use std::path::Path;
+
+#[derive(Eq, PartialEq)]
+pub enum Features<'a> {
+    All,
+    List(&'a [&'a str])
+}
+
+impl<'a> Deref for Features<'a> {
+    type Target = [&'a str];
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Features::All => &[],
+            Features::List(v) => v
+        }
+    }
+}
+
+pub struct Context<'a> {
+    pub path: &'a Path,
+    pub target: &'a str,
+    pub configuration: &'a str,
+    pub features: Features<'a>
+}
+
+pub trait BuildSystem {
+    type Error: std::error::Error;
+    type Package: Package;
+
+    /// Configure the build.
+    fn configure(&self, package: &Self::Package, ctx: &Context) -> Result<(), Self::Error>;
+
+    /// Build the project.
+    fn build(&self, package: &Self::Package, ctx: &Context) -> Result<(), Self::Error>;
+
+    /// Prepares the project for packaging to a specific target.
+    ///
+    /// This function is intended to build a flat list of artifacts which can be used by
+    /// bp3d-package.
+    fn pre_package(&self, package: &Self::Package, ctx: &Context) -> Result<crate::system::artifact::List, Self::Error>;
+}
+
+pub trait Package {
+    /// Returns the name of the package.
+    fn get_name(&self) -> &str;
+
+    /// Returns the version of this package.
+    fn get_version(&self) -> &str;
+
+    /// Returns the list of available targets.
+    fn targets(&self) -> &[Cow<str>];
+
+    /// Returns the list of available configurations.
+    fn configurations(&self) -> &[Cow<str>];
+
+    /// Returns the list of available features.
+    fn features(&self) -> &[Cow<str>];
+}

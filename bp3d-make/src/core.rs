@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,91 +26,73 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::borrow::Cow;
-use std::path::{Path, PathBuf};
-use itertools::Itertools;
-use bp3d_build_common::finder::Finder;
-use bp3d_build_common::output::Output;
-use bp3d_sdk_util::ResultExt;
-use crate::builder::interface::{Builder, Context, Module, PathOutputList};
-use crate::builder::util::PathExt;
-use crate::model::Workspace;
+use bp3d_debug::{debug, info};
+use bp3d_util::result::ResultExt;
+use bp3d_util::simple_error;
+use crate::args::Command;
+use crate::cargo::{CargoBuilder, CargoWorkspace};
+use crate::system::{BuildSystem, Context, Features, Package};
 
-impl<'a> bp3d_build_common::finder::Context for PathOutputList<'a> {
-    fn get_target_path(&self, _: &str) -> Cow<'_, Path> {
-        self.path.into()
-    }
-
-    fn get_outputs(&self) -> impl Iterator<Item = Output> {
-        self.outputs.iter().cloned()
+simple_error! {
+    pub Error {
+        InvalidTarget(String) => "invalid target: {}",
+        InvalidConfig(String) => "invalid configuration: {}",
+        UnknownFeature(String) => "unknown feature: {}",
+        BuildSystem(String) => "build system: {}",
+        Json(serde_json::Error) => "json: {}"
     }
 }
 
-pub fn run_builder<B: Builder>(context: &Context, module: &Module, paths: &mut Vec<PathBuf>) {
-    println!("Configuring module {} using builder {}...", module.name, B::NAME);
-    let builder = B::do_configure(context, module).expect_exit("Failed to configure module", 1);
-    println!("Compiling module {}...", module.name);
-    builder.do_compile(context, module).expect_exit("Failed to compile module", 1);
-    println!("Adding output files...");
-    let outputs = builder.list_outputs(context, module).expect_exit("Failed to get module outputs", 1);
-    let iter = outputs.iter()
-        .map(|o| o.outputs.iter()
-            .map(move |v| Finder::new(&o, "").resolve_output_all(v))
-            .flatten())
-        .flatten()
-        .map(|v| v.path.into_iter().chain(v.exports.into_iter()).chain(v.debug_info.into_iter()))
-        .flatten()
-        .unique();
-    for item in iter {
-        paths.push(item);
+fn run_command<P: Package, B: BuildSystem<Package = P>>(ctx: Context, cmd: Command, package: P, build_system: B) -> Result<Option<String>, Error> {
+    let targets = package.targets();
+    let features = package.features();
+    let configurations = package.configurations();
+    let target = targets.iter().any(|v| v == ctx.target);
+    if !target {
+        return Err(Error::InvalidTarget(ctx.target.into()));
     }
+    let configuration = configurations.iter().any(|v| v == ctx.configuration);
+    if !configuration {
+        return Err(Error::InvalidConfig(ctx.configuration.into()));
+    }
+    if let Features::List(list) = &ctx.features {
+        for feature in *list {
+            let exists = features.iter().any(|v| v == feature);
+            if !exists {
+                return Err(Error::UnknownFeature((*feature).into()));
+            }
+        }
+    }
+    debug!("Running command: {:?} for package {}-{}", cmd, package.get_name(), package.get_version());
+    match cmd {
+        Command::Configure => {
+            info!("Configuring package...");
+            build_system.configure(&package, &ctx).map_err(|v| Error::BuildSystem(v.to_string()))?;
+        },
+        Command::Build => {
+            info!("Configuring package...");
+            build_system.configure(&package, &ctx).map_err(|v| Error::BuildSystem(v.to_string()))?;
+            info!("Building package...");
+            build_system.build(&package, &ctx).map_err(|v| Error::BuildSystem(v.to_string()))?;
+        }
+        Command::PrePackage => {
+            info!("Configuring package...");
+            build_system.configure(&package, &ctx).map_err(|v| Error::BuildSystem(v.to_string()))?;
+            info!("Pre-packaging package...");
+            let list = build_system.pre_package(&package, &ctx).map_err(|v| Error::BuildSystem(v.to_string()))?;
+            let output = serde_json::to_string(&list.into_inner()).map_err(Error::Json)?;
+            return Ok(Some(output));
+        }
+    }
+    Ok(None)
 }
 
-pub fn run_workspace(context: &Context) {
-    let data = std::fs::read_to_string(context.root.join("bp3d-make.toml")).expect_exit("Failed to load workspace configuration", 1);
-    let workspace: Workspace = toml::from_str(&data).expect_exit("Failed to read workspace configuration", 1);
-    let mut paths = Vec::new();
-    for (name, member) in workspace.modules {
-        let path = context.root.join(member.path.as_deref().unwrap_or(&name));
-        let module = Module {
-            name: &name,
-            path: &path
-        };
-        member.ty.call(context, &module, &mut paths);
+pub fn dispatch_run(ctx: Context, cmd: Command) -> Option<String> {
+    let manifest = ctx.path.join("Cargo.toml");
+    if manifest.exists() {
+        let package = CargoWorkspace::load(ctx.path).expect_exit("Failed to load cargo package manifest", 1);
+        run_command(ctx, cmd, package, CargoBuilder).expect_exit("Failed to run build", 2)
+    } else {
+        None
     }
-    println!("Creating output target directory...");
-    println!("Complete list of paths resolved from workspace outputs: {:?}", paths);
-    let root_target = context.root.join("target").join_option(context.target)
-        .join(if context.release { "release" } else { "debug" });
-    #[cfg(unix)]
-    {
-        if !root_target.exists() {
-            std::fs::create_dir_all(&root_target).expect_exit("Failed to create root target directory", 1);
-        }
-        for path in paths {
-            if let Some(file_name) = path.file_name() {
-                let dst = root_target.join(file_name);
-                if !dst.exists() {
-                    std::os::unix::fs::symlink(
-                        std::fs::canonicalize(path).expect_exit("Failed to get absolute path", 1),
-                        dst
-                    ).expect_exit("Failed to link target file", 1)
-                }
-            }
-        }
-    }
-    #[cfg(windows)]
-    {
-        if root_target.exists() {
-            std::fs::remove_dir_all(&root_target).expect_exit("Failed to remove root target directory", 1);
-        }
-        std::fs::create_dir_all(&root_target).expect_exit("Failed to create root target directory", 1);
-        for path in paths {
-            if let Some(file_name) = path.file_name() {
-                std::fs::copy(path, root_target.join(file_name)).expect_exit("Failed to copy target file", 1);
-            }
-        }
-    }
-    //let workspace_content = serde_json::to_string(outputs.as_ref()).expect_exit("Failed to generate workspace content JSON file", 1);
-    //std::fs::write(root_target.join("manifest.json"), workspace_content).expect_exit("Failed to write workspace content JSON file", 1);
 }
