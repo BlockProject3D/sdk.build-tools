@@ -26,9 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod output;
-pub mod finder;
-mod build;
-pub mod package;
-pub mod codec;
-pub mod proto;
+mod var_bytes;
+
+pub use var_bytes::VarBytes;

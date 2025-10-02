@@ -26,9 +26,31 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod output;
-pub mod finder;
-mod build;
-pub mod package;
-pub mod codec;
-pub mod proto;
+{
+    name: "command",
+    imports: [
+        { protocol: "common", type: "Header" },
+        { protocol: "common", type: "VarBytes" },
+        { protocol: "common", type: "String" },
+        { protocol: "common", type: "StringList" },
+        { protocol: "common", type: "StringItem" }
+    ],
+    messages: [
+        {
+            name: "Context",
+            fields: [
+                { name: "path", item_type: "VarBytes" },
+                { name: "target", item_type: "String" },
+                { name: "configuration", item_type: "String" },
+                { name: "features", item_type: "StringList" }
+            ]
+        },
+        {
+            name: "Msg",
+            fields: [
+                { "name": "hdr", item_type: "Header" },
+                { "name": "ctx", item_type: "Context" }
+            ]
+        }
+    ]
+}

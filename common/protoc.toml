@@ -1,0 +1,9 @@
+[package]
+name = "crate::proto"
+path = "src/proto"
+
+[options.common]
+list-wrappers = true
+
+[options.artifact]
+list-wrappers = true

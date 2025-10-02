@@ -26,9 +26,32 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod output;
-pub mod finder;
-mod build;
-pub mod package;
-pub mod codec;
-pub mod proto;
+use std::io::Write;
+use std::marker::PhantomData;
+use bp3d_proto::message::{FromBytes, Message, WriteTo};
+use bp3d_proto::util::ToUsize;
+use bp3d_proto::message::Result;
+
+pub struct VarBytes<T>(PhantomData<T>);
+
+impl<'a, T: FromBytes<'a, Output: ToUsize>> FromBytes<'a> for VarBytes<T> {
+    type Output = &'a [u8];
+
+    fn from_bytes(slice: &'a [u8]) -> Result<Message<Self::Output>> {
+        let msg = T::from_bytes(slice)?;
+        let size = msg.size();
+        let len = msg.into_inner().to_usize();
+        Ok(Message::new(size + len, &slice[size..len + size]))
+    }
+}
+
+impl<'a, T: WriteTo<Input<'a>: ToUsize>> WriteTo for VarBytes<T> {
+    type Input<'b> = &'b [u8];
+
+    fn write_to<W: Write>(input: &Self::Input<'_>, mut out: W) -> Result<()> {
+        let len = input.len();
+        T::write_to(&T::Input::from_usize(len), &mut out)?;
+        out.write_all(input)?;
+        Ok(())
+    }
+}

@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 cargo_toml = "0.20.2"
 bp3d-util = { version="2.2.0", features = ["simple-error"] }
+bp3d-proto = { version = "1.0.0-rc.5.1.0" }
+
+[build-dependencies]
+bp3d-protoc = { version = "1.0.0-rc.5.0.1", features = ["api-rust"] }
