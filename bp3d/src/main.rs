@@ -26,36 +26,24 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
-use clap::{Parser, ValueEnum};
+use std::path::Path;
+use clap::Parser;
+use current_platform::CURRENT_PLATFORM;
+use bp3d_build::system::{Context, Features};
+use crate::args::Args;
+use crate::core::dispatch_run;
 
-#[derive(ValueEnum, Debug, Copy, Clone)]
-pub enum Command {
-    Configure,
-    Build,
-    PrePackage
-}
+mod args;
+mod core;
 
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-pub struct Args {
-    #[arg(short = 't', long = "target", help = "Specify which target to build for.")]
-    pub target: Option<String>,
-
-    #[arg(short = 'f', long = "feature", help = "Specify which feature(s) to build with.")]
-    pub features: Vec<String>,
-
-    #[arg(short = 'c', long = "config", help = "Build rust target in release mode.")]
-    pub configuration: Option<String>,
-
-    #[arg(short = 'a', long = "all-features", help = "Build with all features.")]
-    pub all_features: bool,
-
-    #[arg(long="root", help = "Root path of the project, where to find the manifest.")]
-    pub root: Option<PathBuf>,
-
-    #[arg(long = "json", help = "Json output.")]
-    pub json: bool,
-
-    pub cmd: Command
+fn main() {
+    let args = Args::parse();
+    let features: Vec<&str> = args.features.iter().map(|v| &**v).collect();
+    let ctx = Context {
+        path: args.root.as_deref().unwrap_or(Path::new("./")),
+        target: args.target.as_deref().unwrap_or(CURRENT_PLATFORM),
+        configuration: args.configuration.as_deref().unwrap_or("debug"),
+        features: if args.all_features { Features::All } else { Features::List(&features) },
+    };
+    dispatch_run(ctx, args.cmd);
 }

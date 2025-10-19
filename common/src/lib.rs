@@ -31,4 +31,3 @@ pub mod finder;
 mod build;
 pub mod package;
 pub mod codec;
-pub mod proto;

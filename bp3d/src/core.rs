@@ -26,67 +26,40 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-{
-    name: "artifact",
-    imports: [
-        { protocol: "common", type: "VarBytes" },
-        { protocol: "common", type: "VarBytesOptional" },
-        { protocol: "common", type: "String" }
-    ],
-    enums: [
-        {
-            name: "Type",
-            variants: {
-                Bin: 0,
-                LibDynamic: 1,
-                LibStatic: 2,
-                Header: 3,
-                Config: 4,
-                Other: 5
-            }
-        }
-    ],
-    structs: [
-        {
-            name: "Header",
-            fields: [
-                {
-                    name: "ty",
-                    raw: {
-                        type: "unsigned",
-                        bits: 8
-                    },
-                    view: {
-                        type: "enum",
-                        name: "Type"
-                    }
-                }
-            ]
-        }
-    ],
-    messages: [
-        {
-            name: "Artifact",
-            fields: [
-                { name: "hdr", item_type: "Header" },
-                { name: "path", item_type: "VarBytes" },
-                { name: "debug_info", item_type: "VarBytesOptional" },
-                { name: "exports", item_type: "VarBytesOptional" },
-                { name: "name", item_type: "String" }
-            ]
+use bp3d_debug::{debug, info};
+use bp3d_util::result::ResultExt;
+use bp3d_build::core;
+use bp3d_build::system::Context;
+use crate::args::Command;
+
+fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command) -> core::Result<()> {
+    debug!("Running command: {:?} for package {}-{}", cmd, tool.package().get_name(), tool.package().get_version());
+    match cmd {
+        Command::Configure => {
+            info!("Configuring package...");
+            tool.configure(&ctx)
         },
-        {
-            name: "List",
-            fields: [
-                {
-                    name: "data",
-                    value: {
-                        type: "list",
-                        max_len: 255,
-                        item_type: "Artifact"
-                    }
-                }
-            ]
+        Command::Build => {
+            info!("Configuring package...");
+            tool.configure(&ctx)?;
+            info!("Building package...");
+            tool.build(&ctx)
         }
-    ]
+        Command::PrePackage => {
+            info!("Configuring package...");
+            tool.configure(&ctx)?;
+            info!("Pre-packaging package...");
+            tool.pre_package(&ctx).map(|_| ())
+        }
+        Command::Package => {
+            info!("Configuring package...");
+            tool.configure(&ctx)?;
+            todo!()
+        }
+    }
+}
+
+pub fn dispatch_run(ctx: Context, cmd: Command) {
+    let tool = core::open(&ctx).expect_exit("Failed to load package", 1);
+    run_command(&*tool, ctx, cmd).expect_exit("Failed to run build", 2);
 }

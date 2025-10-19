@@ -1,0 +1,11 @@
+[package]
+name = "bp3d"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.49", features = ["derive"] }
+bp3d-util = { version = "2.2.0", features = ["simple-error", "result"] }
+bp3d-debug = "1.0.0"
+bp3d-build = { path = "../bp3d-build" }
+current_platform = "0.2.0"

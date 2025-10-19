@@ -27,18 +27,15 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::path::{Path, PathBuf};
-use serde::Serialize;
 use crate::system::finder::Finder;
 
-#[derive(Serialize, Eq, PartialEq, Debug, Copy, Clone)]
-#[serde(rename_all="snake_case")]
+#[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum LibType {
     Dynamic,
     Static
 }
 
-#[derive(Serialize, Eq, PartialEq, Debug, Copy, Clone)]
-#[serde(rename_all="snake_case")]
+#[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum Type {
     Bin,
     Lib(LibType),
@@ -47,7 +44,6 @@ pub enum Type {
     Other
 }
 
-#[derive(Serialize)]
 pub struct Artifact {
     path: PathBuf,
     debug_info: Option<PathBuf>,
@@ -57,6 +53,26 @@ pub struct Artifact {
 }
 
 impl Artifact {
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub fn debug_info(&self) -> Option<&Path> {
+        self.debug_info.as_deref()
+    }
+
+    pub fn exports(&self) -> Option<&Path> {
+        self.exports.as_deref()
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn ty(&self) -> Type {
+        self.ty
+    }
+
     pub fn find_bin(path: &Path, name: &str) -> Option<Self> {
         let res = Finder::new(path).find_bin(name);
         Some(Self {

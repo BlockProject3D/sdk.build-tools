@@ -71,7 +71,7 @@ pub trait Packager {
     type Error: Error + From<std::io::Error>;
 
     //TODO: Support more configurations like release not just debus
-    //TODO: Support bp3d-make build
+    //TODO: Support bp3d-build build
     fn do_build_target<P: Package>(&self, target: &str, context: &Context<P>) -> Result<(), Self::Error> {
         Command::new("cargo")
             .arg("build")

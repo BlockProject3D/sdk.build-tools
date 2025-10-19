@@ -26,50 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-{
-    name: "response",
-    imports: [
-        { protocol: "common", type: "Header" },
-        { protocol: "artifact", type: "List" },
-        { protocol: "common", type: "String" },
-        { protocol: "common", type: "StringList" },
-        { protocol: "common", type: "StringItem" }
-    ],
-    unions: [
-        {
-            name: "Value",
-            discriminant: "Header.cmd",
-            cases: [
-                { name: "Configure", case: "Configure", item_tyoe: "Package" },
-                { name: "Build", case: "Build" },
-                { name: "PrePackage", case: "PrePackage", item_type: "List" }
-            ]
-        }
-    ],
-    messages: [
-        {
-            name: "Package",
-            fields: [
-                { name: "name", item_type: "String" },
-                { name: "version", item_type: "String" },
-                { name: "targets", item_type: "StringList" },
-                { name: "configurations", item_type: "StringList" },
-                { name: "features", item_type: "StringList" }
-            ]
-        },
-        {
-            name: "Msg",
-            fields: [
-                { "name": "hdr", item_type: "Header" },
-                {
-                    name: "data",
-                    header: "hdr",
-                    value: {
-                        type: "union",
-                        name: "Value"
-                    }
-                }
-            ]
-        }
-    ]
-}
+pub mod engine;
+mod lib_command;
+mod output_list;

@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,25 +26,37 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
-use serde::Deserialize;
-use crate::builder::BuilderType;
+use std::path::PathBuf;
+use clap::{Parser, ValueEnum};
 
-#[derive(Deserialize)]
-pub struct Member {
-    pub ty: BuilderType,
-    pub path: Option<String>
+#[derive(ValueEnum, Debug, Copy, Clone)]
+pub enum Command {
+    Configure,
+    Build,
+    PrePackage,
+    Package
 }
 
-#[derive(Deserialize)]
-pub struct Workspace {
-    /// The name of the workspace being built.
-    pub name: String,
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Args {
+    #[arg(short = 't', long = "target", help = "Specify which target to build for.")]
+    pub target: Option<String>,
 
-    /// The version of the workspace being built.
-    pub version: String,
+    #[arg(short = 'f', long = "feature", help = "Specify which feature(s) to build with.")]
+    pub features: Vec<String>,
 
-    /// Workspace members as a set of key-value pairs where the key is the folder name in the
-    /// workspace and the value is the type of module.
-    pub modules: HashMap<String, Member>
+    #[arg(short = 'c', long = "config", help = "Build rust target in release mode.")]
+    pub configuration: Option<String>,
+
+    #[arg(short = 'a', long = "all-features", help = "Build with all features.")]
+    pub all_features: bool,
+
+    #[arg(long="root", help = "Root path of the project, where to find the manifest.")]
+    pub root: Option<PathBuf>,
+
+    #[arg(long = "ipc", help = "ipc server name.")]
+    pub ipc: Option<String>,
+
+    pub cmd: Command
 }

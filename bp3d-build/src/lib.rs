@@ -26,8 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_protoc::api::generate_rust;
+// Internal build system implementations.
+mod cargo;
 
-fn main() {
-    generate_rust("./protoc.toml").unwrap();
-}
+// Public interface.
+pub mod system;
+pub mod core;
