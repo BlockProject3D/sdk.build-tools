@@ -26,80 +26,118 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ffi::OsStr;
+use std::path::PathBuf;
 use std::process::Command;
-use mlua::{FromLua, Lua, Table, Value};
-use crate::lua::engine::Lib;
+use bp3d_lua::decl_lib_func;
+use bp3d_lua::libs::Lib;
+use bp3d_lua::util::Namespace;
+use bp3d_lua::vm::function::types::RFunction;
+use bp3d_lua::vm::table::Table;
+use bp3d_lua::vm::value::FromLua;
+use bp3d_lua::vm::Vm;
+use bp3d_util::simple_error;
+use crate::lua::obj_path::Path;
 
-struct CommandInfo<'lua> {
-    pub exe: mlua::String<'lua>,
-    pub args: Option<Vec<mlua::String<'lua>>>,
-    pub env: Option<HashMap<mlua::String<'lua>, mlua::String<'lua>>>,
-    pub working_directory: Option<mlua::String<'lua>>
+simple_error! {
+    pub Error {
+        Lua(bp3d_lua::vm::error::Error) => "lua error: {}",
+        Io(std::io::Error) => "io error: {}"
+    }
 }
 
-impl<'lua> CommandInfo<'lua> {
+pub enum PathOrString {
+    Path(PathBuf),
+    String(String),
+}
+
+impl AsRef<OsStr> for PathOrString {
+    fn as_ref(&self) -> &OsStr {
+        match self {
+            PathOrString::Path(v) => v.as_ref(),
+            PathOrString::String(v) => v.as_ref()
+        }
+    }
+}
+
+impl FromLua<'_> for PathOrString {
+    unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
+        FromLua::from_lua(vm, index).unwrap_unchecked()
+    }
+
+    fn from_lua(vm: &'_ Vm, index: i32) -> bp3d_lua::vm::Result<Self> {
+        let path: bp3d_lua::vm::Result<&Path> = FromLua::from_lua(vm, index);
+        if let Ok(path) = path {
+            Ok(PathOrString::Path(path.as_path().into()))
+        } else {
+            Ok(PathOrString::String(FromLua::from_lua(vm, index)?))
+        }
+    }
+}
+
+struct CommandInfo {
+    pub exe: String,
+    pub args: Option<Vec<PathOrString>>,
+    pub env: Option<HashMap<String, String>>,
+    pub workdir: Option<PathBuf>
+}
+
+impl CommandInfo {
+    pub fn from_table(table: &Table) -> bp3d_lua::vm::Result<Self> {
+        let workdir: Option<&Path> = table.get(c"workdir")?;
+        Ok(CommandInfo {
+            exe: table.get(c"exe")?,
+            args: table.get(c"args")?,
+            env: table.get(c"env")?,
+            workdir: workdir.map(|v| PathBuf::from(v.as_path())),
+        })
+    }
+}
+
+impl CommandInfo {
     pub fn into_command(self) -> Command {
-        let mut cmd = Command::new(as_os_str(&self.exe));
+        let mut cmd = Command::new(&self.exe);
         if let Some(args) = self.args {
-            cmd.args(args.iter().map(|v| as_os_str(v)));
+            cmd.args(args.iter().map(|v| v));
         }
         if let Some(env) = self.env {
-            cmd.envs(env.iter().map(|(k, v)| (as_os_str(k), as_os_str(v))));
+            cmd.envs(env.iter().map(|(k, v)| (k, v)));
         }
-        if let Some(workdir) = self.working_directory {
-            cmd.current_dir(as_os_str(&workdir));
+        if let Some(workdir) = self.workdir {
+            cmd.current_dir(&workdir);
         }
         cmd
     }
 }
 
-impl<'lua> FromLua<'lua> for CommandInfo<'lua> {
-    fn from_lua(value: Value<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
-        let table = Table::from_lua(value, lua)?;
-        Ok(CommandInfo {
-            exe: FromLua::from_lua(table.get("exe")?, lua)?,
-            args: FromLua::from_lua(table.get("args")?, lua)?,
-            env: FromLua::from_lua(table.get("env")?, lua)?,
-            working_directory: FromLua::from_lua(table.get("workingDirectory")?, lua)?
-        })
+decl_lib_func! {
+    fn command_run(table: Table) -> Result<(bool, Option<i32>), Error> {
+        let info = CommandInfo::from_table(&table).map_err(Error::Lua)?;
+        let mut cmd = info.into_command();
+        let status = cmd.status().map_err(Error::Io)?;
+        Ok((status.success(), status.code()))
     }
 }
 
-fn as_os_str<'a>(bytes: &'a mlua::String) -> Cow<'a, OsStr> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::ffi::OsStrExt;
-        OsStr::from_bytes(bytes.as_bytes()).into()
-    }
-    #[cfg(windows)]
-    {
-
+decl_lib_func! {
+    fn command_output<'lua>(table: Table) -> Result<Box<[u8]>, Error> {
+        let info = CommandInfo::from_table(&table).map_err(Error::Lua)?;
+        let mut cmd = info.into_command();
+        let output = cmd.output().map_err(Error::Io)?;
+        Ok(output.stdout.into_boxed_slice())
     }
 }
 
 pub struct CommandLib;
 
-fn command_run(_: &Lua, info: CommandInfo) -> mlua::Result<(bool, Option<i32>)> {
-    let mut cmd = info.into_command();
-    let status = cmd.status()?;
-    Ok((status.success(), status.code()))
-}
-
-fn command_output<'lua>(lua: &'lua Lua, info: CommandInfo) -> mlua::Result<mlua::String<'lua>> {
-    let mut cmd = info.into_command();
-    let output = cmd.output()?;
-    lua.create_string(output.stdout)
-}
-
 impl Lib for CommandLib {
-    const NAME: &'static str = "command";
+    const NAMESPACE: &'static str = "bp3d.build.command";
 
-    fn load(&self, lua: &Lua, table: &Table) -> mlua::Result<()> {
-        table.set("run", lua.create_function(command_run)?)?;
-        table.set("output", lua.create_function(command_output)?)?;
-        Ok(())
+    fn load(&self, namespace: &mut Namespace) -> bp3d_lua::vm::Result<()> {
+        namespace.add([
+            ("run", RFunction::wrap(command_run)),
+            ("output", RFunction::wrap(command_output))
+        ])
     }
 }

@@ -27,42 +27,74 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::path::PathBuf;
-use mlua::{UserData, UserDataMethods};
-use crate::builder::interface::OutputList;
+use bp3d_lua::{decl_lib_func, decl_userdata, impl_userdata};
+use bp3d_lua::libs::Lib;
+use bp3d_lua::util::Namespace;
+use bp3d_lua::vm::userdata::case::Camel;
+use bp3d_util::path::PathExt;
 
-pub struct OutputListWrapper(OutputList<'static>);
+decl_userdata!(pub struct Path(PathBuf));
 
-impl OutputListWrapper {
-    pub fn new() -> Self {
-        Self(OutputList::new())
-    }
-
-    pub fn into_inner(self) -> OutputList<'static> {
-        self.0
+impl From<PathBuf> for Path {
+    fn from(path: PathBuf) -> Self {
+        Path(path)
     }
 }
 
-impl UserData for OutputListWrapper {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
-        methods.add_method_mut("addTargetPath", |_, this, path: String| {
-            this.0.add_target_path(PathBuf::from(path));
-            Ok(())
-        });
-        methods.add_method_mut("addBin", |_, this, name: String| {
-            this.0.add_bin(name);
-            Ok(())
-        });
-        methods.add_method_mut("addLib", |_, this, name: String| {
-            this.0.add_lib(name);
-            Ok(())
-        });
-        methods.add_method_mut("addConfig", |_, this, name: String| {
-            this.0.add_config(name);
-            Ok(())
-        });
-        methods.add_method_mut("addOther", |_, this, name: String| {
-            this.0.add_other(name);
-            Ok(())
-        });
+impl From<&std::path::Path> for Path {
+    fn from(value: &std::path::Path) -> Self {
+        Path(value.into())
+    }
+}
+
+impl Path {
+    pub fn as_path(&self) -> &std::path::Path {
+        &self.0
+    }
+}
+
+decl_lib_func! {
+    fn new(path: &str) -> Path {
+        Path(PathBuf::from(path))
+    }
+}
+
+impl_userdata! {
+    impl Path {
+        fn join(this: &Path, other: &Path) -> Path {
+            Path(this.0.join(&other.0))
+        }
+
+        fn with_extension(this: &Path, extension: &str) -> Path {
+            Path(this.0.ensure_extension(extension).into())
+        }
+
+        fn with_name(this: &Path, name: &str) -> Path {
+            let mut path = this.0.clone();
+            path.set_file_name(name);
+            Path(path)
+        }
+
+        fn name(this: &Path) -> Option<String> {
+            this.0.file_name().map(|v| v.to_string_lossy().into())
+        }
+
+        fn __tostring(this: &Path) -> String {
+            this.0.display().to_string()
+        }
+    }
+
+    static {
+        [fn new];
+    }
+}
+
+pub struct ObjPath;
+
+impl Lib for ObjPath {
+    const NAMESPACE: &'static str = "bp3d.build";
+
+    fn load(&self, namespace: &mut Namespace) -> bp3d_lua::vm::Result<()> {
+        namespace.add_userdata::<Path>("Path", Camel)
     }
 }

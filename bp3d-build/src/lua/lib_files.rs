@@ -26,8 +26,50 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod core;
-mod lib_command;
-mod lib_files;
-mod obj_artifact;
-mod obj_path;
+use bp3d_lua::decl_lib_func;
+use bp3d_lua::libs::Lib;
+use bp3d_lua::util::Namespace;
+use bp3d_lua::vm::function::types::RFunction;
+use crate::lua::obj_path::Path;
+
+decl_lib_func! {
+    fn read_text(path: &Path) -> std::io::Result<String> {
+        std::fs::read_to_string(path.as_path())
+    }
+}
+
+decl_lib_func! {
+    fn write_text(path: &Path, data: &str) -> std::io::Result<()> {
+        std::fs::write(path.as_path(), data)
+    }
+}
+
+decl_lib_func! {
+    fn copy(src_path: &Path, dst_path: &Path) -> std::io::Result<()> {
+        std::fs::copy(src_path.as_path(), dst_path.as_path()).map(|_| ())
+    }
+}
+
+decl_lib_func! {
+    fn symlink(src_path: &Path, dst_path: &Path) -> std::io::Result<()> {
+        #[cfg(unix)]
+        return std::os::unix::fs::symlink(src_path.as_path(), dst_path.as_path()).map(|_| ());
+        #[cfg(windows)]
+        return Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "symlink"));
+    }
+}
+
+pub struct FilesLib;
+
+impl Lib for FilesLib {
+    const NAMESPACE: &'static str = "bp3d.build.files";
+
+    fn load(&self, namespace: &mut Namespace) -> bp3d_lua::vm::Result<()> {
+        namespace.add([
+            ("readText", RFunction::wrap(read_text)),
+            ("writeText", RFunction::wrap(write_text)),
+            ("copy", RFunction::wrap(copy)),
+            ("symlink", RFunction::wrap(symlink))
+        ])
+    }
+}

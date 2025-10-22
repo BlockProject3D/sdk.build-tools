@@ -32,3 +32,4 @@ mod cargo;
 // Public interface.
 pub mod system;
 pub mod core;
+pub mod lua;
