@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,47 +26,30 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use cargo_toml::Manifest;
+use std::collections::VecDeque;
+use bp3d_util::result::ResultExt;
 use serde::de::DeserializeOwned;
-use bp3d_sdk_util::ResultExt;
 use crate::manifest_ext::parse_manifest;
-use crate::packager::interface::{Context, Package, Packager};
-use bp3d_build_common::output::Output;
+use crate::packager::interface::{Context, Packager};
 
-impl Package for Manifest {
-    fn get_name(&self) -> &str {
-        self.package().name()
-    }
-
-    fn get_version(&self) -> &str {
-        self.package().version()
-    }
-
-    fn get_outputs(&self) -> impl Iterator<Item = Output> {
-        self.bin.iter().map(|v| Output::Bin(v.name.as_deref()
-            .unwrap_or(self.get_name()).into()))
-            .chain(
-                self.lib.iter()
-                    .map(|v| Output::Lib(v.name.as_deref().unwrap_or(self.get_name()).into()))
-            )
-    }
-}
-
-pub fn run_packager<P: Package, T: Packager + DeserializeOwned>(context: &Context<P>) {
+pub fn run_packager<T: Packager + DeserializeOwned>(context: &Context) {
     println!("Initializing packager {}...", T::NAME);
-    let packager: T = parse_manifest(context.root)
+    let packager: T = parse_manifest(context.path)
         .expect_exit("Failed to load packager configuration from root manifest", 1);
     println!("Building targets...");
+    let mut v = VecDeque::new();
     for target in context.targets {
         println!("Building target '{}'...", target);
-        packager.do_build_target(target, context).expect_exit("Failed to build target", 1);
+        let data = packager.do_build_target(target, context).expect_exit("Failed to build target", 1);
+        v.push_back(data);
     }
     println!("Running post build phase...");
     packager.do_build(context).expect_exit("Failed to run post-build phase", 1);
     println!("Packaging targets...");
     for target in context.targets {
         println!("Packaging target '{}'...", target);
-        packager.do_package_target(target, context).expect_exit("Failed to package target", 1);
+        let data = v.pop_front().unwrap();
+        packager.do_package_target(&data, target, context).expect_exit("Failed to package target", 1);
     }
     println!("Generating full package...");
     packager.do_package(context).expect_exit("Failed to generate full package", 1);

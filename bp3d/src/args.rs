@@ -28,6 +28,7 @@
 
 use std::path::PathBuf;
 use clap::{Parser, ValueEnum};
+use bp3d_package::PackagerType;
 
 #[derive(ValueEnum, Debug, Copy, Clone)]
 pub enum Command {
@@ -41,7 +42,7 @@ pub enum Command {
 #[command(version, about, long_about = None)]
 pub struct Args {
     #[arg(short = 't', long = "target", help = "Specify which target to build for.")]
-    pub target: Option<String>,
+    pub targets: Vec<String>,
 
     #[arg(short = 'f', long = "feature", help = "Specify which feature(s) to build with.")]
     pub features: Vec<String>,
@@ -57,6 +58,9 @@ pub struct Args {
 
     #[arg(long = "ipc", help = "ipc server name.")]
     pub ipc: Option<String>,
+
+    #[arg(short = 'p', long = "package", help = "The packager engine to use.")]
+    pub package_type: Option<PackagerType>,
 
     pub cmd: Command
 }

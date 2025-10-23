@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::process::Command;
+use bp3d_util::simple_error;
 use serde::Deserialize;
-use bp3d_build_common::finder::{Finder, LibType};
-use bp3d_sdk_util::simple_error;
-use crate::packager::interface::{Context, Package, Packager};
+use bp3d_build::system::artifact::{LibType, List, Type};
+use crate::packager::interface::{Context, Packager};
 use crate::packager::util::{CommandExt, ensure_clean_directories};
 
 #[derive(Deserialize)]
@@ -44,12 +43,13 @@ pub struct Framework {
 }
 
 simple_error! {
-    Error {
+    pub Error {
         (impl From) Io(std::io::Error) => "io error: {}",
         Lipo => "failed to run lipo tool",
         InstallNameTool => "failed to run install_name_tool",
         CreateXcFramework => "failed to generate combined XCFramework package",
-        NoLib => "this package does not produce any libraries"
+        NoLib => "this package does not produce any libraries",
+        (impl From) Build(bp3d_build::core::Error) => "build error: {}"
     }
 }
 
@@ -57,7 +57,7 @@ impl Packager for Framework {
     const NAME: &'static str = "Framework";
     type Error = Error;
 
-    fn do_package_target<P: Package>(&self, target: &str, context: &Context<P>) -> Result<(), Self::Error> {
+    fn do_package_target(&self, list: &List, target: &str, context: &Context) -> Result<(), Self::Error> {
         let bin_dir;
         let res_dir;
         let module_dir;
@@ -77,7 +77,7 @@ impl Packager for Framework {
         ensure_clean_directories([&**framework_dir, &bin_dir, &res_dir, &module_dir])?;
         Command::new("lipo")
             .arg("-create")
-            .arg(Finder::new(context, target).find_first(LibType::Dynamic, |v| v.is_lib()).path.ok_or(Error::NoLib)?)
+            .arg(list.find_first(Type::Lib(LibType::Dynamic)).ok_or(Error::NoLib)?.path())
             .arg("-output")
             .arg(bin_dir.join(&self.name))
             .ensure(Error::Lipo)?;
@@ -94,10 +94,10 @@ impl Packager for Framework {
             std::os::unix::fs::symlink("Versions/Current/Modules", framework_dir.join("Modules"))?;
         }
         if let Some(includes) = &self.includes {
-            if !context.root.join(includes).exists() {
+            if !context.path.join(includes).exists() {
                 println!("Warning: Header directory {} not found in crate root!", includes);
             }
-            copy_dir::copy_dir(context.root.join(includes), bin_dir.join("Headers"))?;
+            copy_dir::copy_dir(context.path.join(includes), bin_dir.join("Headers"))?;
             if target.contains("darwin") {
                 std::os::unix::fs::symlink("Versions/Current/Headers", framework_dir.join("Headers"))?;
             }
@@ -124,7 +124,7 @@ impl Packager for Framework {
             "<string>iPhoneOS</string>\n        <string>iPadOS</string>"
         };
         let build_number = Command::new("sw_vers").arg("-buildVersion").output_string()?.replace("\n", "");
-        let version = context.package.get_version().split("-").next().unwrap();
+        let version = context.tool.package().get_version().split("-").next().unwrap();
         std::fs::write(res_dir.join("Info.plist"), format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
 <plist version=\"1.0\">
@@ -164,8 +164,8 @@ impl Packager for Framework {
         Ok(())
     }
 
-    fn do_package<P: Package>(&self, context: &Context<P>) -> Result<(), Self::Error> {
-        let out = context.root.join(format!("target/{}.xcframework", self.name));
+    fn do_package(&self, context: &Context) -> Result<(), Self::Error> {
+        let out = context.path.join(format!("target/{}.xcframework", self.name));
         if out.exists() {
             std::fs::remove_dir_all(&out)?;
         }

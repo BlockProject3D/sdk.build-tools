@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::path::Path;
 use bp3d_util::simple_error;
 use crate::cargo::{CargoBuilder, CargoWorkspace};
 use crate::system::{BuildSystem, Context, Features, Package};
@@ -113,10 +114,10 @@ impl<P, B> BuildTool for BuildSystemWrapper<P, B>
     }
 }
 
-pub fn open(ctx: &Context) -> Result<Box<dyn BuildTool>> {
-    let manifest = ctx.path.join("Cargo.toml");
+pub fn open(path: &Path) -> Result<Box<dyn BuildTool>> {
+    let manifest = path.join("Cargo.toml");
     if manifest.exists() {
-        let package = CargoWorkspace::load(ctx.path).map_err(|e| Error::InvalidPackage(e.to_string()))?;
+        let package = CargoWorkspace::load(path).map_err(|e| Error::InvalidPackage(e.to_string()))?;
         Ok(Box::new(BuildSystemWrapper::new(package, CargoBuilder)))
     } else {
         Err(Error::UnknownProject)

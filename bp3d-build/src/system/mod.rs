@@ -32,6 +32,6 @@ pub mod finder;
 
 pub use interface::*;
 
-pub const fn static_string(str: &'static str) -> std::borrow::Cow<str> {
+pub const fn static_string(str: &'static str) -> std::borrow::Cow<'static, str> {
     std::borrow::Cow::Borrowed(str)
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,22 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
-use clap::Parser;
-use crate::packager::PackagerType;
+mod packager;
+mod manifest_ext;
+mod core;
 
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-pub struct Args {
-    #[arg(short = 't', long = "target", help = "Specify which target(s) to build for.")]
-    pub target_list: Vec<String>,
-
-    #[arg(long, help = "Build rust targets in release mode.")]
-    pub release: bool,
-
-    #[arg(short = 'p', long = "package", required = true, help = "The packager engine to use.")]
-    pub package_type: PackagerType,
-
-    #[arg(help = "Root path of the crate, where to find the manifest (Cargo.toml).")]
-    pub root: Option<PathBuf>
-}
+pub use packager::PackagerType;
+pub use packager::interface::Context;

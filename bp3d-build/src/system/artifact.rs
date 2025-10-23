@@ -149,6 +149,14 @@ impl List {
         self.content.push(artifact);
     }
 
+    pub fn find(&self, ty: Type) -> impl Iterator<Item = &Artifact> {
+        self.content.iter().filter(move |v| v.ty == ty)
+    }
+
+    pub fn find_first(&self, ty: Type) -> Option<&Artifact> {
+        self.content.iter().filter(move |v| v.ty == ty).next()
+    }
+
     pub fn into_inner(self) -> Vec<Artifact> {
         self.content
     }

@@ -30,7 +30,7 @@ use std::borrow::Cow;
 use std::ops::Deref;
 use std::path::Path;
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Copy, Clone)]
 pub enum Features<'a> {
     All,
     List(&'a [&'a str])
@@ -79,11 +79,11 @@ pub trait Package {
     fn get_version(&self) -> &str;
 
     /// Returns the list of available targets.
-    fn targets(&self) -> &[Cow<str>];
+    fn targets(&self) -> &[Cow<'_, str>];
 
     /// Returns the list of available configurations.
-    fn configurations(&self) -> &[Cow<str>];
+    fn configurations(&self) -> &[Cow<'_, str>];
 
     /// Returns the list of available features.
-    fn features(&self) -> &[Cow<str>];
+    fn features(&self) -> &[Cow<'_, str>];
 }

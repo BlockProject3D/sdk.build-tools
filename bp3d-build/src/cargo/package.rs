@@ -104,15 +104,15 @@ impl Package for CargoWorkspace {
         &self.core_version
     }
 
-    fn targets(&self) -> &[Cow<str>] {
+    fn targets(&self) -> &[Cow<'_, str>] {
         SUPPORTED_TARGETS
     }
 
-    fn configurations(&self) -> &[Cow<str>] {
+    fn configurations(&self) -> &[Cow<'_, str>] {
         SUPPORTED_CONFIGURATIONS
     }
 
-    fn features(&self) -> &[Cow<str>] {
+    fn features(&self) -> &[Cow<'_, str>] {
         &self.features
     }
 }
@@ -154,15 +154,15 @@ impl Package for CargoPackage {
         self.manifest.package().version()
     }
 
-    fn targets(&self) -> &[Cow<str>] {
+    fn targets(&self) -> &[Cow<'_, str>] {
         SUPPORTED_TARGETS
     }
 
-    fn configurations(&self) -> &[Cow<str>] {
+    fn configurations(&self) -> &[Cow<'_, str>] {
         SUPPORTED_CONFIGURATIONS
     }
 
-    fn features(&self) -> &[Cow<str>] {
+    fn features(&self) -> &[Cow<'_, str>] {
         self.features.as_slice()
     }
 }

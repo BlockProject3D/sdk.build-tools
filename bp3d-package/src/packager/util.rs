@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2025, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::borrow::Cow;
-use crate::packager::interface::{Context, Package};
-
 use std::error::Error;
 use std::path::Path;
 use std::process::{Command};
-use bp3d_build_common::output::Output;
 
 pub trait CommandExt {
     fn ensure<E: Error + From<std::io::Error>>(&mut self, fail_value: E) -> Result<(), E>;
@@ -65,16 +61,6 @@ pub fn ensure_clean_directories<'a>(directories: impl IntoIterator<Item = &'a Pa
     Ok(())
 }
 
-impl<'a, P: Package> bp3d_build_common::finder::Context for Context<'a, P> {
-    fn get_target_path(&self, target: &str) -> Cow<'_, Path> {
-        self.get_target_path(target).into()
-    }
-
-    fn get_outputs(&self) -> impl Iterator<Item = Output> {
-        self.package.get_outputs()
-    }
-}
-
 macro_rules! packager_registry {
     ($($module: ident::$name: ident),*) => {
         $(mod $module;)*
@@ -85,9 +71,9 @@ macro_rules! packager_registry {
         }
 
         impl PackagerType {
-            pub fn call<P: crate::packager::interface::Package>(&self, context: &crate::packager::interface::Context<P>) {
+            pub fn call(&self, context: &crate::packager::interface::Context) {
                 match self {
-                    $(PackagerType::$name => crate::core::run_packager::<P, $module::$name>(context))*
+                    $(PackagerType::$name => crate::core::run_packager::<$module::$name>(context))*
                 }
             }
         }

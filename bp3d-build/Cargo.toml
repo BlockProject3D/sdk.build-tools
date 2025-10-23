@@ -6,15 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.5.4", features = ["derive"] }
-current_platform = "0.2.0"
-toml = "0.8.12"
 cargo_toml = "0.22.3"
-bp3d-sdk-util = { path = "../util" }
 bp3d-util = { version = "2.2.0", features = ["simple-error", "result", "path"] }
 bp3d-os = { version = "2.2.0", features = ["assets"] }
 bp3d-debug = "1.0.0"
-bp3d-build-common = { path = "../common" }
-itertools = "0.12.1"
 bp3d-lua = { version = "1.0.0-rc.5.0.0", path = "../../tools.lua/core", features = ["root-vm", "libs"] }
-bp3d-lua-codegen = { version = "1.0.0-rc.1.0.0", path = "../../tools.lua/codegen" }
