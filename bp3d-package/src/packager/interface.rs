@@ -28,6 +28,7 @@
 
 use std::error::Error;
 use std::path::{Path, PathBuf};
+use serde::de::DeserializeOwned;
 use bp3d_build::core::BuildTool;
 use bp3d_build::system::artifact::List;
 use bp3d_build::system::Features;
@@ -45,32 +46,38 @@ impl<'a> Context<'a> {
     }
 }
 
-pub trait Packager {
+pub fn build_target(context: &Context, target: &str) -> Result<List, bp3d_build::core::Error> {
+    let ctx = bp3d_build::system::Context {
+        path: context.path,
+        target,
+        configuration: context.configuration,
+        features: Features::All
+    };
+    context.tool.configure(&ctx)?;
+    let data = context.tool.pre_package(&ctx)?;
+    Ok(data)
+}
+
+pub trait Packager<'a>: Sized {
     const NAME: &'static str;
 
-    type Error: Error + From<bp3d_build::core::Error>;
+    type Error: Error;
 
-    fn do_build_target(&self, target: &str, context: &Context) -> Result<List, Self::Error> {
-        let ctx = bp3d_build::system::Context {
-            path: context.path,
-            target,
-            configuration: context.configuration,
-            features: Features::All
-        };
-        context.tool.configure(&ctx)?;
-        let data = context.tool.pre_package(&ctx)?;
-        Ok(data)
-    }
+    type Config: DeserializeOwned;
 
-    fn do_build(&self, _context: &Context) -> Result<(), Self::Error> {
+    fn new(config: Self::Config, context: &'a Context<'a>) -> Result<Self, Self::Error>;
+
+    fn do_build_target(&self, target: &str) -> Result<List, Self::Error>;
+
+    fn do_build(&self) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn do_package_target(&self, _list: &List, _target: &str, _context: &Context) -> Result<(), Self::Error> {
+    fn do_package_target(&self, _list: &List, _target: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn do_package(&self, _context: &Context) -> Result<(), Self::Error> {
+    fn do_package(&self) -> Result<(), Self::Error> {
         Ok(())
     }
 }

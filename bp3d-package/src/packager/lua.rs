@@ -26,31 +26,48 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::VecDeque;
-use bp3d_util::result::ResultExt;
-use crate::manifest_ext::parse_manifest;
-use crate::packager::interface::{Context, Packager};
+use std::collections::HashMap;
+use bp3d_util::simple_error;
+use bp3d_build::system::artifact::List;
+use crate::Context;
+use crate::packager::interface::{build_target, Packager};
 
-pub fn run_packager<'a, T: Packager<'a>>(context: &'a Context) {
-    println!("Initializing packager {}...", T::NAME);
-    let config: T::Config = parse_manifest(context.path)
-        .expect_exit("Failed to load packager configuration from root manifest", 1);
-    let packager = T::new(config, context).expect_exit("Failed to initialize packager", 1);
-    println!("Building targets...");
-    let mut v = VecDeque::new();
-    for target in context.targets {
-        println!("Building target '{}'...", target);
-        let data = packager.do_build_target(target).expect_exit("Failed to build target", 1);
-        v.push_back(data);
+simple_error! {
+    pub Error {
+        (impl From) Lua(bp3d_lua::vm::error::Error) => "lua error: {}",
+        Build(bp3d_build::core::Error) => "build error: {}"
     }
-    println!("Running post build phase...");
-    packager.do_build().expect_exit("Failed to run post-build phase", 1);
-    println!("Packaging targets...");
-    for target in context.targets {
-        println!("Packaging target '{}'...", target);
-        let data = v.pop_front().unwrap();
-        packager.do_package_target(&data, target).expect_exit("Failed to package target", 1);
+}
+
+pub struct Lua<'a> {
+    kvs: HashMap<String, String>,
+    lua: Option<bp3d_build::lua::core::Vm>,
+    context: &'a Context<'a>
+}
+
+impl<'a> Packager<'a> for Lua<'a> {
+    const NAME: &'static str = "Lua";
+    type Error = Error;
+    type Config = HashMap<String, String>;
+
+    fn new(config: Self::Config, _: &'a Context<'a>) -> Result<Self, Self::Error> {
+        todo!()
     }
-    println!("Generating full package...");
-    packager.do_package().expect_exit("Failed to generate full package", 1);
+
+    fn do_build_target(&self, target: &str) -> Result<List, Self::Error> {
+        build_target(&self.context, target).map_err(Error::Build)
+    }
+
+    fn do_build(&self) -> Result<(), Self::Error> {
+        //self.lua = Some(bp3d_build::lua::core::Vm::new(context.path));
+        todo!()
+    }
+
+    fn do_package_target(&self, _list: &List, _target: &str) -> Result<(), Self::Error> {
+        todo!()
+    }
+
+    fn do_package(&self) -> Result<(), Self::Error> {
+        todo!()
+    }
 }

@@ -31,15 +31,20 @@ use std::process::Command;
 use bp3d_util::simple_error;
 use serde::Deserialize;
 use bp3d_build::system::artifact::{LibType, List, Type};
-use crate::packager::interface::{Context, Packager};
+use crate::packager::interface::{build_target, Context, Packager};
 use crate::packager::util::{CommandExt, ensure_clean_directories};
 
 #[derive(Deserialize)]
-pub struct Framework {
+pub struct Config {
     name: String,
     identifier: String,
     includes: Option<String>,
     umbrella: Option<String>
+}
+
+pub struct Framework<'a> {
+    cfg: Config,
+    context: &'a Context<'a>
 }
 
 simple_error! {
@@ -49,60 +54,72 @@ simple_error! {
         InstallNameTool => "failed to run install_name_tool",
         CreateXcFramework => "failed to generate combined XCFramework package",
         NoLib => "this package does not produce any libraries",
-        (impl From) Build(bp3d_build::core::Error) => "build error: {}"
+        Build(bp3d_build::core::Error) => "build error: {}"
     }
 }
 
-impl Packager for Framework {
+impl<'a> Packager<'a> for Framework<'a> {
     const NAME: &'static str = "Framework";
     type Error = Error;
+    type Config = Config;
 
-    fn do_package_target(&self, list: &List, target: &str, context: &Context) -> Result<(), Self::Error> {
+    fn new(config: Self::Config, context: &'a Context<'a>) -> Result<Self, Self::Error> {
+        Ok(Self {
+            cfg: config,
+            context
+        })
+    }
+
+    fn do_build_target(&self, target: &str) -> Result<List, Self::Error> {
+        build_target(&self.context, target).map_err(Error::Build)
+    }
+
+    fn do_package_target(&self, list: &List, target: &str) -> Result<(), Self::Error> {
         let bin_dir;
         let res_dir;
         let module_dir;
-        let framework_dir = &context.get_target_path(target).join(format!("{}.framework", self.name));
+        let framework_dir = &self.context.get_target_path(target).join(format!("{}.framework", self.cfg.name));
         if target.contains("darwin") {
-            bin_dir = format!("{}.framework/Versions/A/", self.name);
-            res_dir = format!("{}.framework/Versions/A/Resources", self.name);
-            module_dir = format!("{}.framework/Versions/A/Modules", self.name)
+            bin_dir = format!("{}.framework/Versions/A/", self.cfg.name);
+            res_dir = format!("{}.framework/Versions/A/Resources", self.cfg.name);
+            module_dir = format!("{}.framework/Versions/A/Modules", self.cfg.name)
         } else {
-            bin_dir = format!("{}.framework/", self.name);
-            res_dir = format!("{}.framework/", self.name);
-            module_dir = format!("{}.framework/Modules", self.name);
+            bin_dir = format!("{}.framework/", self.cfg.name);
+            res_dir = format!("{}.framework/", self.cfg.name);
+            module_dir = format!("{}.framework/Modules", self.cfg.name);
         }
-        let bin_dir = &context.get_target_path(target).join(bin_dir);
-        let res_dir = &context.get_target_path(target).join(res_dir);
-        let module_dir = &context.get_target_path(target).join(module_dir);
+        let bin_dir = &self.context.get_target_path(target).join(bin_dir);
+        let res_dir = &self.context.get_target_path(target).join(res_dir);
+        let module_dir = &self.context.get_target_path(target).join(module_dir);
         ensure_clean_directories([&**framework_dir, &bin_dir, &res_dir, &module_dir])?;
         Command::new("lipo")
             .arg("-create")
             .arg(list.find_first(Type::Lib(LibType::Dynamic)).ok_or(Error::NoLib)?.path())
             .arg("-output")
-            .arg(bin_dir.join(&self.name))
+            .arg(bin_dir.join(&self.cfg.name))
             .ensure(Error::Lipo)?;
         Command::new("install_name_tool")
             .arg("-id")
-            .arg(format!("@rpath/{}.framework/{}", self.name, self.name))
-            .arg(&self.name)
+            .arg(format!("@rpath/{}.framework/{}", self.cfg.name, self.cfg.name))
+            .arg(&self.cfg.name)
             .current_dir(bin_dir)
             .ensure(Error::InstallNameTool)?;
         if target.contains("darwin") {
             std::os::unix::fs::symlink("A", framework_dir.join("Versions/Current"))?;
-            std::os::unix::fs::symlink(format!("Versions/Current/{}", self.name), framework_dir.join(&self.name))?;
+            std::os::unix::fs::symlink(format!("Versions/Current/{}", self.cfg.name), framework_dir.join(&self.cfg.name))?;
             std::os::unix::fs::symlink("Versions/Current/Resources", framework_dir.join("Resources"))?;
             std::os::unix::fs::symlink("Versions/Current/Modules", framework_dir.join("Modules"))?;
         }
-        if let Some(includes) = &self.includes {
-            if !context.path.join(includes).exists() {
+        if let Some(includes) = &self.cfg.includes {
+            if !self.context.path.join(includes).exists() {
                 println!("Warning: Header directory {} not found in crate root!", includes);
             }
-            copy_dir::copy_dir(context.path.join(includes), bin_dir.join("Headers"))?;
+            copy_dir::copy_dir(self.context.path.join(includes), bin_dir.join("Headers"))?;
             if target.contains("darwin") {
                 std::os::unix::fs::symlink("Versions/Current/Headers", framework_dir.join("Headers"))?;
             }
-            let motherfuckingrust = format!("{}.h", self.name);
-            let umbrella = self.umbrella.as_ref().unwrap_or(&motherfuckingrust);
+            let motherfuckingrust = format!("{}.h", self.cfg.name);
+            let umbrella = self.cfg.umbrella.as_ref().unwrap_or(&motherfuckingrust);
             let umbrella_path = bin_dir.join("Headers").join(umbrella);
             if !umbrella_path.exists() {
                 std::fs::write(umbrella_path, "/* Empty generated umbrella header to ensure Xcode can link the framework. */")?;
@@ -116,7 +133,7 @@ impl Packager for Framework {
     }}
 }}
 
-", self.name, umbrella))?;
+", self.cfg.name, umbrella))?;
         }
         let platforms = if target.contains("darwin") {
             "<string>MacOSX</string>"
@@ -124,7 +141,7 @@ impl Packager for Framework {
             "<string>iPhoneOS</string>\n        <string>iPadOS</string>"
         };
         let build_number = Command::new("sw_vers").arg("-buildVersion").output_string()?.replace("\n", "");
-        let version = context.tool.package().get_version().split("-").next().unwrap();
+        let version = self.context.tool.package().get_version().split("-").next().unwrap();
         std::fs::write(res_dir.join("Info.plist"), format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
 <plist version=\"1.0\">
@@ -160,20 +177,20 @@ impl Packager for Framework {
     </array>
 </dict>
 </plist>
-", build_number, self.name, self.identifier, self.name, version, platforms, version))?;
+", build_number, self.cfg.name, self.cfg.identifier, self.cfg.name, version, platforms, version))?;
         Ok(())
     }
 
-    fn do_package(&self, context: &Context) -> Result<(), Self::Error> {
-        let out = context.path.join(format!("target/{}.xcframework", self.name));
+    fn do_package(&self) -> Result<(), Self::Error> {
+        let out = self.context.path.join(format!("target/{}.xcframework", self.cfg.name));
         if out.exists() {
             std::fs::remove_dir_all(&out)?;
         }
         let mut cmd = Command::new("xcrun");
         cmd.arg("xcodebuild").arg("-create-xcframework");
-        let framework_dirs: Vec<PathBuf> = context.targets.iter()
-            .map(|target| context.get_target_path(target)
-                .join(format!("{}.framework", self.name)))
+        let framework_dirs: Vec<PathBuf> = self.context.targets.iter()
+            .map(|target| self.context.get_target_path(target)
+                .join(format!("{}.framework", self.cfg.name)))
             .collect();
         for dir in &framework_dirs {
             cmd.arg("-framework").arg(dir);
