@@ -26,12 +26,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod interface;
+mod interface;
 mod util;
-mod lua;
+pub mod lua;
 
 use crate::packager::util::packager_registry;
 
 packager_registry! {
     framework::Framework
 }
+
+pub use interface::*;

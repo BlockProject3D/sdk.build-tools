@@ -31,7 +31,9 @@ use bp3d_debug::{debug, info};
 use bp3d_util::result::ResultExt;
 use bp3d_build::core;
 use bp3d_build::system::Features;
-use bp3d_package::PackagerType;
+use bp3d_package::packager::lua::Lua;
+use bp3d_package::packager::PackagerType;
+use bp3d_package::run_packager;
 use crate::args::Command;
 
 pub struct Context<'a> {
@@ -54,7 +56,7 @@ fn run_for_each_target(ctx: &Context, f: impl Fn(&bp3d_build::system::Context) -
     Ok(())
 }
 
-fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager: Option<PackagerType>) -> core::Result<()> {
+fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager: Option<String>) -> core::Result<()> {
     debug!("Running command: {:?} for package {}-{}", cmd, tool.package().get_name(), tool.package().get_version());
     match cmd {
         Command::Configure => {
@@ -84,14 +86,19 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
             })
         }
         Command::Package => {
-            if let Some(packager) = packager {
-                packager.call(&bp3d_package::Context {
+            if let Some(packager_name) = packager {
+                let ctx = bp3d_package::packager::Context {
                     path: ctx.path,
                     configuration: ctx.configuration,
                     targets: ctx.targets,
                     tool,
-                    packager: ""
-                });
+                    packager: &packager_name
+                };
+                let packager = PackagerType::from_name(&packager_name);
+                match packager {
+                    Some(packager) => packager.call(&ctx),
+                    None => run_packager::<Lua>(&ctx)
+                }
                 Ok(())
             } else {
                 eprintln!("Please specify a packager type to run the packaging process");
@@ -101,7 +108,7 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
     }
 }
 
-pub fn dispatch_run(ctx: Context, cmd: Command, packager: Option<PackagerType>) {
+pub fn dispatch_run(ctx: Context, cmd: Command, packager: Option<String>) {
     let tool = core::open(&ctx.path).expect_exit("Failed to load package", 1);
     run_command(&*tool, ctx, cmd, packager).expect_exit("Failed to run build", 2);
 }

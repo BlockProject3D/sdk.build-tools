@@ -33,7 +33,7 @@ use bp3d_lua::vm::Vm;
 use bp3d_util::simple_error;
 use bp3d_build::system::artifact::List;
 use bp3d_build::system::Features;
-use crate::Context;
+use crate::packager::Context;
 use crate::packager::interface::{build_target, Packager};
 
 simple_error! {

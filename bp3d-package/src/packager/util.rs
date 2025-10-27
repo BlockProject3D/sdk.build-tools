@@ -65,12 +65,19 @@ macro_rules! packager_registry {
     ($($module: ident::$name: ident),*) => {
         $(mod $module;)*
 
-        #[derive(clap::ValueEnum, Debug, Copy, Clone)]
+        #[derive(Debug, Copy, Clone)]
         pub enum PackagerType {
             $($name),*
         }
 
         impl PackagerType {
+            pub fn from_name(name: &str) -> Option<Self> {
+                match name {
+                    $(stringify!($name) => Some(PackagerType::$name),)*
+                    _ => None
+                }
+            }
+
             pub fn call(&self, context: &crate::packager::interface::Context) {
                 match self {
                     $(PackagerType::$name => crate::core::run_packager::<$module::$name>(context))*

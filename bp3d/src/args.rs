@@ -28,7 +28,6 @@
 
 use std::path::PathBuf;
 use clap::{Parser, ValueEnum};
-use bp3d_package::PackagerType;
 
 #[derive(ValueEnum, Debug, Copy, Clone)]
 pub enum Command {
@@ -60,7 +59,7 @@ pub struct Args {
     pub ipc: Option<String>,
 
     #[arg(short = 'p', long = "package", help = "The packager engine to use.")]
-    pub package_type: Option<PackagerType>,
+    pub package_type: Option<String>,
 
     pub cmd: Command
 }

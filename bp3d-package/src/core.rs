@@ -29,7 +29,7 @@
 use std::collections::VecDeque;
 use bp3d_util::result::ResultExt;
 use crate::manifest_ext::parse_manifest;
-use crate::packager::interface::{Context, Packager};
+use crate::packager::{Context, Packager};
 
 pub fn run_packager<'a, T: Packager<'a>>(context: &'a Context) {
     println!("Initializing packager {}...", T::NAME);
