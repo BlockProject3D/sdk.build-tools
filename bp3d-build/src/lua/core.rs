@@ -33,12 +33,13 @@ use bp3d_lua::libs::lua::Lua;
 use bp3d_lua::libs::lua::require::{Provider, Source};
 use bp3d_lua::libs::os::{Compat, Instant, Time};
 use bp3d_lua::libs::util::Util;
-use bp3d_lua::util::core::AnyStr;
 use bp3d_lua::vm::closure::arc::Shared;
 use bp3d_lua::vm::core::load::Script;
 use bp3d_lua::vm::error::Error;
 use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::Result;
+use bp3d_lua::vm::table::Table;
+use bp3d_lua::vm::userdata::UserDataImmutable;
 use bp3d_lua::vm::value::any::AnyParam;
 use bp3d_lua::vm::value::{FromLua, IntoLua};
 use bp3d_lua::vm::value::types::Function;
@@ -47,6 +48,7 @@ use crate::lua::lib_command::CommandLib;
 use crate::lua::lib_files::FilesLib;
 use crate::lua::obj_artifact::ObjArtifact;
 use crate::lua::obj_path::ObjPath;
+use crate::system::{Context, Features};
 
 struct SourcePath(PathBuf);
 
@@ -76,6 +78,7 @@ impl Source for SourcePath {
 pub struct Vm {
     vm: RootVm,
     provider: Shared<Provider>,
+    paths: Vec<PathBuf>
 }
 
 impl Vm {
@@ -83,12 +86,21 @@ impl Vm {
         self.provider.add_source(name.into(), source);
     }
 
+    pub fn get(&self) -> &bp3d_lua::vm::Vm {
+        &self.vm
+    }
+
     pub fn new(path: &Path) -> Result<Vm> {
         let provider = Shared::new(Provider::new());
+        let mut paths = Vec::new();
         debug!("Adding root bp3d lua path...");
-        provider.add_source("bp3d".into(), SourcePath::from_installed());
+        let src = SourcePath::from_installed();
+        paths.push(src.0.clone());
+        provider.add_source("bp3d".into(), src);
         if let Some(name) = path.file_name().map(|v| v.to_str()).flatten() {
+            let path = path.join("bp3d-build");
             debug!({name}, "Adding project lua path: {:?}...", path);
+            paths.push(path.clone());
             provider.add_source(name.into(), SourcePath::new(path));
         }
         let vm = RootVm::new();
@@ -101,22 +113,65 @@ impl Vm {
         ObjArtifact.register(&vm)?;
         Ok(Vm {
             vm,
-            provider
+            provider,
+            paths
         })
+    }
+
+    pub fn call_main<'a>(&self, len: usize, args: impl Iterator<Item = (&'a str, &'a str)>) -> Result<()> {
+        self.vm.scope(|vm| {
+            let mut args2 = Table::with_capacity(vm, 0, len);
+            for (k, v) in args {
+                args2.set(k, v)?;
+            }
+            let f: Function = vm.get_global(c"Main")?;
+            f.call(args2)
+        })
+    }
+
+    fn _call<'a, A: IntoLua, R: FromLua<'a>>(vm: &bp3d_lua::vm::Vm, f: &'a Function<'a>, context: &Context, arg: A) -> Result<R> {
+        let mut ctx = Table::with_capacity(vm, 0, 4);
+        ctx.set(c"path", crate::lua::obj_path::Path::from(PathBuf::from(context.path)))?;
+        ctx.set(c"target", context.target)?;
+        ctx.set(c"configuration", context.configuration)?;
+        if let Features::List(features) = context.features {
+            let mut features2 = Table::with_capacity(vm, features.len(), 0);
+            for feature in features {
+                features2.push(*feature)?;
+            }
+            ctx.set(c"features", features2)?;
+        }
+        f.call((ctx, arg))
+    }
+
+    pub fn call_userdata<R: 'static + UserDataImmutable + Clone>(&self, name: &str, context: &Context) -> Result<R> {
+        self.vm.scope(|vm| {
+            let f: Function = vm.get_global(name)?;
+            let obj: &R = Self::_call(vm, &f, context, ())?;
+            Ok(obj.clone())
+        })
+    }
+
+    pub fn call_context<A: IntoLua>(&self, name: &str, context: &Context, arg: A) -> Result<()> {
+        self.vm.scope(|vm| {
+            let f: Function = vm.get_global(name)?;
+            Self::_call(vm, &f, context, arg)
+        })
+    }
+
+    pub fn find(&self, name: &str) -> Option<PathBuf> {
+        for v in &self.paths {
+            let path = v.join(name);
+            if path.exists() {
+                return Some(path);
+            }
+        }
+        None
     }
 
     pub fn run(&self, script_path: &Path) -> Result<()> {
         self.vm.scope(|vm| {
             vm.run(Script::from_path(script_path).map_err(|e| Error::Loader(e.to_string()))?)
-        })
-    }
-
-    pub fn call<R: for <'a> FromLua<'a>, R2: 'static>(&self, name: impl AnyStr, arg: impl IntoLua, done: impl FnOnce(R) -> R2) -> Result<R2> {
-        self.vm.scope(|vm| {
-            let f: Function = vm.get_global(name)?;
-            let r: R = f.call(arg)?;
-            let r2 = done(r);
-            Ok(r2)
         })
     }
 }

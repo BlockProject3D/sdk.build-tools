@@ -37,7 +37,8 @@ pub struct Context<'a> {
     pub path: &'a Path,
     pub configuration: &'a str,
     pub targets: &'a [&'a str],
-    pub tool: &'a dyn BuildTool
+    pub tool: &'a dyn BuildTool,
+    pub packager: &'a str
 }
 
 impl<'a> Context<'a> {

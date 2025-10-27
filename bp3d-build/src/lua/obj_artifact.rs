@@ -29,10 +29,13 @@
 use bp3d_lua::{decl_userdata, impl_userdata};
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
+use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::userdata::case::Camel;
+use bp3d_lua::vm::value::IntoLua;
+use bp3d_lua::vm::Vm;
 use crate::lua::obj_path::Path;
 use crate::system::artifact;
-use crate::system::artifact::{LibType, Type};
+use crate::system::artifact::{LibType, List, Type};
 
 decl_userdata!(pub struct Artifact(artifact::Artifact));
 
@@ -82,5 +85,16 @@ impl Lib for ObjArtifact {
 
     fn load(&self, namespace: &mut Namespace) -> bp3d_lua::vm::Result<()> {
         namespace.add_userdata::<Artifact>("Artifact", Camel)
+    }
+}
+
+unsafe impl IntoLua for List {
+    fn into_lua(self, vm: &Vm) -> u16 {
+        let inner = self.into_inner();
+        let mut tbl = Table::with_capacity(vm, inner.len(), 0);
+        for artifact in inner {
+            tbl.push(Artifact(artifact)).unwrap();
+        }
+        1
     }
 }

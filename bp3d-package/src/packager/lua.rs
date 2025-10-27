@@ -27,22 +27,42 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::HashMap;
+use bp3d_lua::vm::table::Table;
+use bp3d_lua::vm::value::types::Function;
+use bp3d_lua::vm::Vm;
 use bp3d_util::simple_error;
 use bp3d_build::system::artifact::List;
+use bp3d_build::system::Features;
 use crate::Context;
 use crate::packager::interface::{build_target, Packager};
 
 simple_error! {
     pub Error {
         (impl From) Lua(bp3d_lua::vm::error::Error) => "lua error: {}",
-        Build(bp3d_build::core::Error) => "build error: {}"
+        Build(bp3d_build::core::Error) => "build error: {}",
+        NotFound(String) => "packager not found: {}"
     }
 }
 
 pub struct Lua<'a> {
-    kvs: HashMap<String, String>,
-    lua: Option<bp3d_build::lua::core::Vm>,
+    vm: bp3d_build::lua::core::Vm,
     context: &'a Context<'a>
+}
+
+fn create_context<'a>(vm: &'a Vm, context: &Context) -> bp3d_lua::vm::Result<Table<'a>> {
+    let mut tbl = Table::with_capacity(vm, 0, 3);
+    tbl.set(c"path", bp3d_build::lua::Path::from(context.path))?;
+    tbl.set(c"configuration", context.configuration)?;
+    let mut package = Table::with_capacity(vm, 0, 2);
+    package.set(c"name", context.tool.package().get_name())?;
+    package.set(c"version", context.tool.package().get_version())?;
+    tbl.set(c"package", package)?;
+    let mut targets = Table::with_capacity(vm, context.targets.len(), 0);
+    for target in context.targets {
+        targets.push(*target)?;
+    }
+    tbl.set(c"targets", targets)?;
+    Ok(tbl)
 }
 
 impl<'a> Packager<'a> for Lua<'a> {
@@ -50,24 +70,56 @@ impl<'a> Packager<'a> for Lua<'a> {
     type Error = Error;
     type Config = HashMap<String, String>;
 
-    fn new(config: Self::Config, _: &'a Context<'a>) -> Result<Self, Self::Error> {
-        todo!()
+    fn new(config: Self::Config, context: &'a Context<'a>) -> Result<Self, Self::Error> {
+        let vm = bp3d_build::lua::core::Vm::new(context.path)?;
+        let path = vm.find(&format!("package/{}", context.packager));
+        if path.is_none() {
+            return Err(Error::NotFound(context.packager.into()));
+        }
+        let path = path.unwrap();
+        vm.run(&path)?;
+        vm.call_main(config.len(), config.iter().map(|(k, v)| (&**k, &**v)))?;
+        Ok(Lua {
+            context,
+            vm
+        })
     }
 
     fn do_build_target(&self, target: &str) -> Result<List, Self::Error> {
-        build_target(&self.context, target).map_err(Error::Build)
+        let res = build_target(&self.context, target).map_err(Error::Build)?;
+        let ctx = bp3d_build::system::Context {
+            path: self.context.path,
+            target,
+            configuration: self.context.configuration,
+            features: Features::All
+        };
+        self.vm.call_context("BuildTarget", &ctx, ()).map_err(Error::Lua)?;
+        Ok(res)
     }
 
     fn do_build(&self) -> Result<(), Self::Error> {
-        //self.lua = Some(bp3d_build::lua::core::Vm::new(context.path));
-        todo!()
+        self.vm.get().scope(|vm| {
+            let f: Function = vm.get_global(c"Build")?;
+            let ctx = create_context(vm, &self.context)?;
+            f.call(ctx)
+        }).map_err(Error::Lua)
     }
 
-    fn do_package_target(&self, _list: &List, _target: &str) -> Result<(), Self::Error> {
-        todo!()
+    fn do_package_target(&self, list: &List, target: &str) -> Result<(), Self::Error> {
+        let ctx = bp3d_build::system::Context {
+            path: self.context.path,
+            target,
+            configuration: self.context.configuration,
+            features: Features::All
+        };
+        self.vm.call_context("PackageTarget", &ctx, list.clone()).map_err(Error::Lua)
     }
 
     fn do_package(&self) -> Result<(), Self::Error> {
-        todo!()
+        self.vm.get().scope(|vm| {
+            let f: Function = vm.get_global(c"Package")?;
+            let ctx = create_context(vm, &self.context)?;
+            f.call(ctx)
+        }).map_err(Error::Lua)
     }
 }

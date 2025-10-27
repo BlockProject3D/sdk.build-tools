@@ -90,6 +90,7 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
                     configuration: ctx.configuration,
                     targets: ctx.targets,
                     tool,
+                    packager: ""
                 });
                 Ok(())
             } else {

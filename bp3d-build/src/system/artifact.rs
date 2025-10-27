@@ -44,6 +44,7 @@ pub enum Type {
     Other
 }
 
+#[derive(Clone)]
 pub struct Artifact {
     path: PathBuf,
     debug_info: Option<PathBuf>,
@@ -126,6 +127,7 @@ impl Artifact {
     }
 }
 
+#[derive(Clone)]
 pub struct List {
     content: Vec<Artifact>,
 }
