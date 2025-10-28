@@ -121,11 +121,11 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn command_output<'lua>(table: Table) -> Result<Box<[u8]>, Error> {
+    fn command_output<'lua>(table: Table) -> Result<String, Error> {
         let info = CommandInfo::from_table(&table).map_err(Error::Lua)?;
         let mut cmd = info.into_command();
         let output = cmd.output().map_err(Error::Io)?;
-        Ok(output.stdout.into_boxed_slice())
+        Ok(String::from_utf8_lossy(&output.stdout).into())
     }
 }
 
