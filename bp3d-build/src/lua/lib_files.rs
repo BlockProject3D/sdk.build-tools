@@ -46,6 +46,9 @@ decl_lib_func! {
 
 decl_lib_func! {
     fn copy(src_path: &Path, dst_path: &Path) -> std::io::Result<()> {
+        if let Some(parent) = dst_path.as_path().parent() {
+            std::fs::create_dir_all(parent)?;
+        }
         std::fs::copy(src_path.as_path(), dst_path.as_path()).map(|_| ())
     }
 }
