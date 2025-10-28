@@ -72,6 +72,12 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn exists(path: &Path) -> bool {
+        path.as_path().exists()
+    }
+}
+
 pub struct FilesLib;
 
 impl Lib for FilesLib {
@@ -83,7 +89,8 @@ impl Lib for FilesLib {
             ("writeText", RFunction::wrap(write_text)),
             ("copy", RFunction::wrap(copy)),
             ("symlink", RFunction::wrap(symlink)),
-            ("clean", RFunction::wrap(clean))
+            ("clean", RFunction::wrap(clean)),
+            ("exists", RFunction::wrap(exists))
         ])
     }
 }
