@@ -59,6 +59,16 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn clean(path: &Path) -> std::io::Result<()> {
+        if path.as_path().exists() {
+            std::fs::remove_dir_all(path.as_path())?;
+        }
+        std::fs::create_dir_all(path.as_path())?;
+        Ok(())
+    }
+}
+
 pub struct FilesLib;
 
 impl Lib for FilesLib {
@@ -69,7 +79,8 @@ impl Lib for FilesLib {
             ("readText", RFunction::wrap(read_text)),
             ("writeText", RFunction::wrap(write_text)),
             ("copy", RFunction::wrap(copy)),
-            ("symlink", RFunction::wrap(symlink))
+            ("symlink", RFunction::wrap(symlink)),
+            ("clean", RFunction::wrap(clean))
         ])
     }
 }
