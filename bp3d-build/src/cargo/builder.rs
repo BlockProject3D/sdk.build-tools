@@ -26,31 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::Path;
 use std::process::Command;
 use crate::system::{BuildSystem, Context, Features};
-use crate::system::artifact::{Artifact, LibType, List};
+use crate::system::artifact::{Artifact, LibType, List, Type};
 use super::Error;
 
 pub struct CargoBuilder;
-
-fn list_headers(path: &Path, name: &str, list: &mut List) -> Result<(), Error> {
-    if path.exists() {
-        let files = std::fs::read_dir(path).map_err(Error::Io)?;
-        for file in files {
-            let file = file.map_err(Error::Io)?;
-            let ty = file.file_type().map_err(Error::Io)?;
-            let name1 = String::from(name) + file.file_name().to_str().ok_or(Error::InvalidUtf8)?;
-            if ty.is_file() {
-                let artifact = Artifact::header(&file.path(), &name1);
-                list.add(artifact);
-            } else if ty.is_dir() {
-                list_headers(&file.path(), &name1, list)?;
-            }
-        }
-    }
-    Ok(())
-}
 
 impl BuildSystem for CargoBuilder {
     type Error = Error;
@@ -105,8 +86,8 @@ impl BuildSystem for CargoBuilder {
             let bin = Artifact::find_bin(&target_folder, bin);
             artifacts.add_if_some(bin);
         }
-        let include_folder = ctx.path.join("include");
-        list_headers(&include_folder, "", &mut artifacts)?;
+        artifacts.add_folder(Type::Header, &ctx.path.join("include"), "").map_err(Error::Io)?;
+        artifacts.add_folder(Type::Other, &ctx.path.join("share"), "").map_err(Error::Io)?;
         Ok(artifacts)
     }
 }

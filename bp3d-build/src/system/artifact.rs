@@ -26,6 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 use crate::system::finder::Finder;
 
@@ -149,6 +150,30 @@ impl List {
             panic!("Duplicate artifact {} found", artifact.name);
         }
         self.content.push(artifact);
+    }
+
+    pub fn add_folder(&mut self, ty1: Type, path: &Path, name: &str) -> std::io::Result<()> {
+        if path.exists() {
+            let files = std::fs::read_dir(path)?;
+            for file in files {
+                let file = file?;
+                let ty = file.file_type()?;
+                let name1 = String::from(name) + file.file_name().to_str().ok_or_else(|| Error::new(ErrorKind::Other, "invalid filename"))?;
+                if ty.is_file() {
+                    let artifact = Artifact {
+                        path: file.path(),
+                        debug_info: None,
+                        exports: None,
+                        name: name1,
+                        ty: ty1
+                    };
+                    self.add(artifact);
+                } else if ty.is_dir() {
+                    self.add_folder(ty1, &file.path(), &name1)?;
+                }
+            }
+        }
+        Ok(())
     }
 
     pub fn find(&self, ty: Type) -> impl Iterator<Item = &Artifact> {
