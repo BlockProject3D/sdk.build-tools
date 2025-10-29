@@ -60,19 +60,27 @@ impl CargoWorkspace {
         let mut packages = Vec::new();
         let mut core_name: Option<String> = None;
         let mut core_version: Option<String> = None;
-        match manifest.workspace {
+        match &manifest.workspace {
             Some(v) => {
-                for member in v.members {
-                    let package = CargoPackage::load(&root.join(&member).join("Cargo.toml"))?;
-                    if core_name.is_none() {
-                        core_name = Some(package.get_name().into());
-                        core_version = Some(package.get_version().into());
+                if v.members.len() == 0 {
+                    // Broken cargo_toml which believes a workspace exists when it does not!
+                    let package = CargoPackage::open(manifest);
+                    core_name = Some(package.get_name().into());
+                    core_version = Some(package.get_version().into());
+                    packages.push(package)
+                } else {
+                    for member in &v.members {
+                        let package = CargoPackage::load(&root.join(&member).join("Cargo.toml"))?;
+                        if core_name.is_none() {
+                            core_name = Some(package.get_name().into());
+                            core_version = Some(package.get_version().into());
+                        }
+                        if member == "core" {
+                            core_name = Some(package.get_name().into());
+                            core_version = Some(package.get_version().into());
+                        }
+                        packages.push(package);
                     }
-                    if member == "core" {
-                        core_name = Some(package.get_name().into());
-                        core_version = Some(package.get_version().into());
-                    }
-                    packages.push(package);
                 }
             },
             None => {
