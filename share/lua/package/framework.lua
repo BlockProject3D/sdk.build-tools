@@ -1,7 +1,7 @@
 local context = bp3d.lua.require "bp3d.util.context"
 local args = bp3d.lua.require "bp3d.util.args"
 local build = bp3d.lua.require "bp3d.util.build"
-local artifacts = bp3d.lua.require "bp3d.util.artifacts"
+local artifact = bp3d.lua.require "bp3d.util.artifact"
 local templates = bp3d.lua.require "bp3d.templates.framework"
 
 local ARGS = args.create({
@@ -22,7 +22,7 @@ function Build(ctx)
     VERSION = ctx.package.version
 end
 
-function PackageTarget(ctx, artifacts1)
+function PackageTarget(ctx, artifacts)
     local targetPath = context.getTargetPath(ctx)
     local frameworkDir = ARGS.name .. ".framework"
     local binDir = nil
@@ -47,7 +47,7 @@ function PackageTarget(ctx, artifacts1)
     print("Generating frameowrk...")
     build.run("lipo", {
         "-create",
-        artifacts.findFirst(artifacts1, "lib::dynamic"):path(),
+        artifact.findFirst(artifacts, "lib::dynamic"):path(),
         "-output",
         binDir:join(ARGS.name)
     })
@@ -62,7 +62,7 @@ function PackageTarget(ctx, artifacts1)
         bp3d.build.files.symlink("Versions/Current/Resources", frameworkDir:join("Resources"))
         bp3d.build.files.symlink("Versions/Current/Modules", frameworkDir:join("Modules"))
     end
-    local includes = artifacts.find(artifacts1, "header")
+    local includes = artifact.find(artifacts, "header")
     if bp3d.util.table.count(includes) > 0 then
         print("Adding headers...")
         local headerPath = binDir:join("Headers")
