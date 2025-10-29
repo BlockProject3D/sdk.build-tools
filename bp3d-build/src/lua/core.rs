@@ -36,6 +36,7 @@ use bp3d_lua::libs::util::Util;
 use bp3d_lua::vm::closure::arc::Shared;
 use bp3d_lua::vm::core::load::Script;
 use bp3d_lua::vm::error::Error;
+use bp3d_lua::vm::registry::core::Key;
 use bp3d_lua::vm::RootVm;
 use bp3d_lua::vm::Result;
 use bp3d_lua::vm::table::Table;
@@ -84,7 +85,8 @@ impl Source for SourcePath {
 pub struct Vm {
     vm: RootVm,
     provider: Shared<Provider>,
-    paths: Vec<PathBuf>
+    paths: Vec<PathBuf>,
+    main_class: Option<Key<bp3d_lua::vm::registry::types::Table>>
 }
 
 impl Vm {
@@ -120,25 +122,36 @@ impl Vm {
         ObjPath.register(&vm)?;
         FilesLib.register(&vm)?;
         ObjArtifact.register(&vm)?;
+        vm.run_code(c"require = bp3d.lua.require")?;
         Ok(Vm {
             vm,
             provider,
-            paths
+            paths,
+            main_class: None
+        })
+    }
+
+    pub fn with_class(&self, f: impl FnOnce(&bp3d_lua::vm::Vm, Table) -> Result<()>) -> Result<()> {
+        self.vm.scope(|vm| {
+            let class = self.main_class.as_ref().unwrap().push(vm);
+            f(vm, class)
         })
     }
 
     pub fn call_main<'a>(&self, len: usize, args: impl Iterator<Item = (&'a str, &'a str)>) -> Result<()> {
+        assert!(self.main_class.is_some());
         self.vm.scope(|vm| {
             let mut args2 = Table::with_capacity(vm, 0, len);
             for (k, v) in args {
                 args2.set(k, v)?;
             }
-            let f: Function = vm.get_global(c"Main")?;
-            f.call(args2)
+            let class = self.main_class.as_ref().unwrap().push(vm);
+            let f: Function = class.get(c"init")?;
+            f.call((class.clone(), args2))
         })
     }
 
-    fn _call<'a, A: IntoLua, R: FromLua<'a>>(vm: &bp3d_lua::vm::Vm, f: &'a Function<'a>, context: &Context, arg: A) -> Result<R> {
+    fn _call<'a, A: IntoLua, R: FromLua<'a>>(class: Table<'a>, vm: &bp3d_lua::vm::Vm, f: &'a Function<'a>, context: &Context, arg: A) -> Result<R> {
         let mut ctx = Table::with_capacity(vm, 0, 4);
         ctx.set(c"path", crate::lua::obj_path::Path::from(PathBuf::from(context.path)))?;
         ctx.set(c"target", context.target)?;
@@ -150,21 +163,25 @@ impl Vm {
             }
             ctx.set(c"features", features2)?;
         }
-        f.call((ctx, arg))
+        f.call((class, ctx, arg))
     }
 
     pub fn call_userdata<R: 'static + UserDataImmutable + Clone>(&self, name: &str, context: &Context) -> Result<R> {
+        assert!(self.main_class.is_some());
         self.vm.scope(|vm| {
-            let f: Function = vm.get_global(name)?;
-            let obj: &R = Self::_call(vm, &f, context, ())?;
+            let class = self.main_class.as_ref().unwrap().push(vm);
+            let f: Function = class.get(name)?;
+            let obj: &R = Self::_call(class.clone(), vm, &f, context, ())?;
             Ok(obj.clone())
         })
     }
 
     pub fn call_context<A: IntoLua>(&self, name: &str, context: &Context, arg: A) -> Result<()> {
+        assert!(self.main_class.is_some());
         self.vm.scope(|vm| {
-            let f: Function = vm.get_global(name)?;
-            Self::_call(vm, &f, context, arg)
+            let class = self.main_class.as_ref().unwrap().push(vm);
+            let f: Function = class.get(name)?;
+            Self::_call(class.clone(), vm, &f, context, arg)
         })
     }
 
@@ -179,9 +196,12 @@ impl Vm {
         None
     }
 
-    pub fn run(&self, script_path: &Path) -> Result<()> {
+    pub fn run(&mut self, script_path: &Path) -> Result<()> {
+        assert!(self.main_class.is_none());
         self.vm.scope(|vm| {
-            vm.run(Script::from_path(script_path).map_err(|e| Error::Loader(e.to_string()))?)
+            let cl: Table = vm.run(Script::from_path(script_path).map_err(|e| Error::Loader(e.to_string()))?)?;
+            self.main_class = Some(Key::new(cl));
+            Ok(())
         })
     }
 }

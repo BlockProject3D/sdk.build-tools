@@ -71,7 +71,7 @@ impl<'a> Packager<'a> for Lua<'a> {
     type Config = HashMap<String, String>;
 
     fn new(config: Self::Config, context: &'a Context<'a>) -> Result<Self, Self::Error> {
-        let vm = bp3d_build::lua::core::Vm::new(context.path)?;
+        let mut vm = bp3d_build::lua::core::Vm::new(context.path)?;
         let path = vm.find(&format!("package/{}.lua", context.packager));
         if path.is_none() {
             return Err(Error::NotFound(context.packager.into()));
@@ -93,15 +93,15 @@ impl<'a> Packager<'a> for Lua<'a> {
             configuration: self.context.configuration,
             features: Features::All
         };
-        self.vm.call_context("BuildTarget", &ctx, ()).map_err(Error::Lua)?;
+        self.vm.call_context("buildTarget", &ctx, ()).map_err(Error::Lua)?;
         Ok(res)
     }
 
     fn do_build(&self) -> Result<(), Self::Error> {
-        self.vm.get().scope(|vm| {
-            let f: Function = vm.get_global(c"Build")?;
+        self.vm.with_class(|vm, class| {
+            let f: Function = class.get(c"build")?;
             let ctx = create_context(vm, &self.context)?;
-            f.call(ctx)
+            f.call((class.clone(), ctx))
         }).map_err(Error::Lua)
     }
 
@@ -112,14 +112,14 @@ impl<'a> Packager<'a> for Lua<'a> {
             configuration: self.context.configuration,
             features: Features::All
         };
-        self.vm.call_context("PackageTarget", &ctx, list.clone()).map_err(Error::Lua)
+        self.vm.call_context("packageTarget", &ctx, list.clone()).map_err(Error::Lua)
     }
 
     fn do_package(&self) -> Result<(), Self::Error> {
-        self.vm.get().scope(|vm| {
-            let f: Function = vm.get_global(c"Package")?;
+        self.vm.with_class(|vm, class| {
+            let f: Function = class.get(c"package")?;
             let ctx = create_context(vm, &self.context)?;
-            f.call(ctx)
+            f.call((class.clone(), ctx))
         }).map_err(Error::Lua)
     }
 }

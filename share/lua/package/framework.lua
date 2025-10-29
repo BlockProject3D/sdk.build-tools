@@ -1,30 +1,31 @@
-local context = bp3d.lua.require "bp3d.util.context"
-local args = bp3d.lua.require "bp3d.util.args"
-local build = bp3d.lua.require "bp3d.util.build"
-local artifact = bp3d.lua.require "bp3d.util.artifact"
-local templates = bp3d.lua.require "bp3d.templates.framework"
+local context = require "bp3d.util.context"
+local args = require "bp3d.util.args"
+local build = require "bp3d.util.build"
+local artifact = require "bp3d.util.artifact"
+local templates = require "bp3d.templates.framework"
 
-local ARGS = args.create({
+local Framework = {}
+
+Framework.args = args.create({
     name = { type = "string" },
     identifier = { type = "string" },
     umbrella = { type = "string", optional = true }
 })
 
-local VERSION = ""
-
-function Main(args1)
-    args.update(ARGS, args1)
+function Framework:init(args1)
+    args.update(self.args, args1)
+    self.version = ""
 end
 
-function BuildTarget() end
+function Framework:buildTarget() end
 
-function Build(ctx)
-    VERSION = ctx.package.version
+function Framework:build(ctx)
+    self.version = ctx.package.version
 end
 
-function PackageTarget(ctx, artifacts)
+function Framework:packageTarget(ctx, artifacts)
     local targetPath = context.getTargetPath(ctx)
-    local frameworkDir = ARGS.name .. ".framework"
+    local frameworkDir = self.args.name .. ".framework"
     local binDir = nil
     local resDir = nil
     local moduleDir = nil
@@ -49,16 +50,16 @@ function PackageTarget(ctx, artifacts)
         "-create",
         artifact.findFirst(artifacts, "lib::dynamic"):path(),
         "-output",
-        binDir:join(ARGS.name)
+        binDir:join(self.args.name)
     })
     build.run("install_name_tool", {
         "-id",
-        "@rpath/" .. ARGS.name .. ".framework/" .. ARGS.name,
-        ARGS.name
+        "@rpath/" .. self.args.name .. ".framework/" .. self.args.name,
+        self.args.name
     }, { workdir = binDir })
     if isDarwin then
         bp3d.build.files.symlink("A", frameworkDir:join("Versions/Current"))
-        bp3d.build.files.symlink("Versions/Current/" .. ARGS.name, frameworkDir:join(ARGS.name))
+        bp3d.build.files.symlink("Versions/Current/" .. self.args.name, frameworkDir:join(self.args.name))
         bp3d.build.files.symlink("Versions/Current/Resources", frameworkDir:join("Resources"))
         bp3d.build.files.symlink("Versions/Current/Modules", frameworkDir:join("Modules"))
     end
@@ -72,14 +73,14 @@ function PackageTarget(ctx, artifacts)
         if isDarwin then
             bp3d.build.files.symlink("Versions/Current/Headers", frameworkDir:join("Headers"))
         end
-        local umbrella = ARGS.umbrella or ARGS.name .. ".h"
+        local umbrella = self.args.umbrella or self.args.name .. ".h"
         local umbrellaPath = headerPath:join(umbrella)
         if not bp3d.build.files.exists(umbrellaPath) then
             bp3d.build.files.writeText(umbrellaPath,
                 "/* Empty generated umbrella header to ensure Xcode can link the framework. */")
         end
         bp3d.build.files.writeText(moduleDir:join("module.modulemap"), build.render(templates.MODULE_MAP_TEMPLATE, {
-            NAME = ARGS.name,
+            NAME = self.args.name,
             UMBRELLA = umbrella
         }))
     end
@@ -92,24 +93,26 @@ function PackageTarget(ctx, artifacts)
         platforms = "<string>iPhoneOS</string>\n        <string>iPadOS</string>"
     end
     bp3d.build.files.writeText(resDir:join("Info.plist"), build.render(templates.PLIST, {
-        NAME = ARGS.name,
-        VERSION = VERSION,
+        NAME = self.args.name,
+        VERSION = self.version,
         BUILD_NUMBER = buildNumber,
-        IDENTIFIER = ARGS.identifier,
+        IDENTIFIER = self.args.identifier,
         PLATFORMS = platforms
     }))
 end
 
-function Package(ctx)
+function Framework:package(ctx)
     print("Generating XC framework...")
-    local out = ctx.path:join("target/" .. ARGS.name .. ".xcframework");
+    local out = ctx.path:join("target/" .. self.args.name .. ".xcframework");
     build.clean(out)
     local args = { "xcodebuild", "-create-xcframework" }
     for _, target in ipairs(ctx.targets) do
         table.insert(args, "-framework")
-        table.insert(args, context.getTargetPath(ctx, target):join(ARGS.name .. ".framework"))
+        table.insert(args, context.getTargetPath(ctx, target):join(self.args.name .. ".framework"))
     end
     table.insert(args, "-output")
     table.insert(args, out)
     build.run("xcrun", args)
 end
+
+return Framework
