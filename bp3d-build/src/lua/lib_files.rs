@@ -30,22 +30,22 @@ use bp3d_lua::decl_lib_func;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::function::types::RFunction;
-use crate::lua::obj_path::Path;
+use crate::lua::obj_path::PathOrString;
 
 decl_lib_func! {
-    fn read_text(path: &Path) -> std::io::Result<String> {
+    fn read_text(path: PathOrString) -> std::io::Result<String> {
         std::fs::read_to_string(path.as_path())
     }
 }
 
 decl_lib_func! {
-    fn write_text(path: &Path, data: &str) -> std::io::Result<()> {
+    fn write_text(path: PathOrString, data: &str) -> std::io::Result<()> {
         std::fs::write(path.as_path(), data)
     }
 }
 
 decl_lib_func! {
-    fn copy(src_path: &Path, dst_path: &Path) -> std::io::Result<()> {
+    fn copy(src_path: PathOrString, dst_path: PathOrString) -> std::io::Result<()> {
         if let Some(parent) = dst_path.as_path().parent() {
             std::fs::create_dir_all(parent)?;
         }
@@ -54,7 +54,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn symlink(src_path: &Path, dst_path: &Path) -> std::io::Result<()> {
+    fn symlink(src_path: PathOrString, dst_path: PathOrString) -> std::io::Result<()> {
         #[cfg(unix)]
         return std::os::unix::fs::symlink(src_path.as_path(), dst_path.as_path()).map(|_| ());
         #[cfg(windows)]
@@ -63,7 +63,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn clean(path: &Path) -> std::io::Result<()> {
+    fn clean(path: PathOrString) -> std::io::Result<()> {
         if path.as_path().exists() {
             std::fs::remove_dir_all(path.as_path())?;
         }
@@ -73,7 +73,7 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn exists(path: &Path) -> bool {
+    fn exists(path: PathOrString) -> bool {
         path.as_path().exists()
     }
 }

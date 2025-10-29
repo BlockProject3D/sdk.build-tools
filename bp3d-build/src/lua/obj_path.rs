@@ -31,7 +31,23 @@ use bp3d_lua::{decl_lib_func, decl_userdata, impl_userdata};
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::userdata::case::Camel;
+use bp3d_lua_codegen::{FromParam, LuaType};
 use bp3d_util::path::PathExt;
+
+#[derive(FromParam, LuaType)]
+pub enum PathOrString<'a> {
+    Path(&'a Path),
+    String(&'a str),
+}
+
+impl<'a> PathOrString<'a> {
+    pub fn as_path(&self) -> &std::path::Path {
+        match self {
+            PathOrString::Path(v) => v.as_path(),
+            PathOrString::String(v) => v.as_ref()
+        }
+    }
+}
 
 decl_userdata!(pub struct Path(PathBuf));
 
@@ -61,8 +77,12 @@ decl_lib_func! {
 
 impl_userdata! {
     impl Path {
-        fn join(this: &Path, other: &Path) -> Path {
-            Path(this.0.join(&other.0))
+        fn join(this: &Path, other: PathOrString) -> Path {
+            let path = match other {
+                PathOrString::Path(v) => this.0.join(v.as_path()),
+                PathOrString::String(v) => this.0.join(v)
+            };
+            Path(path)
         }
 
         fn with_extension(this: &Path, extension: &str) -> Path {

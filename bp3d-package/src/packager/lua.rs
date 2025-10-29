@@ -72,7 +72,7 @@ impl<'a> Packager<'a> for Lua<'a> {
 
     fn new(config: Self::Config, context: &'a Context<'a>) -> Result<Self, Self::Error> {
         let vm = bp3d_build::lua::core::Vm::new(context.path)?;
-        let path = vm.find(&format!("package/{}", context.packager));
+        let path = vm.find(&format!("package/{}.lua", context.packager));
         if path.is_none() {
             return Err(Error::NotFound(context.packager.into()));
         }

@@ -44,6 +44,7 @@ use bp3d_lua::vm::value::any::AnyParam;
 use bp3d_lua::vm::value::{FromLua, IntoLua};
 use bp3d_lua::vm::value::types::Function;
 use bp3d_os::assets::get_executable_path;
+use bp3d_util::path::PathExt;
 use crate::lua::lib_command::CommandLib;
 use crate::lua::lib_files::FilesLib;
 use crate::lua::obj_artifact::ObjArtifact;
@@ -60,9 +61,11 @@ impl SourcePath {
     pub fn from_installed() -> Self {
         let exe = get_executable_path().unwrap();
         let mut path = exe.join("../share/lua");
+        debug!("path: {:?}", &path);
         if !path.exists() {
             path = exe.join("../../share/lua");
         }
+        debug!("path: {:?}", &path);
         assert!(path.exists());
         SourcePath(path)
     }
@@ -71,7 +74,10 @@ impl SourcePath {
 impl Source for SourcePath {
     fn run(&self, vm: &bp3d_lua::vm::Vm, path: &str, _: &str) -> Result<AnyParam> {
         let path = path.replace(".", "/");
-        vm.run(Script::from_path(self.0.join(path)).map_err(|e| Error::Loader(e.to_string()))?)
+        let path = self.0.join(path);
+        let path = path.ensure_extension("lua");
+        debug!("Injecting lua file at path: {:?}", &path);
+        vm.run(Script::from_path(path).map_err(|e| Error::Loader(e.to_string()))?)
     }
 }
 
@@ -97,6 +103,9 @@ impl Vm {
         let src = SourcePath::from_installed();
         paths.push(src.0.clone());
         provider.add_source("bp3d".into(), src);
+        debug!("Project root = {:?}", path);
+        debug!("Project name = {:?}", path.file_name());
+        //FIXME: This will always fail as the project path is always ./ (use absolute_path)
         if let Some(name) = path.file_name().map(|v| v.to_str()).flatten() {
             let path = path.join("bp3d-build");
             debug!({name}, "Adding project lua path: {:?}...", path);
@@ -162,6 +171,7 @@ impl Vm {
     pub fn find(&self, name: &str) -> Option<PathBuf> {
         for v in &self.paths {
             let path = v.join(name);
+            debug!("Check lua file path: {:?}", path);
             if path.exists() {
                 return Some(path);
             }
