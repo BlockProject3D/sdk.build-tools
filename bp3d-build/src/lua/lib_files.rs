@@ -26,12 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use bp3d_debug::debug;
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::table::Table;
+use bp3d_os::assets::get_executable_path;
 use crate::lua::obj_path::PathOrString;
+use crate::lua::Path;
 
 decl_lib_func! {
     fn read_text(path: PathOrString) -> std::io::Result<String> {
@@ -106,6 +109,17 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn get_share_path() -> Path {
+        let exe = get_executable_path().unwrap();
+        let mut path = exe.join("../share");
+        if !path.exists() {
+            path = exe.join("../../share");
+        }
+        Path::from(path)
+    }
+}
+
 pub struct FilesLib;
 
 impl Lib for FilesLib {
@@ -119,7 +133,8 @@ impl Lib for FilesLib {
             ("symlink", RFunction::wrap(symlink)),
             ("clean", RFunction::wrap(clean)),
             ("exists", RFunction::wrap(exists)),
-            ("list", RFunction::wrap(list))
+            ("list", RFunction::wrap(list)),
+            ("getSharePath", RFunction::wrap(get_share_path))
         ])
     }
 }
