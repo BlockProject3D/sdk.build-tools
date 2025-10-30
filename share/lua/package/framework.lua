@@ -17,8 +17,6 @@ function Framework:init(args1)
     self.version = ""
 end
 
-function Framework:buildTarget() end
-
 function Framework:build(ctx)
     self.version = ctx.package.version
 end

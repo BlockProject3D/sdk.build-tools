@@ -86,15 +86,22 @@ impl<'a> Packager<'a> for Lua<'a> {
     }
 
     fn do_build_target(&self, target: &str) -> Result<List, Self::Error> {
-        let res = build_target(&self.context, target).map_err(Error::Build)?;
-        let ctx = bp3d_build::system::Context {
-            path: self.context.path,
-            target,
-            configuration: self.context.configuration,
-            features: Features::All
-        };
-        self.vm.call_context("buildTarget", &ctx, ()).map_err(Error::Lua)?;
-        Ok(res)
+        let flag = self.vm.with_class(|vm, class| {
+            let f: Option<Function> = class.get(c"buildTarget")?;
+            Ok(f.is_some())
+        })?;
+        if flag {
+            let ctx = bp3d_build::system::Context {
+                path: self.context.path,
+                target,
+                configuration: self.context.configuration,
+                features: Features::All
+            };
+            self.vm.call_context("buildTarget", &ctx, ()).map_err(Error::Lua)?;
+            todo!()
+        } else {
+            build_target(&self.context, target).map_err(Error::Build)
+        }
     }
 
     fn do_build(&self) -> Result<(), Self::Error> {

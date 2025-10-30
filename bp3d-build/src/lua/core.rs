@@ -131,7 +131,7 @@ impl Vm {
         })
     }
 
-    pub fn with_class(&self, f: impl FnOnce(&bp3d_lua::vm::Vm, Table) -> Result<()>) -> Result<()> {
+    pub fn with_class<R: 'static>(&self, f: impl FnOnce(&bp3d_lua::vm::Vm, Table) -> Result<R>) -> Result<R> {
         self.vm.scope(|vm| {
             let class = self.main_class.as_ref().unwrap().push(vm);
             f(vm, class)
