@@ -35,6 +35,7 @@ use bp3d_build::system::artifact::List;
 use bp3d_build::system::Features;
 use crate::packager::Context;
 use crate::packager::interface::{build_target, Packager};
+use bp3d_build::lua::List as LuaList;
 
 simple_error! {
     pub Error {
@@ -86,7 +87,7 @@ impl<'a> Packager<'a> for Lua<'a> {
     }
 
     fn do_build_target(&self, target: &str) -> Result<List, Self::Error> {
-        let flag = self.vm.with_class(|vm, class| {
+        let flag = self.vm.with_class(|_, class| {
             let f: Option<Function> = class.get(c"buildTarget")?;
             Ok(f.is_some())
         })?;
@@ -97,8 +98,8 @@ impl<'a> Packager<'a> for Lua<'a> {
                 configuration: self.context.configuration,
                 features: Features::All
             };
-            self.vm.call_context("buildTarget", &ctx, ()).map_err(Error::Lua)?;
-            todo!()
+            let value: LuaList = self.vm.call_userdata("buildTarget", &ctx).map_err(Error::Lua)?;
+            Ok(value.into_inner())
         } else {
             build_target(&self.context, target).map_err(Error::Build)
         }

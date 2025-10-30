@@ -31,5 +31,7 @@ mod lib_command;
 mod lib_files;
 mod obj_artifact;
 mod obj_path;
+mod obj_list;
 
 pub use obj_path::Path;
+pub use obj_list::List;

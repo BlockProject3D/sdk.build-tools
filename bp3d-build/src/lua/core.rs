@@ -49,6 +49,7 @@ use bp3d_util::path::PathExt;
 use crate::lua::lib_command::CommandLib;
 use crate::lua::lib_files::FilesLib;
 use crate::lua::obj_artifact::ObjArtifact;
+use crate::lua::obj_list::ObjList;
 use crate::lua::obj_path::ObjPath;
 use crate::system::{Context, Features};
 
@@ -122,6 +123,7 @@ impl Vm {
         ObjPath.register(&vm)?;
         FilesLib.register(&vm)?;
         ObjArtifact.register(&vm)?;
+        ObjList.register(&vm)?;
         vm.run_code(c"require = bp3d.lua.require")?;
         Ok(Vm {
             vm,

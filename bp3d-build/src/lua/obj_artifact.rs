@@ -26,14 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::{decl_userdata, impl_userdata};
+use bp3d_lua::{decl_lib_func, decl_userdata, impl_userdata};
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::userdata::case::Camel;
 use bp3d_lua::vm::value::IntoLua;
 use bp3d_lua::vm::Vm;
-use crate::lua::obj_path::Path;
+use bp3d_lua_codegen::{FromParam, LuaType};
+use crate::lua::obj_path::{Path, PathOrString};
 use crate::system::artifact;
 use crate::system::artifact::{LibType, List, Type};
 
@@ -42,6 +43,57 @@ decl_userdata!(pub struct Artifact(artifact::Artifact));
 impl From<artifact::Artifact> for Artifact {
     fn from(artifact: artifact::Artifact) -> Self {
         Self(artifact)
+    }
+}
+
+impl From<Artifact> for artifact::Artifact {
+    fn from(value: Artifact) -> Self {
+        value.0
+    }
+}
+
+impl From<&Artifact> for artifact::Artifact {
+    fn from(value: &Artifact) -> Self {
+        value.0.clone()
+    }
+}
+
+#[derive(LuaType, FromParam)]
+enum LuaLibType {
+    Dynamic,
+    Static
+}
+
+decl_lib_func! {
+    fn find_bin(path: PathOrString, name: &str) -> Option<Artifact> {
+        artifact::Artifact::find_bin(path.as_path(), name).map(Artifact)
+    }
+}
+
+decl_lib_func! {
+    fn find_lib(path: PathOrString, name: &str, ty: LuaLibType) -> Option<Artifact> {
+        match ty {
+            LuaLibType::Dynamic => artifact::Artifact::find_lib(path.as_path(), name, LibType::Dynamic).map(Artifact),
+            LuaLibType::Static => artifact::Artifact::find_lib(path.as_path(), name, LibType::Static).map(Artifact)
+        }
+    }
+}
+
+decl_lib_func! {
+    fn header(path: PathOrString, name: &str) -> Artifact {
+        Artifact(artifact::Artifact::header(path.as_path(), name))
+    }
+}
+
+decl_lib_func! {
+    fn config(path: PathOrString, name: &str) -> Artifact {
+        Artifact(artifact::Artifact::config(path.as_path(), name))
+    }
+}
+
+decl_lib_func! {
+    fn other(path: PathOrString, name: &str) -> Artifact {
+        Artifact(artifact::Artifact::other(path.as_path(), name))
     }
 }
 
@@ -75,6 +127,13 @@ impl_userdata! {
                 Type::Other => "other"
             }
         }
+    }
+    static {
+        [fn find_bin];
+        [fn find_lib];
+        [fn header];
+        [fn config];
+        [fn other];
     }
 }
 
