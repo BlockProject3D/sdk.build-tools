@@ -1,9 +1,9 @@
 local Packager = require "bp3d.packager"
 local build = require "bp3d.util.build"
 
-local Test = Class(Packager)
+local Debug = Class(Packager)
 
-function Test:buildTarget(ctx)
+function Debug:buildTarget(ctx)
     local files = bp3d.build.files.list(ctx.path:join("target"):join(ctx.configuration))
     local bins = {}
     for _, v in ipairs(files) do
@@ -21,4 +21,4 @@ function Test:buildTarget(ctx)
     return bp3d.build.List.new()
 end
 
-return Test
+return Debug
