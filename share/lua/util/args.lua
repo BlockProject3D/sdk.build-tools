@@ -21,8 +21,10 @@ args.create = function(typeInfo)
 end
 
 args.update = function(tbl, args)
+    assert(tbl ~= nil, "no argument type map passed")
     for k, v in pairs(tbl.__types) do
         if not v.optional then
+            assert(args ~= nil, "arguments table is nil")
             if v.type == "enum" then
                 assert(type(args[k]) == "string", "invalid type for argument " .. k)
                 assert(bp3d.util.table.contains(v.enum, args[k]), "invalid enum variant " .. args[k])
@@ -30,7 +32,7 @@ args.update = function(tbl, args)
                 assert(type(args[k]) == v.type, "invalid type for argument " .. k)
             end
             tbl[k] = args[k]
-        elseif args[k] ~= nil then
+        elseif args ~= nil and args[k] ~= nil then
             if v.type == "enum" then
                 assert(type(args[k]) == "string", "invalid type for argument " .. k)
                 assert(bp3d.util.table.contains(v.enum, args[k]), "invalid enum variant " .. args[k])
