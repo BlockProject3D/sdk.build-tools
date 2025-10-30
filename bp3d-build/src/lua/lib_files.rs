@@ -30,6 +30,7 @@ use bp3d_lua::decl_lib_func;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::function::types::RFunction;
+use bp3d_lua::vm::table::Table;
 use crate::lua::obj_path::PathOrString;
 
 decl_lib_func! {
@@ -78,6 +79,33 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn list<'a>(vm: &Vm, path: PathOrString) -> std::io::Result<Table<'a>> {
+        let mut tbl = Table::new(vm);
+        let files = path.as_path().read_dir()?;
+        for file in files {
+            let file = file?;
+            let path = file.path();
+            let name = file.file_name();
+            let ty = file.file_type()?;
+            let mut subt = Table::with_capacity(vm, 0, 4);
+            subt.set(c"path", crate::lua::obj_path::Path::from(path)).unwrap();
+            subt.set(c"name", name.as_encoded_bytes()).unwrap();
+            if ty.is_dir() {
+                subt.set(c"type", "dir").unwrap();
+            } else if ty.is_file() {
+                subt.set(c"type", "file").unwrap();
+            } else if ty.is_symlink() {
+                subt.set(c"type", "symlink").unwrap();
+            } else {
+                subt.set(c"type", "other").unwrap();
+            }
+            tbl.push(subt).unwrap();
+        }
+        Ok(tbl)
+    }
+}
+
 pub struct FilesLib;
 
 impl Lib for FilesLib {
@@ -90,7 +118,8 @@ impl Lib for FilesLib {
             ("copy", RFunction::wrap(copy)),
             ("symlink", RFunction::wrap(symlink)),
             ("clean", RFunction::wrap(clean)),
-            ("exists", RFunction::wrap(exists))
+            ("exists", RFunction::wrap(exists)),
+            ("list", RFunction::wrap(list))
         ])
     }
 }
