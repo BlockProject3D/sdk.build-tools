@@ -1,27 +1,23 @@
+local Packager = require "bp3d.packager"
 local context = require "bp3d.util.context"
-local args = require "bp3d.util.args"
 local build = require "bp3d.util.build"
 local artifact = require "bp3d.util.artifact"
 local templates = require "bp3d.templates.framework"
 
-local Framework = {}
+local Framework = Class(Packager)
 
-Framework.args = args.create({
+Framework.argTypes = {
     name = { type = "string" },
     identifier = { type = "string" },
     umbrella = { type = "string", optional = true }
-})
-
-function Framework:init(args1)
-    args.update(self.args, args1)
-    self.version = ""
-end
+}
 
 function Framework:build(ctx)
     self.version = ctx.package.version
 end
 
 function Framework:packageTarget(ctx, artifacts)
+    print("Packaging " .. self.args.name .. "-" .. self.version .. " for target " .. ctx.target)
     local targetPath = context.getTargetPath(ctx)
     local frameworkDir = self.args.name .. ".framework"
     local binDir = nil
@@ -37,10 +33,10 @@ function Framework:packageTarget(ctx, artifacts)
         resDir = frameworkDir
         moduleDir = frameworkDir .. "/Modules"
     end
-    local frameworkDir = targetPath:join(frameworkDir)
-    local binDir = targetPath:join(binDir)
-    local resDir = targetPath:join(resDir)
-    local moduleDir = targetPath:join(moduleDir)
+    frameworkDir = targetPath:join(frameworkDir)
+    binDir = targetPath:join(binDir)
+    resDir = targetPath:join(resDir)
+    moduleDir = targetPath:join(moduleDir)
     print("Cleaning directories...")
     build.clean(frameworkDir, binDir, resDir, moduleDir)
     print("Generating frameowrk...")
