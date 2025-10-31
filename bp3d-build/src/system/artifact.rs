@@ -169,7 +169,7 @@ impl List {
                     };
                     self.add(artifact);
                 } else if ty.is_dir() {
-                    self.add_folder(ty1, &file.path(), &name1)?;
+                    self.add_folder(ty1, &file.path(), &(name1 + "/"))?;
                 }
             }
         }
