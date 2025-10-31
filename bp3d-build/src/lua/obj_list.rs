@@ -71,7 +71,7 @@ impl_userdata! {
                 ArtifactType::Lib => Type::Lib(LibType::Dynamic),
                 ArtifactType::Header => Type::Header,
                 ArtifactType::Config => Type::Config,
-                ArtifactType::Other => Type::Other
+                ArtifactType::Other => Type::Resource
             };
             this.0.borrow_mut().add_folder(ty, path.as_path(), name)
         }

@@ -42,7 +42,7 @@ pub enum Type {
     Lib(LibType),
     Header,
     Config,
-    Other
+    Resource
 }
 
 #[derive(Clone)]
@@ -117,13 +117,13 @@ impl Artifact {
         }
     }
 
-    pub fn other(path: &Path, name: &str) -> Self {
+    pub fn resource(path: &Path, name: &str) -> Self {
         Self {
             path: path.into(),
             name: name.into(),
             debug_info: None,
             exports: None,
-            ty: Type::Other
+            ty: Type::Resource
         }
     }
 }

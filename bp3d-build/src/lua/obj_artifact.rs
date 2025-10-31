@@ -92,8 +92,8 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn other(path: PathOrString, name: &str) -> Artifact {
-        Artifact(artifact::Artifact::other(path.as_path(), name))
+    fn resource(path: PathOrString, name: &str) -> Artifact {
+        Artifact(artifact::Artifact::resource(path.as_path(), name))
     }
 }
 
@@ -124,7 +124,7 @@ impl_userdata! {
                 }
                 Type::Header => "header",
                 Type::Config => "config",
-                Type::Other => "other"
+                Type::Resource => "resource"
             }
         }
 
@@ -137,7 +137,7 @@ impl_userdata! {
         [fn find_lib];
         [fn header];
         [fn config];
-        [fn other];
+        [fn resource];
     }
 }
 
