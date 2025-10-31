@@ -16,7 +16,7 @@ function Debug:buildTarget(ctx)
     end
     for k, v in pairs(bins) do
         print("Applying codesign to executable name " .. k .. "...")
-        build.run("codesign", { "-s", "-", "-v", "-f", "--entitlements", bp3d.build.files.getSharePath():join("entitlements.xml"), v })
+        build.run("codesign", { "-s", "-", "-v", "-f", "--entitlements", bp3d.build.files.getResourcesPath():join("entitlements.xml"), v })
     end
     return bp3d.build.List.new()
 end
