@@ -127,6 +127,10 @@ impl_userdata! {
                 Type::Other => "other"
             }
         }
+
+        fn __tostring(this: &Artifact) -> &str {
+            this.0.name()
+        }
     }
     static {
         [fn find_bin];
