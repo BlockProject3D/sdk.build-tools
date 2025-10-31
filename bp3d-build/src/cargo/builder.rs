@@ -87,7 +87,7 @@ impl BuildSystem for CargoBuilder {
             artifacts.add_if_some(bin);
         }
         artifacts.add_folder(Type::Header, &ctx.path.join("include"), "").map_err(Error::Io)?;
-        artifacts.add_folder(Type::Other, &ctx.path.join("share"), "").map_err(Error::Io)?;
+        artifacts.add_folder(Type::Other, &ctx.path.join("res"), "").map_err(Error::Io)?;
         Ok(artifacts)
     }
 }

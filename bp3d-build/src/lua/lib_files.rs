@@ -110,11 +110,11 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn get_share_path() -> Path {
+    fn get_res_path() -> Path {
         let exe = get_executable_path().unwrap();
-        let mut path = exe.join("../share");
+        let mut path = exe.join("../res");
         if !path.exists() {
-            path = exe.join("../../share");
+            path = exe.join("../../res");
         }
         Path::from(path)
     }
@@ -134,7 +134,7 @@ impl Lib for FilesLib {
             ("clean", RFunction::wrap(clean)),
             ("exists", RFunction::wrap(exists)),
             ("list", RFunction::wrap(list)),
-            ("getSharePath", RFunction::wrap(get_share_path))
+            ("getResourcesPath", RFunction::wrap(get_res_path))
         ])
     }
 }

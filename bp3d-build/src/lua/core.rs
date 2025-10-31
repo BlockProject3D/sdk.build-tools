@@ -62,10 +62,10 @@ impl SourcePath {
 
     pub fn from_installed() -> Self {
         let exe = get_executable_path().unwrap();
-        let mut path = exe.join("../share/lua");
+        let mut path = exe.join("../usr/share/lua");
         debug!("path: {:?}", &path);
         if !path.exists() {
-            path = exe.join("../../share/lua");
+            path = exe.join("../../res/lua");
         }
         debug!("path: {:?}", &path);
         assert!(path.exists());
