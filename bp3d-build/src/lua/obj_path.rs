@@ -99,6 +99,10 @@ impl_userdata! {
             this.0.file_name().map(|v| v.to_string_lossy().into())
         }
 
+        fn extension(this: &Path) -> Option<String> {
+            this.0.extension().map(|v| v.to_string_lossy().into())
+        }
+
         fn __tostring(this: &Path) -> String {
             this.0.display().to_string()
         }
