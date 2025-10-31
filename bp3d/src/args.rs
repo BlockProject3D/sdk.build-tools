@@ -55,9 +55,6 @@ pub struct Args {
     #[arg(long="root", help = "Root path of the project, where to find the manifest.")]
     pub root: Option<PathBuf>,
 
-    #[arg(long = "ipc", help = "ipc server name.")]
-    pub ipc: Option<String>,
-
     #[arg(short = 'p', long = "package", help = "The packager engine to use.")]
     pub package_type: Option<String>,
 
