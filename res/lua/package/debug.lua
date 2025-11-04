@@ -4,7 +4,7 @@ local build = require "bp3d.util.build"
 local Debug = Class(Packager)
 
 function Debug:buildTarget(ctx)
-    local files = bp3d.build.files.list(ctx.path:join("target"):join(ctx.configuration))
+    local files = bp3d.files.list(ctx.path:join("target"):join(ctx.configuration))
     local bins = {}
     for _, v in ipairs(files) do
         if v.type == "file" then

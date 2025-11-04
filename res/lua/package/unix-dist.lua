@@ -18,7 +18,7 @@ function UnixDist:packageTarget(ctx, artifacts)
         local binDir = distPath:join("bin")
         build.clean(binDir)
         for _, v in pairs(bins) do
-            bp3d.build.files.copy(v:path(), binDir:join(v:name()))
+            bp3d.files.copyFile(v:path(), binDir:join(v:name()))
         end
     end
 
@@ -29,10 +29,10 @@ function UnixDist:packageTarget(ctx, artifacts)
         print("Packaging libraries...")
         build.clean(libDir)
         for _, v in pairs(libs) do
-            bp3d.build.files.copy(v:path(), libDir:join(v:name()))
+            bp3d.files.copyFile(v:path(), libDir:join(v:name()))
         end
     end
-    local files = bp3d.build.files.list(targetPath)
+    local files = bp3d.files.list(targetPath)
     local hasLibs = false
     for _, v in ipairs(files) do
         local ext = v.path:extension()
@@ -44,7 +44,7 @@ function UnixDist:packageTarget(ctx, artifacts)
                 end
                 hasLibs = true
             end
-            bp3d.build.files.copy(v.path, libDir:join(v.name))
+            bp3d.files.copyFile(v.path, libDir:join(v.name))
         end
     end
 
@@ -55,7 +55,7 @@ function UnixDist:packageTarget(ctx, artifacts)
         local includeDir = usrPath:join("include")
         build.clean(includeDir)
         for _, v in pairs(headers) do
-            bp3d.build.files.copy(v:path(), includeDir:join(v:name()))
+            bp3d.files.copyFile(v:path(), includeDir:join(v:name()))
         end
     end
 
@@ -66,7 +66,7 @@ function UnixDist:packageTarget(ctx, artifacts)
         local etcDir = distPath:join("etc")
         build.clean(etcDir)
         for _, v in pairs(configs) do
-            bp3d.build.files.copy(v:path(), etcDir:join(v:name()))
+            bp3d.files.copyFile(v:path(), etcDir:join(v:name()))
         end
     end
 
@@ -77,7 +77,7 @@ function UnixDist:packageTarget(ctx, artifacts)
         local shareDir = usrPath:join("share")
         build.clean(shareDir)
         for _, v in pairs(resources) do
-            bp3d.build.files.copy(v:path(), shareDir:join(v:name()))
+            bp3d.files.copyFile(v:path(), shareDir:join(v:name()))
         end
     end
 end
