@@ -28,12 +28,12 @@
 
 use std::cell::RefCell;
 use bp3d_lua::{decl_lib_func, decl_userdata, impl_userdata};
+use bp3d_lua::libs::files::SandboxPath;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::userdata::case::Camel;
 use bp3d_lua_codegen::{FromParam, LuaType};
 use crate::lua::obj_artifact::Artifact;
-use crate::lua::obj_path::PathOrString;
 use crate::system::artifact::{LibType, Type};
 
 #[derive(LuaType, FromParam)]
@@ -65,7 +65,7 @@ impl_userdata! {
             this.0.borrow_mut().add_if_some(artifact.map(crate::system::artifact::Artifact::from))
         }
 
-        fn add_folder(this: &List, ty: ArtifactType, path: PathOrString, name: &str) -> std::io::Result<()> {
+        fn add_folder(this: &List, vm: &Vm, ty: ArtifactType, path: SandboxPath, name: &str) -> std::io::Result<()> {
             let ty = match ty {
                 ArtifactType::Bin => Type::Bin,
                 ArtifactType::Lib => Type::Lib(LibType::Dynamic),
@@ -73,7 +73,8 @@ impl_userdata! {
                 ArtifactType::Config => Type::Config,
                 ArtifactType::Other => Type::Resource
             };
-            this.0.borrow_mut().add_folder(ty, path.as_path(), name)
+            let path = path.to_path(vm).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            this.0.borrow_mut().add_folder(ty, &*path, name)
         }
     }
     static {

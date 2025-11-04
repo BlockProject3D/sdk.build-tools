@@ -28,6 +28,7 @@
 
 use std::path::{Path, PathBuf};
 use bp3d_debug::debug;
+use bp3d_lua::libs::files::{Files, SandboxPath};
 use bp3d_lua::libs::Lib;
 use bp3d_lua::libs::lua::Lua;
 use bp3d_lua::libs::lua::require::{Provider, Source};
@@ -50,8 +51,9 @@ use crate::lua::lib_command::CommandLib;
 use crate::lua::lib_files::FilesLib;
 use crate::lua::obj_artifact::ObjArtifact;
 use crate::lua::obj_list::ObjList;
-use crate::lua::obj_path::ObjPath;
 use crate::system::{Context, Features};
+use bp3d_lua::libs::files::chroot;
+use bp3d_lua::libs::files::chroot::Permissions;
 
 struct SourcePath(PathBuf);
 
@@ -116,11 +118,15 @@ impl Vm {
             provider.add_source(name.into(), SourcePath::new(path));
         }
         let vm = RootVm::new();
-        Lua::new().provider(provider.clone()).load_chroot_path(path).build().register(&vm)?;
+        Lua::new().provider(provider.clone()).build().register(&vm)?;
+        chroot::set_chroot(&vm, path);
+        chroot::set_access(&vm, "/", Permissions::R);
+        chroot::set_access(&vm, "/target", Permissions::R | Permissions::W);
+        chroot::set_access(&vm, "/bp3d-build", Permissions::R | Permissions::X);
         (Compat, Instant, Time).register(&vm)?;
         Util.register(&vm)?;
+        Files.register(&vm)?;
         CommandLib.register(&vm)?;
-        ObjPath.register(&vm)?;
         FilesLib.register(&vm)?;
         ObjArtifact.register(&vm)?;
         ObjList.register(&vm)?;
@@ -155,7 +161,7 @@ impl Vm {
 
     fn _call<'a, A: IntoLua, R: FromLua<'a>>(class: Table<'a>, vm: &bp3d_lua::vm::Vm, f: &'a Function<'a>, context: &Context, arg: A) -> Result<R> {
         let mut ctx = Table::with_capacity(vm, 0, 4);
-        ctx.set(c"path", crate::lua::obj_path::Path::from(PathBuf::from(context.path)))?;
+        ctx.set(c"path", SandboxPath::from_path_unchecked(context.path))?;
         ctx.set(c"target", context.target)?;
         ctx.set(c"configuration", context.configuration)?;
         if let Features::List(features) = context.features {

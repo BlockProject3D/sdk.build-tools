@@ -27,6 +27,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::{decl_lib_func, decl_userdata, impl_userdata};
+use bp3d_lua::libs::files::chroot::SandboxError;
+use bp3d_lua::libs::files::SandboxPath;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::table::Table;
@@ -34,7 +36,6 @@ use bp3d_lua::vm::userdata::case::Camel;
 use bp3d_lua::vm::value::IntoLua;
 use bp3d_lua::vm::Vm;
 use bp3d_lua_codegen::{FromParam, LuaType};
-use crate::lua::obj_path::{Path, PathOrString};
 use crate::system::artifact;
 use crate::system::artifact::{LibType, List, Type};
 
@@ -65,50 +66,50 @@ enum LuaLibType {
 }
 
 decl_lib_func! {
-    fn find_bin(path: PathOrString, name: &str) -> Option<Artifact> {
-        artifact::Artifact::find_bin(path.as_path(), name).map(Artifact)
+    fn find_bin(vm: &Vm, path: SandboxPath, name: &str) -> Result<Option<Artifact>, SandboxError> {
+        path.to_path(vm).map(|v| artifact::Artifact::find_bin(&*v, name).map(Artifact))
     }
 }
 
 decl_lib_func! {
-    fn find_lib(path: PathOrString, name: &str, ty: LuaLibType) -> Option<Artifact> {
+    fn find_lib(vm: &Vm, path: SandboxPath, name: &str, ty: LuaLibType) -> Result<Option<Artifact>, SandboxError> {
         match ty {
-            LuaLibType::Dynamic => artifact::Artifact::find_lib(path.as_path(), name, LibType::Dynamic).map(Artifact),
-            LuaLibType::Static => artifact::Artifact::find_lib(path.as_path(), name, LibType::Static).map(Artifact)
+            LuaLibType::Dynamic => path.to_path(vm).map(|v| artifact::Artifact::find_lib(&*v, name, LibType::Dynamic).map(Artifact)),
+            LuaLibType::Static => path.to_path(vm).map(|v| artifact::Artifact::find_lib(&*v, name, LibType::Static).map(Artifact)),
         }
     }
 }
 
 decl_lib_func! {
-    fn header(path: PathOrString, name: &str) -> Artifact {
-        Artifact(artifact::Artifact::header(path.as_path(), name))
+    fn header(vm: &Vm, path: SandboxPath, name: &str) -> Result<Artifact, SandboxError> {
+        path.to_path(vm).map(|v| Artifact(artifact::Artifact::header(&*v, name)))
     }
 }
 
 decl_lib_func! {
-    fn config(path: PathOrString, name: &str) -> Artifact {
-        Artifact(artifact::Artifact::config(path.as_path(), name))
+    fn config(vm: &Vm, path: SandboxPath, name: &str) -> Result<Artifact, SandboxError> {
+        path.to_path(vm).map(|v| Artifact(artifact::Artifact::config(&*v, name)))
     }
 }
 
 decl_lib_func! {
-    fn resource(path: PathOrString, name: &str) -> Artifact {
-        Artifact(artifact::Artifact::resource(path.as_path(), name))
+    fn resource(vm: &Vm, path: SandboxPath, name: &str) -> Result<Artifact, SandboxError> {
+        path.to_path(vm).map(|v| Artifact(artifact::Artifact::resource(&*v, name)))
     }
 }
 
 impl_userdata! {
     impl Artifact {
-        fn path(this: &Artifact) -> Path {
-            this.0.path().into()
+        fn path(this: &Artifact) -> SandboxPath {
+            SandboxPath::from_path_unchecked(this.0.path())
         }
 
-        fn debug_info(this: &Artifact) -> Option<Path> {
-            this.0.debug_info().map(Path::from)
+        fn debug_info(this: &Artifact) -> Option<SandboxPath> {
+            this.0.debug_info().map(SandboxPath::from_path_unchecked)
         }
 
-        fn exports(this: &Artifact) -> Option<Path> {
-            this.0.exports().map(Path::from)
+        fn exports(this: &Artifact) -> Option<SandboxPath> {
+            this.0.exports().map(SandboxPath::from_path_unchecked)
         }
 
         fn name(this: &Artifact) -> &str {

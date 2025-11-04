@@ -1,8 +1,11 @@
 local build = {}
 
 build.clean = function(...)
-    for _, v in ipairs({...}) do
-        bp3d.build.files.clean(v)
+    for _, v in ipairs({ ... }) do
+        if bp3d.files.exists(v) then
+            bp3d.files.deleteDir(v)
+        end
+        bp3d.files.createDir(v)
     end
 end
 

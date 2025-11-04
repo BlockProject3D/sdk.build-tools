@@ -26,97 +26,22 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_debug::debug;
 use bp3d_lua::decl_lib_func;
+use bp3d_lua::libs::files::SandboxPathBuf;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::function::types::RFunction;
-use bp3d_lua::vm::table::Table;
 use bp3d_os::assets::get_executable_path;
-use crate::lua::obj_path::PathOrString;
-use crate::lua::Path;
 
 decl_lib_func! {
-    fn read_text(path: PathOrString) -> std::io::Result<String> {
-        std::fs::read_to_string(path.as_path())
-    }
-}
-
-decl_lib_func! {
-    fn write_text(path: PathOrString, data: &str) -> std::io::Result<()> {
-        std::fs::write(path.as_path(), data)
-    }
-}
-
-decl_lib_func! {
-    fn copy(src_path: PathOrString, dst_path: PathOrString) -> std::io::Result<()> {
-        if let Some(parent) = dst_path.as_path().parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        std::fs::copy(src_path.as_path(), dst_path.as_path()).map(|_| ())
-    }
-}
-
-decl_lib_func! {
-    fn symlink(src_path: PathOrString, dst_path: PathOrString) -> std::io::Result<()> {
-        #[cfg(unix)]
-        return std::os::unix::fs::symlink(src_path.as_path(), dst_path.as_path()).map(|_| ());
-        #[cfg(windows)]
-        return Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "symlink"));
-    }
-}
-
-decl_lib_func! {
-    fn clean(path: PathOrString) -> std::io::Result<()> {
-        if path.as_path().exists() {
-            std::fs::remove_dir_all(path.as_path())?;
-        }
-        std::fs::create_dir_all(path.as_path())?;
-        Ok(())
-    }
-}
-
-decl_lib_func! {
-    fn exists(path: PathOrString) -> bool {
-        path.as_path().exists()
-    }
-}
-
-decl_lib_func! {
-    fn list<'a>(vm: &Vm, path: PathOrString) -> std::io::Result<Table<'a>> {
-        let mut tbl = Table::new(vm);
-        let files = path.as_path().read_dir()?;
-        for file in files {
-            let file = file?;
-            let path = file.path();
-            let name = file.file_name();
-            let ty = file.file_type()?;
-            let mut subt = Table::with_capacity(vm, 0, 4);
-            subt.set(c"path", crate::lua::obj_path::Path::from(path)).unwrap();
-            subt.set(c"name", name.as_encoded_bytes()).unwrap();
-            if ty.is_dir() {
-                subt.set(c"type", "dir").unwrap();
-            } else if ty.is_file() {
-                subt.set(c"type", "file").unwrap();
-            } else if ty.is_symlink() {
-                subt.set(c"type", "symlink").unwrap();
-            } else {
-                subt.set(c"type", "other").unwrap();
-            }
-            tbl.push(subt).unwrap();
-        }
-        Ok(tbl)
-    }
-}
-
-decl_lib_func! {
-    fn get_res_path() -> Path {
+    fn get_res_path() -> SandboxPathBuf {
+        //FIXME: Find a better way to get the path info
         let exe = get_executable_path().unwrap();
-        let mut path = exe.join("../res");
+        let mut path = exe.join("../usr/share");
         if !path.exists() {
             path = exe.join("../../res");
         }
-        Path::from(path)
+        SandboxPathBuf::from_path_unchecked(path)
     }
 }
 
@@ -127,13 +52,6 @@ impl Lib for FilesLib {
 
     fn load(&self, namespace: &mut Namespace) -> bp3d_lua::vm::Result<()> {
         namespace.add([
-            ("readText", RFunction::wrap(read_text)),
-            ("writeText", RFunction::wrap(write_text)),
-            ("copy", RFunction::wrap(copy)),
-            ("symlink", RFunction::wrap(symlink)),
-            ("clean", RFunction::wrap(clean)),
-            ("exists", RFunction::wrap(exists)),
-            ("list", RFunction::wrap(list)),
             ("getResourcesPath", RFunction::wrap(get_res_path))
         ])
     }

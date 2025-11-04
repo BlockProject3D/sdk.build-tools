@@ -27,18 +27,16 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::HashMap;
-use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::process::Command;
 use bp3d_lua::decl_lib_func;
+use bp3d_lua::libs::files::{SandboxPath, SandboxPathBuf};
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::table::Table;
-use bp3d_lua::vm::value::FromLua;
 use bp3d_lua::vm::Vm;
 use bp3d_util::simple_error;
-use crate::lua::obj_path::Path;
 
 simple_error! {
     pub Error {
@@ -47,50 +45,22 @@ simple_error! {
     }
 }
 
-pub enum PathOrString {
-    Path(PathBuf),
-    String(String),
-}
-
-impl AsRef<OsStr> for PathOrString {
-    fn as_ref(&self) -> &OsStr {
-        match self {
-            PathOrString::Path(v) => v.as_ref(),
-            PathOrString::String(v) => v.as_ref()
-        }
-    }
-}
-
-impl FromLua<'_> for PathOrString {
-    unsafe fn from_lua_unchecked(vm: &'_ Vm, index: i32) -> Self {
-        FromLua::from_lua(vm, index).unwrap_unchecked()
-    }
-
-    fn from_lua(vm: &'_ Vm, index: i32) -> bp3d_lua::vm::Result<Self> {
-        let path: bp3d_lua::vm::Result<&Path> = FromLua::from_lua(vm, index);
-        if let Ok(path) = path {
-            Ok(PathOrString::Path(path.as_path().into()))
-        } else {
-            Ok(PathOrString::String(FromLua::from_lua(vm, index)?))
-        }
-    }
-}
-
 struct CommandInfo {
     pub exe: String,
-    pub args: Option<Vec<PathOrString>>,
+    pub args: Option<Vec<SandboxPathBuf>>,
     pub env: Option<HashMap<String, String>>,
     pub workdir: Option<PathBuf>
 }
 
 impl CommandInfo {
-    pub fn from_table(table: &Table) -> bp3d_lua::vm::Result<Self> {
-        let workdir: Option<&Path> = table.get(c"workdir")?;
+    pub fn from_table(vm: &Vm, table: &Table) -> bp3d_lua::vm::Result<Self> {
+        let workdir: Option<SandboxPath> = table.get(c"workdir")?;
+        let workdir = workdir.map(|v| v.to_path(vm).ok().map(PathBuf::from)).flatten();
         Ok(CommandInfo {
             exe: table.get(c"exe")?,
             args: table.get(c"args")?,
             env: table.get(c"env")?,
-            workdir: workdir.map(|v| PathBuf::from(v.as_path())),
+            workdir,
         })
     }
 }
@@ -99,7 +69,7 @@ impl CommandInfo {
     pub fn into_command(self) -> Command {
         let mut cmd = Command::new(&self.exe);
         if let Some(args) = self.args {
-            cmd.args(args.iter().map(|v| v));
+            cmd.args(args.iter().map(|v| v.as_os_str()));
         }
         if let Some(env) = self.env {
             cmd.envs(env.iter().map(|(k, v)| (k, v)));
@@ -112,8 +82,8 @@ impl CommandInfo {
 }
 
 decl_lib_func! {
-    fn command_run(table: Table) -> Result<(bool, Option<i32>), Error> {
-        let info = CommandInfo::from_table(&table).map_err(Error::Lua)?;
+    fn command_run(vm: &Vm, table: Table) -> Result<(bool, Option<i32>), Error> {
+        let info = CommandInfo::from_table(vm, &table).map_err(Error::Lua)?;
         let mut cmd = info.into_command();
         let status = cmd.status().map_err(Error::Io)?;
         Ok((status.success(), status.code()))
@@ -121,8 +91,8 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
-    fn command_output<'lua>(table: Table) -> Result<String, Error> {
-        let info = CommandInfo::from_table(&table).map_err(Error::Lua)?;
+    fn command_output(vm: &Vm, table: Table) -> Result<String, Error> {
+        let info = CommandInfo::from_table(vm, &table).map_err(Error::Lua)?;
         let mut cmd = info.into_command();
         let output = cmd.output().map_err(Error::Io)?;
         Ok(String::from_utf8_lossy(&output.stdout).into())

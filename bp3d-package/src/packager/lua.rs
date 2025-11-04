@@ -27,6 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::HashMap;
+use bp3d_lua::libs::files::SandboxPath;
 use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::value::types::Function;
 use bp3d_lua::vm::Vm;
@@ -52,7 +53,7 @@ pub struct Lua<'a> {
 
 fn create_context<'a>(vm: &'a Vm, context: &Context) -> bp3d_lua::vm::Result<Table<'a>> {
     let mut tbl = Table::with_capacity(vm, 0, 3);
-    tbl.set(c"path", bp3d_build::lua::Path::from(context.path))?;
+    tbl.set(c"path", SandboxPath::from_path_unchecked(context.path))?;
     tbl.set(c"configuration", context.configuration)?;
     let mut package = Table::with_capacity(vm, 0, 2);
     package.set(c"name", context.tool.package().get_name())?;
