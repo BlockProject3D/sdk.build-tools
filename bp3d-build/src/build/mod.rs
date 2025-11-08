@@ -26,14 +26,4 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// Public interface.
-pub mod system;
-
-/// Public core interface.
-pub mod core;
-
-/// Public Lua engine.
-pub mod lua;
-
-// Build system implementations.
-mod build;
+pub mod cargo;

@@ -28,7 +28,7 @@
 
 use std::path::Path;
 use bp3d_util::simple_error;
-use crate::cargo::{CargoBuilder, CargoWorkspace};
+use crate::build::cargo::{CargoBuilder, CargoWorkspace};
 use crate::system::{BuildSystem, Context, Features, Package};
 use crate::system::artifact::List;
 
@@ -52,7 +52,7 @@ pub trait BuildTool {
 
     fn build(&self, ctx: &Context) -> Result<()>;
 
-    fn pre_package(&self, ctx: &Context) -> Result<crate::system::artifact::List>;
+    fn pre_package(&self, ctx: &Context) -> Result<List>;
 }
 
 struct BuildSystemWrapper<P, B> {
