@@ -28,12 +28,11 @@
 
 mod interface;
 mod util;
-pub mod lua;
 
 use crate::packager::util::packager_registry;
 
 packager_registry! {
-    framework::Framework
+    lua::Lua
 }
 
 pub use interface::*;

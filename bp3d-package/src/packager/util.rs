@@ -26,44 +26,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::error::Error;
-use std::path::Path;
-use std::process::{Command};
-
-pub trait CommandExt {
-    fn ensure<E: Error + From<std::io::Error>>(&mut self, fail_value: E) -> Result<(), E>;
-
-    fn output_string(&mut self) -> std::io::Result<String>;
-}
-
-impl CommandExt for Command {
-    fn ensure<E: Error + From<std::io::Error>>(&mut self, fail_value: E) -> Result<(), E> {
-        let res = self.status()?;
-        if !res.success() {
-            Err(fail_value)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn output_string(&mut self) -> std::io::Result<String> {
-        Ok(String::from_utf8_lossy(&self.output()?.stdout).into())
-    }
-}
-
-pub fn ensure_clean_directories<'a>(directories: impl IntoIterator<Item = &'a Path>) -> std::io::Result<()> {
-    for dir in directories {
-        if dir.exists() {
-            std::fs::remove_dir_all(dir)?;
-        }
-        std::fs::create_dir_all(dir)?;
-    }
-    Ok(())
-}
-
 macro_rules! packager_registry {
     ($($module: ident::$name: ident),*) => {
-        $(mod $module;)*
+        $(pub mod $module;)*
 
         #[derive(Debug, Copy, Clone)]
         pub enum PackagerType {
