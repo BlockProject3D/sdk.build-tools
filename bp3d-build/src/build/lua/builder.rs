@@ -26,5 +26,28 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod cargo;
-pub mod lua;
+use crate::build::lua::LuaPackage;
+use crate::system::{BuildSystem, Context};
+use crate::system::artifact::List;
+use crate::lua::List as LuaList;
+
+pub struct LuaBuilder;
+
+impl BuildSystem for LuaBuilder {
+    type Error = bp3d_lua::vm::error::Error;
+    type Package = LuaPackage;
+
+    fn configure(&self, package: &Self::Package, ctx: &Context) -> Result<(), Self::Error> {
+        package.vm().call_main(0, [].into_iter())?;
+        package.vm().call_context("configure", ctx, ())
+    }
+
+    fn build(&self, package: &Self::Package, ctx: &Context) -> Result<(), Self::Error> {
+        package.vm().call_context("build", ctx, ())
+    }
+
+    fn pre_package(&self, package: &Self::Package, ctx: &Context) -> Result<List, Self::Error> {
+        let lst: LuaList = package.vm().call_userdata("prePackage", ctx)?;
+        Ok(lst.into_inner())
+    }
+}

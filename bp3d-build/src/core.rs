@@ -29,6 +29,7 @@
 use std::path::Path;
 use bp3d_util::simple_error;
 use crate::build::cargo::{CargoBuilder, CargoWorkspace};
+use crate::build::lua::{LuaBuilder, LuaPackage};
 use crate::system::{BuildSystem, Context, Features, Package};
 use crate::system::artifact::List;
 
@@ -119,6 +120,9 @@ pub fn open(path: &Path) -> Result<Box<dyn BuildTool>> {
     if manifest.exists() {
         let package = CargoWorkspace::load(path).map_err(|e| Error::InvalidPackage(e.to_string()))?;
         Ok(Box::new(BuildSystemWrapper::new(package, CargoBuilder)))
+    } else if path.join("build.lua").exists() {
+        let package = LuaPackage::new(path).map_err(|e| Error::InvalidPackage(e.to_string()))?;
+        Ok(Box::new(BuildSystemWrapper::new(package, LuaBuilder)))
     } else {
         Err(Error::UnknownProject)
     }

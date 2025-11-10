@@ -26,5 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod cargo;
-pub mod lua;
+use bp3d_util::simple_error;
+
+mod builder;
+mod package;
+
+simple_error! {
+    pub Error {
+        Lua(bp3d_lua::vm::error::Error) => "lua error: {}"
+    }
+}
+
+pub use package::LuaPackage;
+pub use builder::LuaBuilder;
