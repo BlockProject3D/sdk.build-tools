@@ -50,7 +50,7 @@ impl LuaPackage {
         let mut features: Vec<Cow<'static, str>> = Vec::new();
         let mut name: String = String::new();
         let mut version: String = String::new();
-        vm.with_class(|vm, class| {
+        vm.with_class(|_, class| {
             let targets1: Vec<String> = class.get(c"targets")?;
             let configurations1: Vec<String> = class.get(c"configurations")?;
             let features1: Vec<String> = class.get(c"features")?;
