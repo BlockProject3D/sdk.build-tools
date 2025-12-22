@@ -90,7 +90,12 @@ function Framework:packageTarget(ctx, artifacts)
         print("Adding headers...")
         local headerPath = binDir:join("Headers")
         for _, include in pairs(includes) do
-            bp3d.files.copyFile(include:path(), headerPath:join(include:name()))
+            local name = include:name()
+            if bp3d.util.string.startsWith(name, self.args.name) then
+                --stupidly broken lua language which requires a +2 where it does not make any sense...
+                name = name:sub(#self.args.name + 2)
+            end
+            bp3d.files.copyFile(include:path(), headerPath:join(name))
         end
         if isDarwin then
             bp3d.files.symlink("Versions/Current/Headers", frameworkDir:join("Headers"))

@@ -101,6 +101,7 @@ impl Vm {
         &self.vm
     }
 
+    #[allow(dependency_on_unit_never_type_fallback)]
     pub fn new(path: &Path) -> Result<Vm> {
         let provider = Shared::new(Provider::new());
         let mut paths = Vec::new();
