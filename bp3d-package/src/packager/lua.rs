@@ -28,6 +28,7 @@
 
 use std::collections::HashMap;
 use bp3d_lua::libs::files::SandboxPath;
+use bp3d_lua::vm::closure::types::RClosure;
 use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::value::types::Function;
 use bp3d_lua::vm::Vm;
@@ -99,6 +100,11 @@ impl<'a> Packager<'a> for Lua<'a> {
                 configuration: self.context.configuration,
                 features: Features::All
             };
+            let (f, _guard) = RClosure::from_rust_temporary(self.vm.get(), |config: Table| {
+                let target: &str = config.get(c"target")?;
+                build_target(&self.context, target).map(|v| LuaList::from(v)).map_err(Error::Build)
+            });
+            self.vm.get().set_global(c"baseBuild", f)?;
             let value: LuaList = self.vm.call_userdata("buildTarget", &ctx).map_err(Error::Lua)?;
             Ok(value.into_inner())
         } else {

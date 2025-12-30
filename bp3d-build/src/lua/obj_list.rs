@@ -47,6 +47,12 @@ enum ArtifactType {
 
 decl_userdata!(#[derive(Clone)] pub struct List(RefCell<crate::system::artifact::List>));
 
+impl From<crate::system::artifact::List> for List {
+    fn from(value: crate::system::artifact::List) -> Self {
+        List(RefCell::new(value))
+    }
+}
+
 impl List {
     pub fn into_inner(self) -> crate::system::artifact::List {
         self.0.into_inner()
