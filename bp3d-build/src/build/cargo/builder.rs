@@ -27,11 +27,26 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::process::Command;
-use crate::system::{BuildSystem, Context, Features};
+use crate::system::{BuildSystem, Context, Features, Package};
 use crate::system::artifact::{Artifact, LibType, List, Type};
 use super::Error;
 
 pub struct CargoBuilder;
+
+fn gen_base_command(cmd: &mut Command, ctx: &Context) {
+    cmd.arg("--target").arg(ctx.target).current_dir(ctx.path);
+    if ctx.configuration == "release" {
+        cmd.arg("--release");
+    }
+    if ctx.features == Features::All {
+        cmd.arg("--all-features");
+    } else if ctx.features.len() > 0 {
+        cmd.arg("--features");
+        for v in ctx.features.iter() {
+            cmd.arg(v);
+        }
+    }
+}
 
 impl BuildSystem for CargoBuilder {
     type Error = Error;
@@ -61,19 +76,22 @@ impl BuildSystem for CargoBuilder {
 
     fn pre_package(&self, package: &Self::Package, ctx: &Context) -> Result<List, Self::Error> {
         let mut cmd = Command::new("cargo");
-        cmd.arg("build").arg("--target").arg(ctx.target).current_dir(ctx.path);
-        if ctx.configuration == "release" {
-            cmd.arg("--release");
-        }
-        if ctx.features == Features::All {
-            cmd.arg("--all-features");
-        } else if ctx.features.len() > 0 {
-            cmd.arg("--features");
-            for v in ctx.features.iter() {
-                cmd.arg(v);
-            }
-        }
+        cmd.arg("build");
+        gen_base_command(&mut cmd, ctx);
         cmd.status().map_err(Error::Io)?;
+        if package.libs().count() > 0 && ctx.target.contains("apple") {
+            println!("Adding version information...");
+            let version = package.get_version();
+            let mut cmd = Command::new("cargo");
+            cmd.arg("rustc");
+            gen_base_command(&mut cmd, ctx);
+            cmd.arg("--").arg(format!("-Clink-arg=-compatibility_version{}", version))
+                .arg(format!("-Clink-arg=-current_version{}", version));
+            cmd.status().map_err(Error::Io)?;
+        } else if ctx.target.contains("msvc") {
+            // We have a windows build, include the RC file.
+            
+        }
         let mut artifacts = List::new();
         let target_folder = ctx.path.join("target").join(ctx.target).join(ctx.configuration);
         for lib in package.libs() {
