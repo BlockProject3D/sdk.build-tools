@@ -40,12 +40,19 @@ Framework.argTypes = {
     umbrella = { type = "string", optional = true }
 }
 
-function Framework:build(ctx)
-    self.version = ctx.package.version
+function Framework:buildTarget(ctx)
+    local files = baseBuild(ctx)
+    print("Adding version information...")
+    build.runCargo("rustc", ctx, {
+        "--",
+        "-Clink-arg=-compatibility_version" .. self.context.package.version,
+        "-Clink-arg=-current_version" .. self.context.package.version
+    })
+    return files
 end
 
 function Framework:packageTarget(ctx, artifacts)
-    print("Packaging " .. self.args.name .. "-" .. self.version .. " for target " .. ctx.target)
+    print("Packaging " .. self.args.name .. "-" .. self.context.package.version .. " for target " .. ctx.target)
     local targetPath = context.getTargetPath(ctx)
     local frameworkDir = self.args.name .. ".framework"
     local binDir = nil
@@ -121,21 +128,21 @@ function Framework:packageTarget(ctx, artifacts)
     end
     bp3d.files.writeText(resDir:join("Info.plist"), build.render(templates.PLIST, {
         NAME = self.args.name,
-        VERSION = self.version,
+        VERSION = self.context.package.version,
         BUILD_NUMBER = buildNumber,
         IDENTIFIER = self.args.identifier,
         PLATFORMS = platforms
     }))
 end
 
-function Framework:package(ctx)
-    local out = ctx.path:join("target/" .. self.args.name .. ".xcframework");
+function Framework:package()
+    local out = self.context.path:join("target/" .. self.args.name .. ".xcframework");
     print("Generating XC framework " .. tostring(out) .. "...")
     build.clean(out)
     local args = { "xcodebuild", "-create-xcframework" }
-    for _, target in ipairs(ctx.targets) do
+    for _, target in ipairs(self.context.targets) do
         table.insert(args, "-framework")
-        table.insert(args, context.getTargetPath(ctx, target):join(self.args.name .. ".framework"))
+        table.insert(args, context.getTargetPath(self.context, target):join(self.args.name .. ".framework"))
     end
     table.insert(args, "-output")
     table.insert(args, out)

@@ -59,4 +59,30 @@ build.render = function(template, args)
     return template
 end
 
+build.runCargo = function(cmd, ctx, args2, env)
+    local args = {
+        cmd,
+        "--target",
+        ctx.target
+    }
+    if ctx.configuration == "release" then
+        table.insert(args, "--release")
+    end
+    if ctx.features then
+        table.insert(args, "--features")
+        for _, v in ipairs(ctx.features) do
+            table.insert(args, v)
+        end
+    else
+        table.insert(args, "--all-features")
+    end
+    for _, v in ipairs(args2) do
+        table.insert(args, v)
+    end
+    build.run("cargo", args, {
+        workdir = ctx.path,
+        env = env
+    })
+end
+
 return build

@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::process::Command;
-use crate::system::{BuildSystem, Context, Features, Package};
+use crate::system::{BuildSystem, Context, Features};
 use crate::system::artifact::{Artifact, LibType, List, Type};
 use super::Error;
 
@@ -79,31 +79,6 @@ impl BuildSystem for CargoBuilder {
         cmd.arg("build");
         gen_base_command(&mut cmd, ctx);
         cmd.status().map_err(Error::Io)?;
-        let mut artifacts = List::new();
-        let target_folder = ctx.path.join("target").join(ctx.target).join(ctx.configuration);
-        for lib in package.libs() {
-            let dy = Artifact::find_lib(&target_folder, lib, LibType::Dynamic);
-            let st = Artifact::find_lib(&target_folder, lib, LibType::Static);
-            artifacts.add_if_some(dy);
-            artifacts.add_if_some(st);
-        }
-        for bin in package.bins() {
-            let bin = Artifact::find_bin(&target_folder, bin);
-            artifacts.add_if_some(bin);
-        }
-        if artifacts.find(Type::Lib(LibType::Dynamic)).count() > 0 && ctx.target.contains("apple") {
-            println!("Adding version information...");
-            let version = package.get_version();
-            let mut cmd = Command::new("cargo");
-            cmd.arg("rustc");
-            gen_base_command(&mut cmd, ctx);
-            cmd.arg("--").arg(format!("-Clink-arg=-compatibility_version{}", version))
-                .arg(format!("-Clink-arg=-current_version{}", version));
-            cmd.status().map_err(Error::Io)?;
-        } else if ctx.target.contains("msvc") {
-            // We have a windows build, include the RC file.
-
-        }
         let mut artifacts = List::new();
         let target_folder = ctx.path.join("target").join(ctx.target).join(ctx.configuration);
         for lib in package.libs() {

@@ -38,10 +38,12 @@ function Packager:init(args1)
     end
 end
 
-function Packager:build(ctx) end
+function Packager:init2(ctx) self.context = ctx end
+
+function Packager:build() end
 
 function Packager:packageTarget(ctx, artifacts) end
 
-function Packager:package(ctx) end
+function Packager:package() end
 
 return Packager

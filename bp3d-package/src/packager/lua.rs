@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -73,6 +73,7 @@ impl<'a> Packager<'a> for Lua<'a> {
     type Error = Error;
     type Config = HashMap<String, String>;
 
+    #[allow(dependency_on_unit_never_type_fallback)]
     fn new(config: Self::Config, context: &'a Context<'a>) -> Result<Self, Self::Error> {
         let mut vm = bp3d_build::lua::core::Vm::new(context.path)?;
         let path = vm.find(&format!("package/{}.lua", context.packager));
@@ -82,6 +83,11 @@ impl<'a> Packager<'a> for Lua<'a> {
         let path = path.unwrap();
         vm.run(&path)?;
         vm.call_main(config.len(), config.iter().map(|(k, v)| (&**k, &**v)))?;
+        vm.with_class(|vm, class| {
+            let f: Function = class.get(c"init2")?;
+            let ctx = create_context(vm, context)?;
+            f.call((class.clone(), ctx))
+        }).map_err(Error::Lua)?;
         Ok(Lua {
             context,
             vm
@@ -113,10 +119,9 @@ impl<'a> Packager<'a> for Lua<'a> {
     }
 
     fn do_build(&self) -> Result<(), Self::Error> {
-        self.vm.with_class(|vm, class| {
+        self.vm.with_class(|_, class| {
             let f: Function = class.get(c"build")?;
-            let ctx = create_context(vm, &self.context)?;
-            f.call((class.clone(), ctx))
+            f.call(class.clone())
         }).map_err(Error::Lua)
     }
 
@@ -131,10 +136,9 @@ impl<'a> Packager<'a> for Lua<'a> {
     }
 
     fn do_package(&self) -> Result<(), Self::Error> {
-        self.vm.with_class(|vm, class| {
+        self.vm.with_class(|_, class| {
             let f: Function = class.get(c"package")?;
-            let ctx = create_context(vm, &self.context)?;
-            f.call((class.clone(), ctx))
+            f.call(class.clone())
         }).map_err(Error::Lua)
     }
 }
