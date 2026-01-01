@@ -60,6 +60,9 @@ build.render = function(template, args)
 end
 
 build.runCargo = function(cmd, ctx, args2, env)
+    if not bp3d.files.exists(ctx.path:join("Cargo.toml")) then
+        return
+    end
     local args = {
         cmd,
         "--target",
