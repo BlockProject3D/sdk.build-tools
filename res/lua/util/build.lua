@@ -54,7 +54,7 @@ end
 
 build.render = function(template, args)
     for k, v in pairs(args) do
-        bp3d.util.utf8.replace(template, "{" .. k .. "}", v)
+        template = bp3d.util.utf8.replace(template, "{" .. k .. "}", v)
     end
     return template
 end
