@@ -59,7 +59,7 @@ artifact.findDynamicLibraries = function(artifacts, targetPath)
     local libs = artifact.find(artifacts, "lib::dynamic")
     for _, v in pairs(libs) do
         table.insert(res, {
-            name = v:name(),
+            name = v:path():name(),
             path = v:path()
         })
     end
