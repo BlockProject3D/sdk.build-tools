@@ -26,9 +26,9 @@
 -- NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 -- SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-local artifacts = {}
+local artifact = {}
 
-artifacts.findFirst = function(artifacts, type)
+artifact.findFirst = function(artifacts, type)
     for _, v in pairs(artifacts) do
         if v:ty() == type then
             return v
@@ -37,7 +37,7 @@ artifacts.findFirst = function(artifacts, type)
     return nil
 end
 
-artifacts.find = function(artifacts, type)
+artifact.find = function(artifacts, type)
     local res = {}
     for k, v in pairs(artifacts) do
         if v:ty() == type then
@@ -47,4 +47,33 @@ artifacts.find = function(artifacts, type)
     return res
 end
 
-return artifacts
+artifact.contains = function(artifacts, name)
+    for _, v in pairs(artifacts) do
+        if v:name() == name then return true end
+    end
+    return false
+end
+
+artifact.findDynamicLibraries = function(artifacts, targetPath)
+    local res = {}
+    local libs = artifact.find(artifacts, "lib::dynamic")
+    for _, v in pairs(libs) do
+        table.insert(res, {
+            name = v:name(),
+            path = v:path()
+        })
+    end
+    local files = bp3d.files.list(targetPath)
+    for _, v in ipairs(files) do
+        local ext = v.path:extension()
+        if v.type == "file" and (ext == "dylib" or ext == "dll" or ext == "so") and not artifact.contains(artifacts, v.name) then
+            table.insert(res, {
+                name = v.name,
+                path = v.path
+            })
+        end
+    end
+    return res
+end
+
+return artifact

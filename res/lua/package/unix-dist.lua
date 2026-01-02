@@ -51,27 +51,12 @@ function UnixDist:packageTarget(ctx, artifacts)
     end
 
     -- Package libraries.
-    local libs = artifact.find(artifacts, "lib::dynamic")
+    local libs = artifact.findDynamicLibraries(artifacts, targetPath)
     local libDir = distPath:join("lib")
     if bp3d.util.table.count(libs) > 0 then
         print("Packaging libraries...")
         build.clean(libDir)
         for _, v in pairs(libs) do
-            bp3d.files.copyFile(v:path(), libDir:join(v:name()))
-        end
-    end
-    local files = bp3d.files.list(targetPath)
-    local hasLibs = false
-    for _, v in ipairs(files) do
-        local ext = v.path:extension()
-        if v.type == "file" and (ext == "dylib" or ext == "dll" or ext == "so") then
-            if not hasLibs then
-                if bp3d.util.table.count(libs) == 0 then
-                    print("Packaging libraries...")
-                    build.clean(libDir)
-                end
-                hasLibs = true
-            end
             bp3d.files.copyFile(v.path, libDir:join(v.name))
         end
     end
