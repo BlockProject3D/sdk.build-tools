@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -55,7 +55,7 @@ impl Display for Error {
 impl std::error::Error for Error {}
 
 pub fn parse_manifest<T: DeserializeOwned>(root: &Path) -> Result<T, Error> {
-    let str = std::fs::read_to_string(root.join("Cargo.toml")).map_err(Error::Io)?;
+    let str = std::fs::read_to_string(root.join("Cargo.toml")).or_else(|_| std::fs::read_to_string(root.join("bp3d-package.toml"))).map_err(Error::Io)?;
     let ext: ManifestExtension<T> = toml::from_str(&str).map_err(Error::Toml)?;
     Ok(ext.value)
 }
