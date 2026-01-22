@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -45,6 +45,13 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn get_exe_path() -> SandboxPathBuf {
+        let exe = get_executable_path().unwrap();
+        SandboxPathBuf::from_path_unchecked(exe.join("bp3d"))
+    }
+}
+
 pub struct FilesLib;
 
 impl Lib for FilesLib {
@@ -52,7 +59,8 @@ impl Lib for FilesLib {
 
     fn load(&self, namespace: &mut Namespace) -> bp3d_lua::vm::Result<()> {
         namespace.add([
-            ("getResourcesPath", RFunction::wrap(get_res_path))
+            ("getResourcesPath", RFunction::wrap(get_res_path)),
+            ("getExecutablePath", RFunction::wrap(get_exe_path))
         ])
     }
 }
