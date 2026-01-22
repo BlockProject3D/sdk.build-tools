@@ -88,4 +88,28 @@ build.runCargo = function(cmd, ctx, args2, env)
     })
 end
 
+build.runBP3D = function(subPath, cmd, ctx, args)
+    local exe = bp3d.build.files.getExecutablePath()
+    local args1 = { cmd }
+    if ctx.configuration then
+        bp3d.util.table.concat(args1, { "-c", ctx.configuration })
+    end
+    if ctx.targets then
+        for _, v in ipairs(ctx.targets) do
+            bp3d.util.table.concat(args1, { "-t", v })
+        end
+    elseif ctx.target then
+        bp3d.util.table.concat(args1, { "-t", ctx.target })
+    end
+    if ctx.features then
+        for _, v in ipairs(ctx.features) do
+            bp3d.util.table.concat(args1, { "-f", v })
+        end
+    else
+        table.insert(args1, "-a")
+    end
+    bp3d.util.table.concat(args1, args)
+    build.run(exe, args1, { workdir = ctx.path:join(subPath) })
+end
+
 return build
