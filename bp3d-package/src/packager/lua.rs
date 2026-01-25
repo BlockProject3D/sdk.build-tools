@@ -33,6 +33,7 @@ use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::value::types::Function;
 use bp3d_lua::vm::Vm;
 use bp3d_util::simple_error;
+use bp3d_build::lua::core::dump_backtrace;
 use bp3d_build::system::artifact::List;
 use bp3d_build::system::Features;
 use crate::packager::Context;
@@ -86,7 +87,7 @@ impl<'a> Packager<'a> for Lua<'a> {
         vm.with_class(|vm, class| {
             let f: Function = class.get(c"init2")?;
             let ctx = create_context(vm, context)?;
-            f.call((class.clone(), ctx))
+            dump_backtrace(f.call((class.clone(), ctx)))
         }).map_err(Error::Lua)?;
         Ok(Lua {
             context,
@@ -120,7 +121,7 @@ impl<'a> Packager<'a> for Lua<'a> {
     fn do_build(&self) -> Result<(), Self::Error> {
         self.vm.with_class(|_, class| {
             let f: Function = class.get(c"build")?;
-            f.call(class.clone())
+            dump_backtrace(f.call(class.clone()))
         }).map_err(Error::Lua)
     }
 
@@ -136,7 +137,7 @@ impl<'a> Packager<'a> for Lua<'a> {
     fn do_package(&self) -> Result<(), Self::Error> {
         self.vm.with_class(|_, class| {
             let f: Function = class.get(c"package")?;
-            f.call(class.clone())
+            dump_backtrace(f.call(class.clone()))
         }).map_err(Error::Lua)
     }
 }

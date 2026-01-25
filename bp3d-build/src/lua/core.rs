@@ -55,6 +55,15 @@ use crate::system::{Context, Features};
 use bp3d_lua::libs::files::chroot;
 use bp3d_lua::libs::files::chroot::Permissions;
 
+pub fn dump_backtrace<T>(res: Result<T>) -> Result<T> {
+    if let Err(e) = &res {
+        if let Error::Runtime(err) = e {
+            println!("{}", err.backtrace());
+        }
+    }
+    res
+}
+
 struct SourcePath(PathBuf);
 
 impl SourcePath {
@@ -81,7 +90,7 @@ impl Source for SourcePath {
         let path = self.0.join(path);
         let path = path.ensure_extension("lua");
         debug!("Injecting lua file at path: {:?}", &path);
-        vm.run(Script::from_path(path).map_err(|e| Error::Loader(e.to_string()))?)
+        dump_backtrace(vm.run(Script::from_path(path).map_err(|e| Error::Loader(e.to_string()))?))
     }
 }
 
@@ -157,7 +166,7 @@ impl Vm {
             }
             let class = self.main_class.as_ref().unwrap().push(vm);
             let f: Function = class.get(c"init")?;
-            f.call((class.clone(), args2))
+            dump_backtrace(f.call((class.clone(), args2)))
         })
     }
 
@@ -173,7 +182,7 @@ impl Vm {
             }
             ctx.set(c"features", features2)?;
         }
-        f.call((class, ctx, arg))
+        dump_backtrace(f.call((class, ctx, arg)))
     }
 
     fn _call2<'a, A: IntoLua, R: FromLua<'a>>(class: Table<'a>, vm: &bp3d_lua::vm::Vm, f: &'a Function<'a>, context: &Context, targets: &[&str], arg: A) -> Result<R> {
@@ -192,7 +201,7 @@ impl Vm {
             }
             ctx.set(c"features", features2)?;
         }
-        f.call((class, ctx, arg))
+        dump_backtrace(f.call((class, ctx, arg)))
     }
 
     pub fn call_userdata<R: 'static + UserDataImmutable + Clone>(&self, name: &str, context: &Context, target: &str) -> Result<R> {
