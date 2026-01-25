@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -47,9 +47,15 @@ impl<'a> Deref for Features<'a> {
     }
 }
 
-pub struct Context<'a> {
+/*pub struct Context<'a> {
     pub path: &'a Path,
     pub target: &'a str,
+    pub configuration: &'a str,
+    pub features: Features<'a>
+}*/
+
+pub struct Context<'a> {
+    pub path: &'a Path,
     pub configuration: &'a str,
     pub features: Features<'a>
 }
@@ -59,16 +65,16 @@ pub trait BuildSystem {
     type Package: Package;
 
     /// Configure the build.
-    fn configure(&self, package: &Self::Package, ctx: &Context) -> Result<(), Self::Error>;
+    fn configure(&self, package: &Self::Package, ctx: &Context, targets: &[&str]) -> Result<(), Self::Error>;
 
     /// Build the project.
-    fn build(&self, package: &Self::Package, ctx: &Context) -> Result<(), Self::Error>;
+    fn build(&self, package: &Self::Package, ctx: &Context, target: &str) -> Result<(), Self::Error>;
 
     /// Prepares the project for packaging to a specific target.
     ///
     /// This function is intended to build a flat list of artifacts which can be used by
     /// bp3d-package.
-    fn pre_package(&self, package: &Self::Package, ctx: &Context) -> Result<crate::system::artifact::List, Self::Error>;
+    fn pre_package(&self, package: &Self::Package, ctx: &Context, target: &str) -> Result<crate::system::artifact::List, Self::Error>;
 }
 
 pub trait Package {

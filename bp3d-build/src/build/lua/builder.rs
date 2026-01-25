@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -37,17 +37,17 @@ impl BuildSystem for LuaBuilder {
     type Error = bp3d_lua::vm::error::Error;
     type Package = LuaPackage;
 
-    fn configure(&self, package: &Self::Package, ctx: &Context) -> Result<(), Self::Error> {
+    fn configure(&self, package: &Self::Package, ctx: &Context, targets: &[&str]) -> Result<(), Self::Error> {
         package.vm().call_main(0, [].into_iter())?;
-        package.vm().call_context("configure", ctx, ())
+        package.vm().call_target_list("configure", ctx, targets, ())
     }
 
-    fn build(&self, package: &Self::Package, ctx: &Context) -> Result<(), Self::Error> {
-        package.vm().call_context("build", ctx, ())
+    fn build(&self, package: &Self::Package, ctx: &Context, target: &str) -> Result<(), Self::Error> {
+        package.vm().call_context("build", ctx, target, ())
     }
 
-    fn pre_package(&self, package: &Self::Package, ctx: &Context) -> Result<List, Self::Error> {
-        let lst: LuaList = package.vm().call_userdata("prePackage", ctx)?;
+    fn pre_package(&self, package: &Self::Package, ctx: &Context, target: &str) -> Result<List, Self::Error> {
+        let lst: LuaList = package.vm().call_userdata("prePackage", ctx, target)?;
         Ok(lst.into_inner())
     }
 }

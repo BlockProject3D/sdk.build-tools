@@ -102,7 +102,6 @@ impl<'a> Packager<'a> for Lua<'a> {
         if flag {
             let ctx = bp3d_build::system::Context {
                 path: self.context.path,
-                target,
                 configuration: self.context.configuration,
                 features: Features::All
             };
@@ -111,7 +110,7 @@ impl<'a> Packager<'a> for Lua<'a> {
                 build_target(&self.context, target).map(|v| LuaList::from(v)).map_err(Error::Build)
             });
             self.vm.get().set_global(c"baseBuild", f)?;
-            let value: LuaList = self.vm.call_userdata("buildTarget", &ctx).map_err(Error::Lua)?;
+            let value: LuaList = self.vm.call_userdata("buildTarget", &ctx, target).map_err(Error::Lua)?;
             Ok(value.into_inner())
         } else {
             build_target(&self.context, target).map_err(Error::Build)
@@ -128,11 +127,10 @@ impl<'a> Packager<'a> for Lua<'a> {
     fn do_package_target(&self, list: &List, target: &str) -> Result<(), Self::Error> {
         let ctx = bp3d_build::system::Context {
             path: self.context.path,
-            target,
             configuration: self.context.configuration,
             features: Features::All
         };
-        self.vm.call_context("packageTarget", &ctx, list.clone()).map_err(Error::Lua)
+        self.vm.call_context("packageTarget", &ctx, target, list.clone()).map_err(Error::Lua)
     }
 
     fn do_package(&self) -> Result<(), Self::Error> {

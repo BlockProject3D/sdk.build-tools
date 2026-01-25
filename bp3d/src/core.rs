@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -43,47 +43,35 @@ pub struct Context<'a> {
     pub features: Features<'a>
 }
 
-fn run_for_each_target(ctx: &Context, f: impl Fn(&bp3d_build::system::Context) -> core::Result<()>) -> core::Result<()> {
-    for target in ctx.targets {
-        let ctx = bp3d_build::system::Context {
-            path: ctx.path,
-            target,
-            configuration: ctx.configuration,
-            features: ctx.features
-        };
-        f(&ctx)?;
-    }
-    Ok(())
-}
-
 fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager: Option<String>) -> core::Result<()> {
     debug!("Running command: {:?} for package {}-{}", cmd, tool.package().get_name(), tool.package().get_version());
+    let ctx2 = bp3d_build::system::Context {
+        path: ctx.path,
+        configuration: ctx.configuration,
+        features: ctx.features
+    };
     match cmd {
         Command::Configure => {
-            run_for_each_target(&ctx, |ctx| {
-                info!("Configuring package for target {}...", ctx.target);
-                tool.configure(&ctx)
-            })
+            info!("Configuring package for targets {:?}...", ctx.targets);
+            tool.configure(&ctx2, ctx.targets)
         },
         Command::Build => {
-            run_for_each_target(&ctx, |ctx| {
-                info!("Configuring package for target {}...", ctx.target);
-                tool.configure(&ctx)
-            })?;
-            run_for_each_target(&ctx, |ctx| {
-                info!("Building package for target {}...", ctx.target);
-                tool.build(&ctx)
-            })
+            info!("Configuring package for targets {:?}...", ctx.targets);
+            tool.configure(&ctx2, ctx.targets)?;
+            for target in ctx.targets {
+                info!("Building package for target {}...", target);
+                tool.build(&ctx2, target)?;
+            }
+            Ok(())
         }
         Command::PrePackage => {
-            run_for_each_target(&ctx, |ctx| {
-                info!("Configuring package for target {}...", ctx.target);
-                tool.configure(&ctx)
-            })?;
-            run_for_each_target(&ctx, |ctx| {
-                info!("Pre-packaging package for target {}...", ctx.target);
-                tool.pre_package(&ctx).map(|_| ())
-            })
+            info!("Configuring package for targets {:?}...", ctx.targets);
+            tool.configure(&ctx2, ctx.targets)?;
+            for target in ctx.targets {
+                info!("Building package for target {}...", target);
+                tool.pre_package(&ctx2, target)?;
+            }
+            Ok(())
         }
         Command::Package => {
             if let Some(packager_name) = packager {

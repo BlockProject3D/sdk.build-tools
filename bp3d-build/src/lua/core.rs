@@ -161,10 +161,10 @@ impl Vm {
         })
     }
 
-    fn _call<'a, A: IntoLua, R: FromLua<'a>>(class: Table<'a>, vm: &bp3d_lua::vm::Vm, f: &'a Function<'a>, context: &Context, arg: A) -> Result<R> {
+    fn _call<'a, A: IntoLua, R: FromLua<'a>>(class: Table<'a>, vm: &bp3d_lua::vm::Vm, f: &'a Function<'a>, context: &Context, target: &str, arg: A) -> Result<R> {
         let mut ctx = Table::with_capacity(vm, 0, 4);
         ctx.set(c"path", SandboxPath::from_path_unchecked(context.path))?;
-        ctx.set(c"target", context.target)?;
+        ctx.set(c"target", target)?;
         ctx.set(c"configuration", context.configuration)?;
         if let Features::List(features) = context.features {
             let mut features2 = Table::with_capacity(vm, features.len(), 0);
@@ -176,22 +176,50 @@ impl Vm {
         f.call((class, ctx, arg))
     }
 
-    pub fn call_userdata<R: 'static + UserDataImmutable + Clone>(&self, name: &str, context: &Context) -> Result<R> {
+    fn _call2<'a, A: IntoLua, R: FromLua<'a>>(class: Table<'a>, vm: &bp3d_lua::vm::Vm, f: &'a Function<'a>, context: &Context, targets: &[&str], arg: A) -> Result<R> {
+        let mut ctx = Table::with_capacity(vm, 0, 4);
+        ctx.set(c"path", SandboxPath::from_path_unchecked(context.path))?;
+        let mut targets2 = Table::with_capacity(vm, targets.len(), 0);
+        for target in targets {
+            targets2.push(*target)?;
+        }
+        ctx.set(c"targets", targets2)?;
+        ctx.set(c"configuration", context.configuration)?;
+        if let Features::List(features) = context.features {
+            let mut features2 = Table::with_capacity(vm, features.len(), 0);
+            for feature in features {
+                features2.push(*feature)?;
+            }
+            ctx.set(c"features", features2)?;
+        }
+        f.call((class, ctx, arg))
+    }
+
+    pub fn call_userdata<R: 'static + UserDataImmutable + Clone>(&self, name: &str, context: &Context, target: &str) -> Result<R> {
         assert!(self.main_class.is_some());
         self.vm.scope(|vm| {
             let class = self.main_class.as_ref().unwrap().push(vm);
             let f: Function = class.get(name)?;
-            let obj: &R = Self::_call(class.clone(), vm, &f, context, ())?;
+            let obj: &R = Self::_call(class.clone(), vm, &f, context, target, ())?;
             Ok(obj.clone())
         })
     }
 
-    pub fn call_context<A: IntoLua>(&self, name: &str, context: &Context, arg: A) -> Result<()> {
+    pub fn call_target_list<A: IntoLua>(&self, name: &str, context: &Context, targets: &[&str], arg: A) -> Result<()> {
         assert!(self.main_class.is_some());
         self.vm.scope(|vm| {
             let class = self.main_class.as_ref().unwrap().push(vm);
             let f: Function = class.get(name)?;
-            Self::_call(class.clone(), vm, &f, context, arg)
+            Self::_call2(class.clone(), vm, &f, context, targets, arg)
+        })
+    }
+
+    pub fn call_context<A: IntoLua>(&self, name: &str, context: &Context, target: &str, arg: A) -> Result<()> {
+        assert!(self.main_class.is_some());
+        self.vm.scope(|vm| {
+            let class = self.main_class.as_ref().unwrap().push(vm);
+            let f: Function = class.get(name)?;
+            Self::_call(class.clone(), vm, &f, context, target, arg)
         })
     }
 

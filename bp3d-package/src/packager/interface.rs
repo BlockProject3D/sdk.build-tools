@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -50,12 +50,11 @@ impl<'a> Context<'a> {
 pub fn build_target(context: &Context, target: &str) -> Result<List, bp3d_build::core::Error> {
     let ctx = bp3d_build::system::Context {
         path: context.path,
-        target,
         configuration: context.configuration,
         features: Features::All
     };
-    context.tool.configure(&ctx)?;
-    let data = context.tool.pre_package(&ctx)?;
+    //FIXME: configure is not called at this point.
+    let data = context.tool.pre_package(&ctx, target)?;
     Ok(data)
 }
 

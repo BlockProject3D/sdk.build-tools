@@ -33,8 +33,8 @@ use super::Error;
 
 pub struct CargoBuilder;
 
-fn gen_base_command(cmd: &mut Command, ctx: &Context) {
-    cmd.arg("--target").arg(ctx.target).current_dir(ctx.path);
+fn gen_base_command(cmd: &mut Command, ctx: &Context, target: &str) {
+    cmd.arg("--target").arg(target).current_dir(ctx.path);
     if ctx.configuration == "release" {
         cmd.arg("--release");
     }
@@ -52,11 +52,11 @@ impl BuildSystem for CargoBuilder {
     type Error = Error;
     type Package = super::CargoWorkspace;
 
-    fn configure(&self, _: &Self::Package, _: &Context) -> Result<(), Self::Error> {
+    fn configure(&self, _: &Self::Package, _: &Context, _: &[&str]) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn build(&self, _: &Self::Package, ctx: &Context) -> Result<(), Self::Error> {
+    fn build(&self, _: &Self::Package, ctx: &Context, _: &str) -> Result<(), Self::Error> {
         let mut cmd = Command::new("cargo");
         cmd.arg("build").current_dir(ctx.path);
         if ctx.configuration == "release" {
@@ -74,13 +74,13 @@ impl BuildSystem for CargoBuilder {
         Ok(())
     }
 
-    fn pre_package(&self, package: &Self::Package, ctx: &Context) -> Result<List, Self::Error> {
+    fn pre_package(&self, package: &Self::Package, ctx: &Context, target: &str) -> Result<List, Self::Error> {
         let mut cmd = Command::new("cargo");
         cmd.arg("build");
-        gen_base_command(&mut cmd, ctx);
+        gen_base_command(&mut cmd, ctx, target);
         cmd.status().map_err(Error::Io)?;
         let mut artifacts = List::new();
-        let target_folder = ctx.path.join("target").join(ctx.target).join(ctx.configuration);
+        let target_folder = ctx.path.join("target").join(target).join(ctx.configuration);
         for lib in package.libs() {
             let dy = Artifact::find_lib(&target_folder, lib, LibType::Dynamic);
             let st = Artifact::find_lib(&target_folder, lib, LibType::Static);
