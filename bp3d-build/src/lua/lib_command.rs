@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -46,7 +46,7 @@ simple_error! {
 }
 
 struct CommandInfo {
-    pub exe: String,
+    pub exe: SandboxPathBuf,
     pub args: Option<Vec<SandboxPathBuf>>,
     pub env: Option<HashMap<String, String>>,
     pub workdir: Option<PathBuf>
@@ -67,7 +67,9 @@ impl CommandInfo {
 
 impl CommandInfo {
     pub fn into_command(self) -> Command {
-        let mut cmd = Command::new(&self.exe);
+        println!("{:?}", self.exe.as_os_str());
+        println!("{:?}", self.workdir);
+        let mut cmd = Command::new(self.exe.as_os_str());
         if let Some(args) = self.args {
             cmd.args(args.iter().map(|v| v.as_os_str()));
         }
