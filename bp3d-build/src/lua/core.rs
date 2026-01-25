@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -111,12 +111,13 @@ impl Vm {
         provider.add_source("bp3d".into(), src);
         debug!("Project root = {:?}", path);
         debug!("Project name = {:?}", path.file_name());
-        //FIXME: This will always fail as the project path is always ./ (use absolute_path)
-        if let Some(name) = path.file_name().map(|v| v.to_str()).flatten() {
-            let path = path.join("bp3d-build");
-            debug!({name}, "Adding project lua path: {:?}...", path);
-            paths.push(path.clone());
-            provider.add_source(name.into(), SourcePath::new(path));
+        if let Ok(path) = bp3d_os::fs::get_absolute_path(path) {
+            if let Some(name) = path.file_name().map(|v| v.to_str()).flatten() {
+                let path = path.join("bp3d-build");
+                debug!({name}, "Adding project lua path: {:?}...", path);
+                paths.push(path.clone());
+                provider.add_source(name.into(), SourcePath::new(path));
+            }
         }
         let vm = RootVm::new();
         Lua::new().provider(provider.clone()).build().register(&vm)?;
