@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use bp3d_lua::decl_lib_func;
-use bp3d_lua::libs::files::SandboxPathBuf;
+use bp3d_lua::libs::files::{SandboxPath, SandboxPathBuf};
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::function::types::RFunction;
@@ -52,6 +52,18 @@ decl_lib_func! {
     }
 }
 
+decl_lib_func! {
+    fn to_string<'a>(vm: &Vm, path: SandboxPath<'a>) -> Option<String> {
+        let path = path.to_path(vm).ok()?;
+        if path.starts_with(".") {
+            let path = bp3d_os::fs::get_absolute_path(".").ok()?.join(path);
+            path.to_str().map(|v| v.into())
+        } else {
+            path.to_str().map(|v| v.into())
+        }
+    }
+}
+
 pub struct FilesLib;
 
 impl Lib for FilesLib {
@@ -60,7 +72,8 @@ impl Lib for FilesLib {
     fn load(&self, namespace: &mut Namespace) -> bp3d_lua::vm::Result<()> {
         namespace.add([
             ("getResourcesPath", RFunction::wrap(get_res_path)),
-            ("getExecutablePath", RFunction::wrap(get_exe_path))
+            ("getExecutablePath", RFunction::wrap(get_exe_path)),
+            ("toString", RFunction::wrap(to_string))
         ])
     }
 }
