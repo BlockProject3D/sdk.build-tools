@@ -67,8 +67,6 @@ impl CommandInfo {
 
 impl CommandInfo {
     pub fn into_command(self) -> Command {
-        println!("{:?}", self.exe.as_os_str());
-        println!("{:?}", self.workdir);
         let mut cmd = Command::new(self.exe.as_os_str());
         if let Some(args) = self.args {
             cmd.args(args.iter().map(|v| v.as_os_str()));
