@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -36,6 +36,7 @@ const SUPPORTED_TARGETS: &[Cow<str>] = &[
     static_string("aarch64-apple-darwin"),
     static_string("x86_64-apple-darwin"),
     static_string("aarch64-apple-ios"),
+    static_string("aarch64-apple-ios-sim"),
     static_string("aarch64-unknown-linux-gnu"),
     static_string("x86_64-unknown-linux-gnu"),
     static_string("aarch64-pc-windows-msvc"),
