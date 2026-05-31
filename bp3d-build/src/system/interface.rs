@@ -77,12 +77,28 @@ pub trait BuildSystem {
     fn pre_package(&self, package: &Self::Package, ctx: &Context, target: &str) -> Result<crate::system::artifact::List, Self::Error>;
 }
 
-pub trait Package {
-    /// Returns the name of the package.
+pub trait Component {
     fn get_name(&self) -> &str;
 
-    /// Returns the version of this package.
     fn get_version(&self) -> &str;
+
+    fn get_short_name(&self) -> &str;
+
+    fn get_description(&self) -> Option<&str>;
+}
+
+pub trait Package {
+    /// Returns the name of the package.
+    fn get_primary_name(&self) -> &str;
+
+    /// Returns the version of this package.
+    fn get_primary_version(&self) -> &str;
+
+    /// Returns the number of sub packages.
+    fn get_components(&self) -> usize;
+
+    /// Returns a sub package by index.
+    fn get_component(&self, index: usize) -> &dyn Component;
 
     /// Returns the list of available targets.
     fn targets(&self) -> &[Cow<'_, str>];

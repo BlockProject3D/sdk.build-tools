@@ -29,7 +29,7 @@
 use std::borrow::Cow;
 use std::path::Path;
 use cargo_toml::Manifest;
-use crate::system::{static_string, Package};
+use crate::system::{static_string, Component, Package};
 use super::Error;
 
 const SUPPORTED_TARGETS: &[Cow<str>] = &[
@@ -66,19 +66,20 @@ impl CargoWorkspace {
                 if v.members.len() == 0 {
                     // Broken cargo_toml which believes a workspace exists when it does not!
                     let package = CargoPackage::open(manifest);
-                    core_name = Some(package.get_name().into());
-                    core_version = Some(package.get_version().into());
+                    core_name = Some(package.get_primary_name().into());
+                    core_version = Some(package.get_primary_version().into());
                     packages.push(package)
                 } else {
                     for member in &v.members {
-                        let package = CargoPackage::load(&root.join(&member).join("Cargo.toml"))?;
+                        let mut package = CargoPackage::load(&root.join(&member).join("Cargo.toml"))?;
+                        package.short_name = member.clone();
                         if core_name.is_none() {
-                            core_name = Some(package.get_name().into());
-                            core_version = Some(package.get_version().into());
+                            core_name = Some(package.get_primary_name().into());
+                            core_version = Some(package.get_primary_version().into());
                         }
                         if member == "core" {
-                            core_name = Some(package.get_name().into());
-                            core_version = Some(package.get_version().into());
+                            core_name = Some(package.get_primary_name().into());
+                            core_version = Some(package.get_primary_version().into());
                         }
                         packages.push(package);
                     }
@@ -86,8 +87,8 @@ impl CargoWorkspace {
             },
             None => {
                 let package = CargoPackage::open(manifest);
-                core_name = Some(package.get_name().into());
-                core_version = Some(package.get_version().into());
+                core_name = Some(package.get_primary_name().into());
+                core_version = Some(package.get_primary_version().into());
                 packages.push(package)
             }
         }
@@ -105,12 +106,20 @@ impl CargoWorkspace {
 }
 
 impl Package for CargoWorkspace {
-    fn get_name(&self) -> &str {
+    fn get_primary_name(&self) -> &str {
         &self.core_name
     }
 
-    fn get_version(&self) -> &str {
+    fn get_primary_version(&self) -> &str {
         &self.core_version
+    }
+
+    fn get_components(&self) -> usize {
+        self.packages.len()
+    }
+
+    fn get_component(&self, index: usize) -> &dyn Component {
+        &self.packages[index]
     }
 
     fn targets(&self) -> &[Cow<'_, str>] {
@@ -128,6 +137,7 @@ impl Package for CargoWorkspace {
 
 struct CargoPackage {
     manifest: Manifest,
+    short_name: String,
     features: Vec<Cow<'static, str>>
 }
 
@@ -136,6 +146,7 @@ impl CargoPackage {
         let features = manifest.features.iter().map(|(name, _)| name.clone().into()).collect();
         CargoPackage {
             manifest,
+            short_name: "".into(),
             features
         }
     }
@@ -154,13 +165,43 @@ impl CargoPackage {
     }
 }
 
-impl Package for CargoPackage {
+impl Component for CargoPackage {
     fn get_name(&self) -> &str {
         self.manifest.package().name()
     }
 
     fn get_version(&self) -> &str {
         self.manifest.package().version()
+    }
+
+    fn get_short_name(&self) -> &str {
+        if self.short_name.is_empty() {
+            self.get_name()
+        } else {
+            &self.short_name
+        }
+    }
+
+    fn get_description(&self) -> Option<&str> {
+        self.manifest.package().description()
+    }
+}
+
+impl Package for CargoPackage {
+    fn get_primary_name(&self) -> &str {
+        self.manifest.package().name()
+    }
+
+    fn get_primary_version(&self) -> &str {
+        self.manifest.package().version()
+    }
+
+    fn get_component(&self, _: usize) -> &dyn Component {
+        panic!("No subpackages exists on a single cargo crate")
+    }
+
+    fn get_components(&self) -> usize {
+        0
     }
 
     fn targets(&self) -> &[Cow<'_, str>] {

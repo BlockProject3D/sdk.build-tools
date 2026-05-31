@@ -44,7 +44,7 @@ pub struct Context<'a> {
 }
 
 fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager: Option<String>) -> core::Result<()> {
-    debug!("Running command: {:?} for package {}-{}", cmd, tool.package().get_name(), tool.package().get_version());
+    debug!("Running command: {:?} for package {}-{}", cmd, tool.package().get_primary_name(), tool.package().get_primary_version());
     let ctx2 = bp3d_build::system::Context {
         path: ctx.path,
         configuration: ctx.configuration,

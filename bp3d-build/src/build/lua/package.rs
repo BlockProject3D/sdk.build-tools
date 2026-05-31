@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -28,14 +28,41 @@
 
 use std::borrow::Cow;
 use std::path::Path;
+use bp3d_lua::vm::table::Table;
 use crate::lua::core::Vm;
-use crate::system::Package;
+use crate::system::{Component, Package};
+
+struct ComponentInfo {
+    name: String,
+    version: String,
+    short_name: String,
+    description: Option<String>
+}
+
+impl Component for ComponentInfo {
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    fn get_version(&self) -> &str {
+        &self.version
+    }
+
+    fn get_short_name(&self) -> &str {
+        &self.short_name
+    }
+
+    fn get_description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+}
 
 pub struct LuaPackage {
     vm: Vm,
     targets: Vec<Cow<'static, str>>,
     configurations: Vec<Cow<'static, str>>,
     features: Vec<Cow<'static, str>>,
+    components: Vec<ComponentInfo>,
     name: String,
     version: String,
 }
@@ -50,6 +77,7 @@ impl LuaPackage {
         let mut features: Vec<Cow<'static, str>> = Vec::new();
         let mut name: String = String::new();
         let mut version: String = String::new();
+        let mut comps = Vec::new();
         vm.with_class(|_, class| {
             let targets1: Vec<String> = class.get(c"targets")?;
             let configurations1: Vec<String> = class.get(c"configurations")?;
@@ -59,6 +87,18 @@ impl LuaPackage {
             features = features1.into_iter().map(|v| Cow::Owned(v)).collect();
             name = class.get(c"name")?;
             version = class.get(c"version")?;
+            let components: Option<Table> = class.get("components")?;
+            if let Some(mut components) = components {
+                for (short_name, value) in components.iter() {
+                    let tbl: Table = value.get()?;
+                    comps.push(ComponentInfo {
+                        short_name: short_name.get()?,
+                        name: tbl.get("name")?,
+                        version: tbl.get("version")?,
+                        description: tbl.get("description")?
+                    })
+                }
+            }
             Ok(())
         })?;
         Ok(LuaPackage {
@@ -67,7 +107,8 @@ impl LuaPackage {
             configurations,
             features,
             name,
-            version
+            version,
+            components: comps
         })
     }
 
@@ -77,12 +118,20 @@ impl LuaPackage {
 }
 
 impl Package for LuaPackage {
-    fn get_name(&self) -> &str {
+    fn get_primary_name(&self) -> &str {
         &self.name
     }
 
-    fn get_version(&self) -> &str {
+    fn get_primary_version(&self) -> &str {
         &self.version
+    }
+
+    fn get_components(&self) -> usize {
+        self.components.len()
+    }
+
+    fn get_component(&self, index: usize) -> &dyn Component {
+        &self.components[index]
     }
 
     fn targets(&self) -> &[Cow<'_, str>] {
