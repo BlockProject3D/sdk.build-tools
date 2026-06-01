@@ -84,7 +84,7 @@ fn create_context<'a>(vm: &'a Vm, context: &Context) -> bp3d_lua::vm::Result<Tab
 impl<'a> Packager<'a> for Lua<'a> {
     const NAME: &'static str = "Lua";
     type Error = Error;
-    type Config = HashMap<String, String>;
+    type Config = Option<HashMap<String, String>>;
 
     #[allow(dependency_on_unit_never_type_fallback)]
     fn new(config: Self::Config, context: &'a Context<'a>) -> Result<Self, Self::Error> {
@@ -95,7 +95,9 @@ impl<'a> Packager<'a> for Lua<'a> {
         }
         let path = path.unwrap();
         vm.run(&path)?;
-        vm.call_main(config.len(), config.iter().map(|(k, v)| (&**k, &**v)))?;
+        if let Some(config) = config {
+            vm.call_main(config.len(), config.iter().map(|(k, v)| (&**k, &**v)))?;
+        }
         vm.with_class(|vm, class| {
             let f: Function = class.get(c"init2")?;
             let ctx = create_context(vm, context)?;
