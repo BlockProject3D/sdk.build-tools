@@ -90,8 +90,6 @@ impl LuaPackage {
             targets = targets1.into_iter().map(|v| Cow::Owned(v)).collect();
             configurations = configurations1.into_iter().map(|v| Cow::Owned(v)).collect();
             features = features1.into_iter().map(|v| Cow::Owned(v)).collect();
-            name = class.get(c"name")?;
-            version = class.get(c"version")?;
             let components: Option<Table> = class.get("components")?;
             if let Some(mut components) = components {
                 for (short_name, value) in components.iter() {
@@ -104,6 +102,13 @@ impl LuaPackage {
                         private: tbl.get("private")?
                     })
                 }
+                if !comps.is_empty() {
+                    name = comps.first().unwrap().name.clone();
+                    version = comps.first().unwrap().version.clone();
+                }
+            } else {
+                name = class.get(c"name")?;
+                version = class.get(c"version")?;
             }
             Ok(())
         })?;
