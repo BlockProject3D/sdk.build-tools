@@ -28,7 +28,7 @@
 
 use std::borrow::Cow;
 use std::path::Path;
-use cargo_toml::Manifest;
+use cargo_toml::{Manifest, Publish};
 use crate::system::{static_string, Component, Package};
 use super::Error;
 
@@ -184,6 +184,13 @@ impl Component for CargoPackage {
 
     fn get_description(&self) -> Option<&str> {
         self.manifest.package().description()
+    }
+
+    fn is_public(&self) -> bool {
+        self.manifest.package().publish.get().map(|v| match v {
+            Publish::Flag(v) => *v,
+            Publish::Registry(_) => true
+        }).unwrap_or(true)
     }
 }
 

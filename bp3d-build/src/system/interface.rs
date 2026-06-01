@@ -85,6 +85,8 @@ pub trait Component {
     fn get_short_name(&self) -> &str;
 
     fn get_description(&self) -> Option<&str>;
+
+    fn is_public(&self) -> bool;
 }
 
 pub trait Package {

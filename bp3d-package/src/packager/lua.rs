@@ -68,6 +68,7 @@ fn create_context<'a>(vm: &'a Vm, context: &Context) -> bp3d_lua::vm::Result<Tab
             component.set("name", c.get_name())?;
             component.set("version", c.get_version())?;
             component.set("description", c.get_description())?;
+            component.set("public", c.is_public())?;
             components.set(c.get_short_name(), component)?;
         }
         package.set("components", components)?;

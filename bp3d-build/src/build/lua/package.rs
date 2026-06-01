@@ -36,7 +36,8 @@ struct ComponentInfo {
     name: String,
     version: String,
     short_name: String,
-    description: Option<String>
+    description: Option<String>,
+    private: Option<bool>
 }
 
 impl Component for ComponentInfo {
@@ -54,6 +55,10 @@ impl Component for ComponentInfo {
 
     fn get_description(&self) -> Option<&str> {
         self.description.as_deref()
+    }
+
+    fn is_public(&self) -> bool {
+        self.private.unwrap_or(true)
     }
 }
 
@@ -95,7 +100,8 @@ impl LuaPackage {
                         short_name: short_name.get()?,
                         name: tbl.get("name")?,
                         version: tbl.get("version")?,
-                        description: tbl.get("description")?
+                        description: tbl.get("description")?,
+                        private: tbl.get("private")?
                     })
                 }
             }
