@@ -27,15 +27,20 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::HashMap;
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::sync::Mutex;
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::libs::files::{SandboxPath, SandboxPathBuf};
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::function::types::RFunction;
 use bp3d_lua::vm::table::Table;
+use bp3d_lua::vm::thread::value::Thread;
 use bp3d_lua::vm::Vm;
+use bp3d_lua::util::LuaThread;
+use bp3d_lua::util::thread::UnsafeLuaThread;
 use bp3d_util::simple_error;
 
 simple_error! {
@@ -91,6 +96,43 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
+    fn command_spawn(vm: &Vm, table: Table, event_thread: Thread) -> Result<(bool, Option<i32>), Error> {
+        let info = CommandInfo::from_table(vm, &table).map_err(Error::Lua)?;
+        let mut cmd = info.into_command();
+        let mut running = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().map_err(Error::Io)?;
+        let out = running.stdout.take().unwrap();
+        let err = running.stderr.take().unwrap();
+        let event_thread = Mutex::new(unsafe { UnsafeLuaThread::wrap(LuaThread::create(event_thread)) });
+        let val = std::thread::scope(|scope| {
+            let th = scope.spawn(|| {
+                let event_thread = &event_thread;
+                let mut reader = BufReader::new(out).lines();
+                while let Some(line) = reader.next() {
+                    if let Ok(line) = line {
+                        let _ = event_thread.lock().unwrap().as_thread().resume::<()>(("out", line));
+                    }
+                }
+            });
+            let th1 = scope.spawn(|| {
+                let event_thread = &event_thread;
+                let mut reader = BufReader::new(err).lines();
+                while let Some(line) = reader.next() {
+                    if let Ok(line) = line {
+                        let _ = event_thread.lock().unwrap().as_thread().resume::<()>(("err", line));
+                    }
+                }
+            });
+            let status = running.wait().map_err(Error::Io)?;
+            th.join().unwrap();
+            th1.join().unwrap();
+            Ok((status.success(), status.code()))
+        });
+        event_thread.into_inner().unwrap().delete(vm);
+        val
+    }
+}
+
+decl_lib_func! {
     fn command_output(vm: &Vm, table: Table) -> Result<String, Error> {
         let info = CommandInfo::from_table(vm, &table).map_err(Error::Lua)?;
         let mut cmd = info.into_command();
@@ -107,7 +149,8 @@ impl Lib for CommandLib {
     fn load(&self, namespace: &mut Namespace) -> bp3d_lua::vm::Result<()> {
         namespace.add([
             ("run", RFunction::wrap(command_run)),
-            ("output", RFunction::wrap(command_output))
+            ("output", RFunction::wrap(command_output)),
+            ("spawn", RFunction::wrap(command_spawn))
         ])
     }
 }
