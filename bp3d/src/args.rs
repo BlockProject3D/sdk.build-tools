@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -34,7 +34,8 @@ pub enum Command {
     Configure,
     Build,
     PrePackage,
-    Package
+    Package,
+    Run
 }
 
 #[derive(Parser, Debug)]
@@ -58,5 +59,7 @@ pub struct Args {
     #[arg(short = 'p', long = "package", help = "The packager engine to use.")]
     pub package_type: Option<String>,
 
-    pub cmd: Command
+    pub cmd: Command,
+
+    pub other_args: Option<Vec<String>>,
 }

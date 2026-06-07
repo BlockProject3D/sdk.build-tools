@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -49,5 +49,5 @@ fn main() {
         configuration: args.configuration.as_deref().unwrap_or("debug"),
         features: if args.all_features { Features::All } else { Features::List(&features) },
     };
-    dispatch_run(ctx, args.cmd, args.package_type);
+    dispatch_run(ctx, args.cmd, args.package_type, args.other_args);
 }

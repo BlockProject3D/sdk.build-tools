@@ -30,10 +30,12 @@ use std::path::Path;
 use bp3d_debug::{debug, info};
 use bp3d_util::result::ResultExt;
 use bp3d_build::core;
+use bp3d_build::core::Error;
 use bp3d_build::system::Features;
 use bp3d_package::packager::lua::Lua;
 use bp3d_package::packager::PackagerType;
 use bp3d_package::run_packager;
+use bp3d_script::interface::Script;
 use crate::args::Command;
 
 pub struct Context<'a> {
@@ -43,7 +45,7 @@ pub struct Context<'a> {
     pub features: Features<'a>
 }
 
-fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager: Option<String>) -> core::Result<()> {
+fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager: Option<String>, other_args: Option<Vec<String>>) -> core::Result<()> {
     debug!("Running command: {:?} for package {}-{}", cmd, tool.package().get_primary_name(), tool.package().get_primary_version());
     let ctx2 = bp3d_build::system::Context {
         path: ctx.path,
@@ -92,11 +94,47 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
                 eprintln!("Please specify a packager type to run the packaging process");
                 std::process::exit(1);
             }
+        },
+        Command::Run => {
+            let ctx = bp3d_script::interface::Context {
+                path: ctx.path,
+                configuration: ctx.configuration,
+                targets: ctx.targets,
+                features: ctx.features,
+                tool
+            };
+            if other_args.as_ref().map(|v| v.is_empty()).unwrap_or(true) {
+                eprintln!("Please specify a script name to run");
+                std::process::exit(1);
+            }
+            let mut args = other_args.unwrap();
+            let name = args.remove(0);
+            let script = match args.is_empty() {
+                false => {
+                    let args: Vec<&str> = args.iter().map(|v| &**v).collect();
+                    bp3d_script::lua::Lua::new(&ctx, &name, &args)
+                },
+                true => bp3d_script::lua::Lua::new(&ctx, &name, &[])
+            }.map_err(|e| Error::ScriptSystem(e.to_string()))?;
+            let needs_configure = script.needs_configure().map_err(|e| Error::ScriptSystem(e.to_string()))?;
+            let needs_build = script.needs_build().map_err(|e| Error::ScriptSystem(e.to_string()))?;
+            if needs_configure {
+                info!("Configuring package for targets {:?}...", ctx.targets);
+                tool.configure(&ctx2, ctx.targets)?;
+            }
+            if needs_build {
+                for target in ctx.targets {
+                    info!("Building package for target {}...", target);
+                    tool.build(&ctx2, target)?;
+                }
+            }
+            script.execute().map_err(|e| Error::ScriptSystem(e.to_string()))?;
+            Ok(())
         }
     }
 }
 
-pub fn dispatch_run(ctx: Context, cmd: Command, packager: Option<String>) {
+pub fn dispatch_run(ctx: Context, cmd: Command, packager: Option<String>, other_args: Option<Vec<String>>) {
     let tool = core::open(&ctx.path).expect_exit("Failed to load package", 1);
-    run_command(&*tool, ctx, cmd, packager).expect_exit("Failed to run build", 2);
+    run_command(&*tool, ctx, cmd, packager, other_args).expect_exit("Failed to run build", 2);
 }

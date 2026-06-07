@@ -40,7 +40,8 @@ simple_error! {
         InvalidTarget(String) => "invalid target: {}",
         InvalidConfig(String) => "invalid configuration: {}",
         UnknownFeature(String) => "unknown feature: {}",
-        BuildSystem(String) => "build system: {}"
+        BuildSystem(String) => "build error: {}",
+        ScriptSystem(String) => "script error: {}"
     }
 }
 
