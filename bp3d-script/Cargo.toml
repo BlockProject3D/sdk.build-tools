@@ -1,0 +1,8 @@
+[package]
+name = "bp3d-script"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bp3d-build = { path = "../bp3d-build" }
+bp3d-lua = { version = "1.0.0-rc.5.0.0", path = "../../tools.lua/core", features = [] }

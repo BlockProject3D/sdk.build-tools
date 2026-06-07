@@ -55,7 +55,7 @@ pub struct Lua<'a> {
 }
 
 fn create_context<'a>(vm: &'a Vm, context: &Context) -> bp3d_lua::vm::Result<Table<'a>> {
-    let mut tbl = Table::with_capacity(vm, 0, 3);
+    let mut tbl = Table::with_capacity(vm, 0, 4);
     tbl.set(c"path", SandboxPath::from_path_unchecked(context.path))?;
     tbl.set(c"configuration", context.configuration)?;
     tbl.set(c"package", convert_package(vm, context.tool.package())?)?;

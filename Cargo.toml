@@ -1,4 +1,4 @@
 [workspace]
-members = ["bp3d", "bp3d-build", "bp3d-package"]
+members = ["bp3d", "bp3d-build", "bp3d-package", "bp3d-script"]
 
 [bp3d-package]
