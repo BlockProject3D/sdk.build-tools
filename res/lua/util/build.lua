@@ -45,6 +45,16 @@ build.run = function(exe, args, config)
     assert(success and code == 0, "command failed")
 end
 
+build.spawn = function(exe, args, eventThread, config)
+    if config == nil then config = {} end
+    config.exe = exe
+    config.args = args
+    local co = coroutine.create(eventThread)
+    coroutine.resume(co)
+    local success, code = bp3d.build.command.spawn(config, co)
+    assert(success and code == 0, "command failed")
+end
+
 build.getOutput = function(exe, args, config)
     if config == nil then config = {} end
     config.exe = exe
