@@ -26,13 +26,13 @@
 -- NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 -- SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-local Packager = require "bp3d.packager"
+local Script = require "bp3d.script"
 local build = require "bp3d.util.build"
 
-local Debug = Class(Packager)
+local Debug = Class(Script)
 
-function Debug:buildTarget(ctx)
-    local files = bp3d.files.list(ctx.path:join("target"):join(ctx.configuration))
+function Debug:run()
+    local files = bp3d.files.list(self.context.path:join("target"):join(self.context.configuration))
     local bins = {}
     for _, v in ipairs(files) do
         if v.type == "file" then
