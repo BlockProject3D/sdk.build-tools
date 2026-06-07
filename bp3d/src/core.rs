@@ -128,6 +128,7 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
                     tool.build(&ctx2, target)?;
                 }
             }
+            info!("Running script {}...", name);
             script.execute().map_err(|e| Error::ScriptSystem(e.to_string()))?;
             Ok(())
         }

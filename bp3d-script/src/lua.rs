@@ -85,7 +85,7 @@ impl Script for Lua {
     #[allow(dependency_on_unit_never_type_fallback)]
     fn new(context: &Context, name: &str, args: &[&str]) -> Result<Self, Self::Error> {
         let mut vm = Vm::new(context.path).map_err(Error::Lua)?;
-        let path = vm.find(&format!("package/{}.lua", name));
+        let path = vm.find(&format!("script/{}.lua", name));
         if path.is_none() {
             return Err(Error::NotFound(name.into()));
         }
