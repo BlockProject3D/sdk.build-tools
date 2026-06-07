@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -31,5 +31,6 @@ mod lib_command;
 mod lib_files;
 mod obj_artifact;
 mod obj_list;
+pub mod util;
 
 pub use obj_list::List;

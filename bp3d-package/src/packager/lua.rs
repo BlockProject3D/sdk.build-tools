@@ -39,6 +39,7 @@ use bp3d_build::system::Features;
 use crate::packager::Context;
 use crate::packager::interface::{build_target, Packager};
 use bp3d_build::lua::List as LuaList;
+use bp3d_build::lua::util::convert_package;
 
 simple_error! {
     pub Error {
@@ -57,23 +58,7 @@ fn create_context<'a>(vm: &'a Vm, context: &Context) -> bp3d_lua::vm::Result<Tab
     let mut tbl = Table::with_capacity(vm, 0, 3);
     tbl.set(c"path", SandboxPath::from_path_unchecked(context.path))?;
     tbl.set(c"configuration", context.configuration)?;
-    let mut package = Table::with_capacity(vm, 0, 2);
-    package.set(c"name", context.tool.package().get_primary_name())?;
-    package.set(c"version", context.tool.package().get_primary_version())?;
-    if context.tool.package().get_components() > 0 {
-        let mut components = Table::with_capacity(vm, 0, context.tool.package().get_components());
-        for i in 0..context.tool.package().get_components() {
-            let mut component = Table::with_capacity(vm, 0, 3);
-            let c = context.tool.package().get_component(i);
-            component.set("name", c.get_name())?;
-            component.set("version", c.get_version())?;
-            component.set("description", c.get_description())?;
-            component.set("public", c.is_public())?;
-            components.set(c.get_short_name(), component)?;
-        }
-        package.set("components", components)?;
-    }
-    tbl.set(c"package", package)?;
+    tbl.set(c"package", convert_package(vm, context.tool.package())?)?;
     let mut targets = Table::with_capacity(vm, context.targets.len(), 0);
     for target in context.targets {
         targets.push(*target)?;
