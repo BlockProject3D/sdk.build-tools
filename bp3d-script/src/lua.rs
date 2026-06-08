@@ -67,7 +67,7 @@ fn create_context<'a>(vm: &'a bp3d_lua::vm::Vm, context: &Context) -> bp3d_lua::
     }
     tbl.set(c"targets", targets)?;
     match context.features {
-        Features::All => tbl.set(c"features", "all")?,
+        Features::All => (),
         Features::List(features) => {
             let mut tbl1 = Table::with_capacity(vm, features.len(), 0);
             for feature in features {
