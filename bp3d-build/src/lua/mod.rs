@@ -32,5 +32,6 @@ mod lib_files;
 mod obj_artifact;
 mod obj_list;
 pub mod util;
+mod lib_json;
 
 pub use obj_list::List;

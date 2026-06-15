@@ -54,6 +54,7 @@ use crate::lua::obj_list::ObjList;
 use crate::system::{Context, Features};
 use bp3d_lua::libs::files::chroot;
 use bp3d_lua::libs::files::chroot::Permissions;
+use crate::lua::lib_json::JsonLib;
 
 pub fn dump_backtrace<T>(res: Result<T>) -> Result<T> {
     if let Err(e) = &res {
@@ -128,6 +129,11 @@ impl Vm {
                 provider.add_source(name.into(), SourcePath::new(path));
             }
         }
+        if let Some(path) = bp3d_os::dirs::system::get_user_home() {
+            let path = path.join("bp3d-build");
+            debug!("Adding user lua path: {:?}...", path);
+            provider.add_source("user".into(), SourcePath::new(path));
+        }
         let vm = RootVm::new();
         Lua::new().provider(provider.clone()).build().register(&vm)?;
         chroot::set_chroot(&vm, path);
@@ -141,6 +147,7 @@ impl Vm {
         FilesLib.register(&vm)?;
         ObjArtifact.register(&vm)?;
         ObjList.register(&vm)?;
+        JsonLib.register(&vm)?;
         vm.run_code(c"require = bp3d.lua.require")?;
         Ok(Vm {
             vm,

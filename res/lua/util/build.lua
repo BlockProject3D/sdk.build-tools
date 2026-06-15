@@ -45,12 +45,12 @@ build.run = function(exe, args, config)
     assert(success and code == 0, "command failed")
 end
 
-build.spawn = function(exe, args, eventThread, config)
+build.spawn = function(exe, args, eventThread, userdata, config)
     if config == nil then config = {} end
     config.exe = exe
     config.args = args
     local co = coroutine.create(eventThread)
-    coroutine.resume(co)
+    coroutine.resume(co, userdata)
     local success, code = bp3d.build.command.spawn(config, co)
     assert(success and code == 0, "command failed")
 end
@@ -69,22 +69,26 @@ build.render = function(template, args)
     return template
 end
 
-build.runCargo = function(cmd, ctx, args2, env)
+build.getCargo = function(cmd, ctx, args2)
     if not bp3d.files.exists(ctx.path:join("Cargo.toml")) then
-        return
+        return nil
     end
     local args = {
-        cmd,
-        "--target",
-        ctx.target
+        cmd
     }
+    if ctx.target then
+        table.insert(args, "--target")
+        table.insert(args, ctx.target)
+    end
     if ctx.configuration == "release" then
         table.insert(args, "--release")
     end
     if ctx.features then
-        table.insert(args, "--features")
-        for _, v in ipairs(ctx.features) do
-            table.insert(args, v)
+        if #ctx.features > 0 then
+            table.insert(args, "--features")
+            for _, v in ipairs(ctx.features) do
+                table.insert(args, v)
+            end
         end
     else
         table.insert(args, "--all-features")
@@ -92,10 +96,16 @@ build.runCargo = function(cmd, ctx, args2, env)
     for _, v in ipairs(args2) do
         table.insert(args, v)
     end
-    build.run("cargo", args, {
-        workdir = ctx.path,
-        env = env
-    })
+    return args, { workdir = ctx.path }
+end
+
+build.runCargo = function(cmd, ctx, args2, env)
+    local args, config = build.getCargo(cmd, ctx, args2)
+    if not args then
+        return
+    end
+    config.env = env
+    build.run("cargo", args, config)
 end
 
 build.runBP3D = function(subPath, cmd, ctx, args)
