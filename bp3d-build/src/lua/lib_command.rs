@@ -42,6 +42,7 @@ use bp3d_lua::vm::Vm;
 use bp3d_lua::util::LuaThread;
 use bp3d_lua::util::thread::UnsafeLuaThread;
 use bp3d_util::simple_error;
+use crate::lua::core::dump_backtrace;
 
 simple_error! {
     pub Error {
@@ -109,7 +110,8 @@ decl_lib_func! {
                 let mut reader = BufReader::new(out).lines();
                 while let Some(line) = reader.next() {
                     if let Ok(line) = line {
-                        let _ = event_thread.lock().unwrap().as_thread().resume::<()>(("out", line));
+                        let res = event_thread.lock().unwrap().as_thread().resume::<()>(("out", line));
+                        let _ = dump_backtrace(res);
                     }
                 }
             });
@@ -118,7 +120,8 @@ decl_lib_func! {
                 let mut reader = BufReader::new(err).lines();
                 while let Some(line) = reader.next() {
                     if let Ok(line) = line {
-                        let _ = event_thread.lock().unwrap().as_thread().resume::<()>(("err", line));
+                        let res = event_thread.lock().unwrap().as_thread().resume::<()>(("err", line));
+                        let _ = dump_backtrace(res);
                     }
                 }
             });
