@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -29,6 +29,7 @@
 use std::path::{Path, PathBuf};
 use crate::system::artifact::LibType;
 
+#[derive(Debug)]
 pub struct FinderResult {
     pub path: Option<PathBuf>,
     pub debug_info: Option<PathBuf>,

@@ -33,6 +33,46 @@ local build = require "bp3d.util.build"
 
 local UnixDist = Class(Packager)
 
+local function appendObjects(artifacts, path, f)
+    local files = bp3d.files.list(path)
+    for _, v in ipairs(files) do
+        if v.type == "file" then
+            local name = v.path:name()
+            assert(name ~= nil)
+            artifacts:add(f(v.path, name))
+        end
+    end
+end
+
+function UnixDist:buildTarget(ctx)
+    local artifacts = baseBuild(ctx)
+    local extPath = ctx.path:join("target"):join(ctx.target):join("ext")
+    if not bp3d.files.exists(extPath) then return artifacts end
+    local usrExtPath = extPath:join("usr")
+    local bin = extPath:join("bin")
+    local lib = extPath:join("lib")
+    local include = usrExtPath:join("include")
+    local config = usrExtPath:join("etc")
+    local res = usrExtPath:join("share")
+    if bp3d.files.exists(bin) then
+        appendObjects(artifacts, bin, function(path, name) return bp3d.build.Artifact.findBin(path:parent(), name) end)
+    end
+    if bp3d.files.exists(lib) then
+        appendObjects(artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "dynamic") end)
+        appendObjects(artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "static") end)
+    end
+    if bp3d.files.exists(include) then
+        artifacts:addFolder("header", include, "")
+    end
+    if bp3d.files.exists(res) then
+        artifacts:addFolder("other", res, "")
+    end
+    if bp3d.files.exists(config) then
+        artifacts:addFolder("config", config, "")
+    end
+    return artifacts
+end
+
 function UnixDist:packageTarget(ctx, artifacts)
     local targetPath = context.getTargetPath(ctx)
     local distPath = targetPath:join("dist")

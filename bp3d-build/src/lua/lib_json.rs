@@ -26,7 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Display, Formatter};
 use bp3d_lua::decl_lib_func;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
@@ -36,17 +35,6 @@ use bp3d_lua::vm::value::any::Any;
 use bp3d_lua::vm::Vm;
 use bp3d_util::simple_error;
 use json_deserializer::{Number, Object, Value};
-
-/*#[derive(Debug)]
-struct Error(json_deserializer::Error);
-
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl std::error::Error for Error {}*/
 
 simple_error! {
     pub Error {
