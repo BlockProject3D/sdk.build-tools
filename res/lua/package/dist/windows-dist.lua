@@ -26,12 +26,12 @@
 -- NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 -- SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-local Packager = require "bp3d.packager"
+local BaseDist = require "bp3d.package.dist.base"
 local context = require "bp3d.util.context"
 local artifact = require "bp3d.util.artifact"
 local build = require "bp3d.util.build"
 
-local UnixDist = Class(Packager)
+local WindowsDist = Class(BaseDist)
 
 local function appendObjects(artifacts, path, f)
     local files = bp3d.files.list(path)
@@ -44,95 +44,55 @@ local function appendObjects(artifacts, path, f)
     end
 end
 
-function UnixDist:buildTarget(ctx)
+function WindowsDist:buildTarget(ctx)
     local artifacts = baseBuild(ctx)
-    local extPath = ctx.path:join("target"):join(ctx.target):join("ext")
+    local extPath = BaseDist.getExtPath(ctx)
     if not bp3d.files.exists(extPath) then return artifacts end
-    local usrExtPath = extPath:join("usr")
     local bin = extPath:join("bin")
     local lib = extPath:join("lib")
-    local include = usrExtPath:join("include")
-    local config = usrExtPath:join("etc")
-    local res = usrExtPath:join("share")
     if bp3d.files.exists(bin) then
-        appendObjects(artifacts, bin, function(path, name) return bp3d.build.Artifact.findBin(path:parent(), name) end)
+        BaseDist.appendObjects(artifacts, bin, function(path, name) return bp3d.build.Artifact.findBin(path:parent(), name) end)
+        BaseDist.appendObjects(artifacts, bin, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "dynamic") end)
     end
     if bp3d.files.exists(lib) then
-        appendObjects(artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "dynamic") end)
-        appendObjects(artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "static") end)
+        appendObjects(artifacts, lib,
+            function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "static") end)
     end
-    if bp3d.files.exists(include) then
-        artifacts:addFolder("header", include, "")
-    end
-    if bp3d.files.exists(res) then
-        artifacts:addFolder("other", res, "")
-    end
-    if bp3d.files.exists(config) then
-        artifacts:addFolder("config", config, "")
-    end
+    BaseDist.addExtUsr(ctx, artifacts)
     return artifacts
 end
 
-function UnixDist:packageTarget(ctx, artifacts)
+function WindowsDist:packageTarget(ctx, artifacts)
     local targetPath = context.getTargetPath(ctx)
-    local distPath = targetPath:join("dist")
-    local usrPath = distPath:join("usr")
-    build.clean(distPath, usrPath)
+    local distPath = BaseDist.getDistPath(ctx)
+
+    BaseDist.packUsr(ctx, artifacts)
 
     -- Package binarries.
     local bins = artifact.find(artifacts, "bin")
-    if bp3d.util.table.count(bins) > 0 then
+    local libs = artifact.findDynamicLibraries(artifacts, targetPath)
+    if bp3d.util.table.count(bins) > 0 or bp3d.util.table.count(libs) > 0 then
         print("Packaging binarries...")
         local binDir = distPath:join("bin")
         build.clean(binDir)
         for _, v in pairs(bins) do
             bp3d.files.copyFile(v:path(), binDir:join(v:name()))
         end
+        for _, v in pairs(libs) do
+            bp3d.files.copyFile(v.path, binDir:join(v.name))
+        end
     end
 
     -- Package libraries.
-    local libs = artifact.findDynamicLibraries(artifacts, targetPath)
+    local libs = artifact.find(artifacts, "lib::static")
     local libDir = distPath:join("lib")
     if bp3d.util.table.count(libs) > 0 then
         print("Packaging libraries...")
         build.clean(libDir)
         for _, v in pairs(libs) do
-            bp3d.files.copyFile(v.path, libDir:join(v.name))
-        end
-    end
-
-    -- Package headers.
-    local headers = artifact.find(artifacts, "header")
-    if bp3d.util.table.count(headers) > 0 then
-        print("Packaging headers...")
-        local includeDir = usrPath:join("include")
-        build.clean(includeDir)
-        for _, v in pairs(headers) do
-            bp3d.files.copyFile(v:path(), includeDir:join(v:name()))
-        end
-    end
-
-    -- Package configs.
-    local configs = artifact.find(artifacts, "config")
-    if bp3d.util.table.count(configs) > 0 then
-        print("Packaging configs...")
-        local etcDir = distPath:join("etc")
-        build.clean(etcDir)
-        for _, v in pairs(configs) do
-            bp3d.files.copyFile(v:path(), etcDir:join(v:name()))
-        end
-    end
-
-    -- Package resources.
-    local resources = artifact.find(artifacts, "resource")
-    if bp3d.util.table.count(resources) > 0 then
-        print("Packaging resources...")
-        local shareDir = usrPath:join("share")
-        build.clean(shareDir)
-        for _, v in pairs(resources) do
-            bp3d.files.copyFile(v:path(), shareDir:join(v:name()))
+            bp3d.files.copyFile(v:path(), libDir:join(v:name()))
         end
     end
 end
 
-return UnixDist
+return WindowsDist
