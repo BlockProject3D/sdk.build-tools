@@ -30,7 +30,7 @@ use std::path::{Path, PathBuf};
 use bp3d_debug::debug;
 use bp3d_lua::libs::files::{Files, SandboxPath};
 use bp3d_lua::libs::Lib;
-use bp3d_lua::libs::lua::Lua;
+use bp3d_lua::libs::lua::{Lua, Module};
 use bp3d_lua::libs::lua::require::{Provider, Source};
 use bp3d_lua::libs::os::{Compat, Instant, Time};
 use bp3d_lua::libs::util::Util;
@@ -54,6 +54,7 @@ use crate::lua::obj_list::ObjList;
 use crate::system::{Context, Features};
 use bp3d_lua::libs::files::chroot;
 use bp3d_lua::libs::files::chroot::Permissions;
+use bp3d_os::module::loader::ModuleLoader;
 use crate::lua::lib_json::JsonLib;
 
 pub fn dump_backtrace<T>(res: Result<T>) -> Result<T> {
@@ -129,13 +130,20 @@ impl Vm {
                 provider.add_source(name.into(), SourcePath::new(path));
             }
         }
-        if let Some(path) = bp3d_os::dirs::system::get_user_home() {
-            let path = path.join("bp3d-build");
-            debug!("Adding user lua path: {:?}...", path);
-            provider.add_source("user".into(), SourcePath::new(path));
-        }
         let vm = RootVm::new();
         Lua::new().provider(provider.clone()).build().register(&vm)?;
+        Module.register(&vm)?;
+        {
+            let mut loader = ModuleLoader::lock();
+            let exe = get_executable_path().unwrap();
+            debug!("Adding module search path: {:?}", exe);
+            loader.add_search_path(&exe);
+            let libs = exe.parent().map(|v| v.join("lib"));
+            if let Some(libs) = libs {
+                debug!("Adding module search path: {:?}", libs);
+                loader.add_search_path(libs);
+            }
+        }
         chroot::set_chroot(&vm, path);
         chroot::set_access(&vm, "/", Permissions::R);
         chroot::set_access(&vm, "/target", Permissions::R | Permissions::W);
