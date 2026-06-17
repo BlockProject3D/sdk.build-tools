@@ -83,6 +83,8 @@ impl<'a> Packager<'a> for Lua<'a> {
         vm.run(&path)?;
         if let Some(config) = config {
             vm.call_main(config.len(), config.iter().map(|(k, v)| (&**k, &**v)))?;
+        } else {
+            vm.call_main(0, [].into_iter()).map_err(Error::Lua)?;
         }
         vm.with_class(|vm, class| {
             let f: Function = class.get(c"init2")?;
