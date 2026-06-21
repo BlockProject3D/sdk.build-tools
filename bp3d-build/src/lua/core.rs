@@ -99,7 +99,7 @@ impl Source for SourcePath {
 pub struct Vm {
     vm: RootVm,
     provider: Shared<Provider>,
-    paths: Vec<PathBuf>,
+    search_paths: Vec<PathBuf>,
     main_class: Option<Key<bp3d_lua::vm::registry::types::Table>>
 }
 
@@ -115,10 +115,10 @@ impl Vm {
     #[allow(dependency_on_unit_never_type_fallback)]
     pub fn new(path: &Path) -> Result<Vm> {
         let provider = Shared::new(Provider::new());
-        let mut paths = Vec::new();
+        let mut search_paths = Vec::new();
         debug!("Adding root bp3d lua path...");
         let src = SourcePath::from_installed();
-        paths.push(src.0.clone());
+        let annoyingrust = src.0.clone();
         provider.add_source("bp3d".into(), src);
         debug!("Project root = {:?}", path);
         debug!("Project name = {:?}", path.file_name());
@@ -126,10 +126,11 @@ impl Vm {
             if let Some(name) = path.file_name().map(|v| v.to_str()).flatten() {
                 let path = path.join("bp3d-build");
                 debug!({name}, "Adding project lua path: {:?}...", path);
-                paths.push(path.clone());
+                search_paths.push(path.clone());
                 provider.add_source(name.into(), SourcePath::new(path));
             }
         }
+        search_paths.push(annoyingrust);
         let vm = RootVm::new();
         Lua::new().provider(provider.clone()).build().register(&vm)?;
         Module.register(&vm)?;
@@ -160,7 +161,7 @@ impl Vm {
         Ok(Vm {
             vm,
             provider,
-            paths,
+            search_paths,
             main_class: None
         })
     }
@@ -248,7 +249,7 @@ impl Vm {
     }
 
     pub fn find(&self, name: &str) -> Option<PathBuf> {
-        for v in &self.paths {
+        for v in &self.search_paths {
             let path = v.join(name);
             debug!("Check lua file path: {:?}", path);
             if path.exists() {
