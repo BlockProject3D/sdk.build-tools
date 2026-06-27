@@ -53,6 +53,17 @@ decl_lib_func! {
 }
 
 decl_lib_func! {
+    fn get_lib_path() -> SandboxPathBuf {
+        let exe = get_executable_path().unwrap();
+        let mut path = exe.join("../lib");
+        if !path.exists() {
+            path = exe;
+        }
+        SandboxPathBuf::from_path_unchecked(path)
+    }
+}
+
+decl_lib_func! {
     fn to_string<'a>(vm: &Vm, path: SandboxPath<'a>) -> Option<String> {
         let path = path.to_path(vm).ok()?;
         if path.starts_with(".") {
@@ -73,6 +84,7 @@ impl Lib for FilesLib {
         namespace.add([
             ("getResourcesPath", RFunction::wrap(get_res_path)),
             ("getExecutablePath", RFunction::wrap(get_exe_path)),
+            ("getLibraryPath", RFunction::wrap(get_lib_path)),
             ("toString", RFunction::wrap(to_string))
         ])
     }
