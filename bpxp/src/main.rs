@@ -27,11 +27,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::fs::File;
-use std::io::{Seek, Write};
-use std::path::Path;
 use bpx::package::Package;
 use bpx::package::util::{pack_file_vname, unpack};
-use bpx::strings::get_name_from_path;
 use clap::Parser;
 use crate::args::Args;
 
@@ -58,24 +55,11 @@ fn extract(args: &Args) -> bpx::package::Result<()> {
     }
 }
 
-fn pack_file_rec<T: Seek + Write>(inner_path: String, path: &Path, package: &mut Package<T>) -> bpx::package::Result<()> {
-    if path.is_dir() {
-        for entry in path.read_dir()? {
-            let entry = entry?;
-            let inner_path = inner_path.clone() + "/" + entry.file_name().to_str().ok_or(bpx::package::error::Error::Strings(bpx::strings::Error::Utf8))?;
-            pack_file_rec(inner_path, entry.path().as_path(), package)?;
-        }
-    } else {
-        let fname = get_name_from_path(path)?;
-        pack_file_vname(package, &(inner_path + "/" + fname), path)?;
-    }
-    Ok(())
-}
-
 fn compress(args: &Args) -> bpx::package::Result<()> {
     let mut package = Package::create(File::create(&args.file)?)?;
     for f in &args.file_names {
-        pack_file_rec(".".into(), f, &mut package)?;
+        let vname = f.to_str().ok_or(bpx::package::error::Error::Strings(bpx::strings::Error::Utf8))?;
+        pack_file_vname(&mut package, vname, f)?;
     }
     package.save()?;
     Ok(())
