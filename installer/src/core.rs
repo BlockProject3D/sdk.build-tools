@@ -38,6 +38,19 @@ pub struct Installer {
     package: &'static [u8]
 }
 
+#[cfg(unix)]
+fn setup_permissions(path: &Path) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    for path in path.join("bin").read_dir()? {
+        let fuck = path?;
+        let path = fuck.path();
+        if path.is_file() {
+            std::fs::set_permissions(path, std::fs::Permissions::from_mode(0555))?;
+        }
+    }
+    Ok(())
+}
+
 impl Installer {
     pub fn new() -> Self {
         Self::default()
@@ -67,6 +80,8 @@ impl Installer {
             let pack = Package::open(Cursor::new(self.package)).expect("Unable to open embedded installer package");
             let install_path = Path::new(&args.next().unwrap_or("/opt".into())).join(install_name);
             unpack(&pack, &install_path).expect("Failed to extract application objects");
+            #[cfg(unix)]
+            let _ = setup_permissions(&install_path);
         } else if subcmd == "list" {
             let pack = Package::open(Cursor::new(self.package)).expect("Unable to open embedded installer package");
             let objects = pack.objects().expect("Unable to read embedded installer package");
