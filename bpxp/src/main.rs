@@ -30,7 +30,7 @@ use std::fs::File;
 use std::io::{Seek, Write};
 use std::path::Path;
 use bpx::package::Package;
-use bpx::package::util::{pack_file, pack_file_vname, unpack};
+use bpx::package::util::{pack_file_vname, unpack};
 use bpx::strings::get_name_from_path;
 use clap::Parser;
 use crate::args::Args;

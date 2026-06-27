@@ -27,8 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use bp3d_lua::decl_lib_func;
@@ -41,6 +42,7 @@ use bp3d_lua::vm::thread::value::Thread;
 use bp3d_lua::vm::Vm;
 use bp3d_lua::util::LuaThread;
 use bp3d_lua::util::thread::UnsafeLuaThread;
+use bp3d_os::assets::get_executable_path;
 use bp3d_util::simple_error;
 use crate::lua::core::dump_backtrace;
 
@@ -71,9 +73,26 @@ impl CommandInfo {
     }
 }
 
+fn join_file_cross_platform(exe_name: &OsStr, path: &Path) -> PathBuf {
+    #[cfg(target_os = "windows")]
+    let exe_name = {
+        let mut exe_name = std::ffi::os_str::OsString::from(exe_name);
+        exe_name.push(".exe");
+        exe_name
+    };
+    #[cfg(not(target_os = "windows"))]
+    let exe_name = exe_name.to_os_string();
+    path.join(&exe_name)
+}
+
 impl CommandInfo {
     pub fn into_command(self) -> Command {
-        let mut cmd = Command::new(self.exe.as_os_str());
+        let self_exe_path = get_executable_path().map(|path| join_file_cross_platform(self.exe.as_os_str(), &path)).unwrap_or(PathBuf::from("/does/not/exist"));
+        let mut cmd = if self_exe_path.exists() {
+            Command::new(self_exe_path)
+        } else {
+            Command::new(self.exe.as_os_str())
+        };
         if let Some(args) = self.args {
             cmd.args(args.iter().map(|v| v.as_os_str()));
         }
