@@ -75,10 +75,12 @@ function UnixDist:packageTarget(ctx, artifacts)
         print("Packaging libraries...")
         build.clean(libDir)
         for _, v in pairs(libs) do
-            bp3d.files.copyFile(v.path, libDir:join(v.name))
+            local fullName = v.path:fullName()
+            bp3d.files.copyFile(v.path, libDir:join(fullName))
         end
         for _, v in pairs(slibs) do
-            bp3d.files.copyFile(v:path(), libDir:join(v:name()))
+            local fullName = v:path():fullName()
+            bp3d.files.copyFile(v:path(), libDir:join(fullName))
         end
     end
 end

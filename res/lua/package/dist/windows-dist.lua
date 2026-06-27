@@ -79,7 +79,8 @@ function WindowsDist:packageTarget(ctx, artifacts)
             bp3d.files.copyFile(v:path(), binDir:join(v:name()))
         end
         for _, v in pairs(libs) do
-            bp3d.files.copyFile(v.path, binDir:join(v.name))
+            local fullName = v.path:fullName()
+            bp3d.files.copyFile(v.path, binDir:join(fullName))
         end
     end
 
@@ -90,7 +91,8 @@ function WindowsDist:packageTarget(ctx, artifacts)
         print("Packaging libraries...")
         build.clean(libDir)
         for _, v in pairs(libs) do
-            bp3d.files.copyFile(v:path(), libDir:join(v:name()))
+            local fullName = v:path():fullName()
+            bp3d.files.copyFile(v:path(), libDir:join(fullName))
         end
     end
 end
