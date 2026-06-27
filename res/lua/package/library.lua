@@ -48,7 +48,12 @@ function Library:buildTarget(ctx)
             "-Clink-arg=-current_version" .. self.context.package.version
         })
     elseif bp3d.util.string.contains(ctx.target, "msvc") then
-        --TODO: Build with custom name and inject product information RC file.
+        build.runCargo("rustc", ctx, {
+            "--",
+            "--emit",
+            "link=target/" .. ctx.target .. "/" .. ctx.configuration .. "/" .. self.args.name .. ".dll"
+        })
+        --TODO: Inject product information RC file.
     end
     return files
 end
@@ -65,10 +70,10 @@ function Library:packageTarget(ctx, artifacts)
         local newLibPath = distPath:join("lib"):join(libName)
         bp3d.files.rename(originalLibPath, newLibPath)
     else
-        bp3d.files.delete(distPath:join("lib"):join(coreLibName))
         libName = self.args.name .. ".dll"
         local staticLibPath = targetPath:join(self.args.name .. ".lib")
         bp3d.files.copyFile(staticLibPath, distPath:join("lib"):join(self.args.name .. ".lib"))
+        bp3d.files.copyFile(targetPath:join(libName), distPath:join("lib"):join(libName))
     end
     if bp3d.util.string.contains(ctx.target, "apple") then
         build.run("install_name_tool", {
