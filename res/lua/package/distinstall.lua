@@ -29,7 +29,6 @@
 local build = require "bp3d.util.build"
 local context = require "bp3d.util.context"
 local Dist = require "bp3d.package.dist"
-local BaseDist = require "bp3d.package.dist.base"
 local templates = require "bp3d.templates.distinstall"
 
 local DistInstall = Class(Dist)
@@ -40,7 +39,7 @@ function DistInstall:packageTarget(ctx, artifacts)
     local version = self.context.package.version
     local targetPath = context.getTargetPath(ctx)
     print("Building BPX package...")
-    build.run("bpxp", { "-cf", "../dist.bpx", "." }, { workdir = targetPath:join("dist") })
+    build.run("bpxp", { "-t", ctx.target, "-m", "Name=" .. name, "-m", "Version=" .. version, "-cf", "../dist.bpx", "." }, { workdir = targetPath:join("dist") })
     print("Generating installer...")
     bp3d.files.writeText(targetPath:join("installer.rs"), build.render(templates.INSTALLER_MAIN, {
         NAME = name,
@@ -51,7 +50,7 @@ function DistInstall:packageTarget(ctx, artifacts)
         installerName = installerName .. ".exe"
     end
     local libPath = bp3d.build.files.getLibraryPath()
-    build.run("rustc", { "-L", libPath, "-linstaller", "--edition=2021", "--crate-type", "bin", "installer.rs", "-o", installerName }, { workdir = targetPath })
+    build.run("rustc", { "-L", libPath, "-linstaller", "--edition=2021", "--crate-type", "bin", "installer.rs", "-O", "-o", installerName }, { workdir = targetPath })
 end
 
 return DistInstall

@@ -27,8 +27,12 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::fs::File;
-use bpx::package::Package;
+use bp3d_util::result::ResultExt;
+use bpx::package::{Architecture, CreateOptions, Package, Platform};
 use bpx::package::util::{pack_file_vname, unpack};
+use bpx::sd::debug::Debugger;
+use bpx::sd::{Object, Value};
+use bpx::sd::formatting::{Format, IndentType};
 use clap::Parser;
 use crate::args::Args;
 
@@ -55,8 +59,64 @@ fn extract(args: &Args) -> bpx::package::Result<()> {
     }
 }
 
+fn get_platform_from_target(target: &str) -> Platform {
+    if target.contains("windows") {
+        Platform::Windows
+    } else if target.contains("apple") {
+        Platform::Mac
+    } else if target.contains("linux") {
+        Platform::Linux
+    } else {
+        Platform::Any
+    }
+}
+
+fn get_architecture_from_target(target: &str) -> Architecture {
+    if target.contains("x86_64") {
+        Architecture::X86_64
+    } else if target.contains("x86") {
+        Architecture::X86
+    } else if target.contains("aarch64") || target.contains("arm64") {
+        Architecture::Aarch64
+    } else if target.contains("arm") {
+        Architecture::Armv7hl
+    } else {
+        Architecture::Any
+    }
+}
+
 fn compress(args: &Args) -> bpx::package::Result<()> {
-    let mut package = Package::create(File::create(&args.file)?)?;
+    let mut opts = CreateOptions::new(File::create(&args.file)?);
+    if let Some(target) = &args.target {
+        opts = opts.architecture(get_architecture_from_target(target))
+            .platform(get_platform_from_target(target));
+    }
+    if !args.metadata.is_empty() {
+        let mut obj = Debugger::attach(Object::with_capacity(args.metadata.len() as _)).unwrap();
+        for kv in &args.metadata {
+            let mut kv = kv.split("=");
+            let key = kv.next();
+            let value = kv.next();
+            match (key, value) {
+                (Some(key), Some(value)) => {
+                    if let Ok(v) = value.parse::<i32>() {
+                        obj.set(key, Value::Int32(v));
+                    } else if let Ok(v) = value.parse::<f32>() {
+                        obj.set(key, Value::Float(v));
+                    } else if value == "true" {
+                        obj.set(key, Value::Bool(true));
+                    } else if value == "false" {
+                        obj.set(key, Value::Bool(false));
+                    } else {
+                        obj.set(key, Value::String(value.to_string()));
+                    }
+                }
+                _ => continue
+            }
+        }
+        opts = opts.metadata(Value::Object(obj.detach()));
+    }
+    let mut package = Package::create(opts)?;
     for f in &args.file_names {
         let vname = f.to_str().ok_or(bpx::package::error::Error::Strings(bpx::strings::Error::Utf8))?;
         pack_file_vname(&mut package, vname, f)?;
@@ -65,8 +125,19 @@ fn compress(args: &Args) -> bpx::package::Result<()> {
     Ok(())
 }
 
-fn list(args: &Args) -> bpx::package::Result<()> {
+fn info(args: &Args) -> bpx::package::Result<()> {
     let package = Package::open(File::open(&args.file)?)?;
+    println!("Platform: {:?}", package.settings().platform);
+    println!("Architecture: {:?}", package.settings().architecture);
+    println!();
+    let metadata = package.load_metadata()?;
+    if let Value::Object(obj) = metadata {
+        println!("==> Metadata <==");
+        let fmt = obj.format(IndentType::Spaces, 4);
+        println!("{}", fmt);
+        println!();
+    }
+    println!("==> Objects <==");
     let objects = package.objects()?;
     for obj in &objects {
         println!("{} ({} mbit(s))", objects.load_name(obj)?, (obj.size as f64) / 1024.0 / 1024.0);
@@ -77,13 +148,13 @@ fn list(args: &Args) -> bpx::package::Result<()> {
 fn main() {
     let args = Args::parse();
     if args.extract {
-        extract(&args).expect("Failed to extract package");
+        extract(&args).expect_exit("Failed to extract package", 1);
     } else if args.compress {
-        compress(&args).expect("Failed to compress package");
-    } else if args.list {
-        list(&args).expect("Failed to list contents of package");
+        compress(&args).expect_exit("Failed to compress package", 1);
+    } else if args.info {
+        info(&args).expect_exit("Failed to dump contents of package", 1);
     } else {
-        eprintln!("Please specify a mode (extract, compress or list)!");
+        eprintln!("Please specify a mode (extract, compress or info)!");
         std::process::exit(1);
     }
 }

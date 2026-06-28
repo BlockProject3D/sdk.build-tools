@@ -32,17 +32,23 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    #[arg(short = 'x', long = "extract", help = "Extraction mode.")]
+    #[arg(short='x', long="extract", help="Extraction mode.")]
     pub extract: bool,
 
-    #[arg(short = 'c', long = "compress", help = "Compression mode.")]
+    #[arg(short='c', long="compress", help="Compression mode.")]
     pub compress: bool,
 
-    #[arg(short = 'l', long = "list", help = "List mode.")]
-    pub list: bool,
+    #[arg(short='i', long="info", help="Info mode.")]
+    pub info: bool,
 
-    #[arg(short = 'f', long = "file", help = "Specify a file name.")]
+    #[arg(short='f', long="file", help="Specify a file name.")]
     pub file: PathBuf,
+
+    #[arg(short='m', long="metadata", help="Specify additional metadata parameters to embed.")]
+    pub metadata: Vec<String>,
+
+    #[arg(short='t', long="target", help="Specify optionally the target triple when generating the package...")]
+    pub target: Option<String>,
 
     pub file_names: Vec<PathBuf>,
 }
