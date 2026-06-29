@@ -83,7 +83,7 @@ function BaseDist.packUsr(ctx, artifacts)
         local includeDir = usrPath:join("include")
         build.clean(includeDir)
         for _, v in pairs(headers) do
-            bp3d.files.copyFile(v:path(), includeDir:join(v:name()))
+            artifact.copyTo(v, includeDir)
         end
     end
 
@@ -94,7 +94,7 @@ function BaseDist.packUsr(ctx, artifacts)
         local etcDir = distPath:join("etc")
         build.clean(etcDir)
         for _, v in pairs(configs) do
-            bp3d.files.copyFile(v:path(), etcDir:join(v:name()))
+            artifact.copyTo(v, etcDir)
         end
     end
 
@@ -105,7 +105,7 @@ function BaseDist.packUsr(ctx, artifacts)
         local shareDir = usrPath:join("share")
         build.clean(shareDir)
         for _, v in pairs(resources) do
-            bp3d.files.copyFile(v:path(), shareDir:join(v:name()))
+            artifact.copyTo(v, shareDir)
         end
     end
 end

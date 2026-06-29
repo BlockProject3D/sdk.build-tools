@@ -60,7 +60,7 @@ end
 
 function Library:packageTarget(ctx, artifacts)
     UnixDist.packageTarget(self, ctx, artifacts)
-    local coreLibName = artifact.findFirst(artifacts, "lib::dynamic"):path():name()
+    local coreLibName = artifact.findFirst(artifacts, "lib::dynamic"):path():fullName()
     local targetPath = context.getTargetPath(ctx)
     local distPath = targetPath:join("dist")
     local libName = ""

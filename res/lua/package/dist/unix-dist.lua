@@ -63,7 +63,7 @@ function UnixDist:packageTarget(ctx, artifacts)
         local binDir = distPath:join("bin")
         build.clean(binDir)
         for _, v in pairs(bins) do
-            bp3d.files.copyFile(v:path(), binDir:join(v:name()))
+            artifact.copyTo(v, binDir)
         end
     end
 
@@ -75,12 +75,10 @@ function UnixDist:packageTarget(ctx, artifacts)
         print("Packaging libraries...")
         build.clean(libDir)
         for _, v in pairs(libs) do
-            local fullName = v.path:fullName()
-            bp3d.files.copyFile(v.path, libDir:join(fullName))
+            artifact.copyTo(v, libDir)
         end
         for _, v in pairs(slibs) do
-            local fullName = v:path():fullName()
-            bp3d.files.copyFile(v:path(), libDir:join(fullName))
+            artifact.copyTo(v, libDir)
         end
     end
 end

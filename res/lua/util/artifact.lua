@@ -54,26 +54,53 @@ artifact.contains = function(artifacts, name)
     return false
 end
 
+local LocalArtifact = {}
+LocalArtifact.path = function(self) return self._path end
+LocalArtifact.name = function(self) return self._name end
+LocalArtifact.debugInfo = function(self) return self._debugInfo end
+LocalArtifact.exports = function(self) return self._exports end
+LocalArtifact.__index = LocalArtifact
+
 artifact.findDynamicLibraries = function(artifacts, targetPath)
     local res = {}
     local libs = artifact.find(artifacts, "lib::dynamic")
     for _, v in pairs(libs) do
-        table.insert(res, {
-            name = v:path():fullName(),
-            path = v:path()
-        })
+        table.insert(res, v)
     end
     local files = bp3d.files.list(targetPath)
     for _, v in ipairs(files) do
         local ext = v.path:extension()
         if v.type == "file" and (ext == "dylib" or ext == "dll" or ext == "so") and not artifact.contains(artifacts, v.name) then
-            table.insert(res, {
-                name = v.name,
-                path = v.path
-            })
+            local vv = {
+                _name = v.name,
+                _path = v.path
+            }
+            setmetatable(vv, LocalArtifact)
+            table.insert(res, vv)
         end
     end
     return res
+end
+
+artifact.copyTo = function(artifact, dstPath)
+    if artifact == nil then return end
+    local subPath = ""
+    local id = string.find(string.reverse(artifact:name()), "/")
+    if id ~= nil then
+        subPath = string.sub(artifact:name(), 1, #artifact:name() - id) .. "/"
+    end
+    if artifact:path() ~= nil then
+        local fullName = artifact:path():fullName()
+        bp3d.files.copyFile(artifact:path(), dstPath:join(subPath .. fullName))
+    end
+    if artifact:debugInfo() ~= nil then
+        local fullName = artifact:debugInfo():fullName()
+        bp3d.files.copyFile(artifact:debugInfo(), dstPath:join(subPath .. fullName))
+    end
+    if artifact:exports() ~= nil then
+        local fullName = artifact:exports():fullName()
+        bp3d.files.copyFile(artifact:exports(), dstPath:join(subPath .. fullName))
+    end
 end
 
 return artifact
