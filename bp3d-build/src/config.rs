@@ -26,58 +26,35 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::error::Error;
-use std::path::{Path, PathBuf};
-use serde::de::DeserializeOwned;
-use bp3d_build::core::BuildTool;
-use bp3d_build::system::artifact::List;
-use bp3d_build::system::Features;
+use std::path::Path;
+use bp3d_util::simple_error;
+use serde::Deserialize;
 
-pub struct Context<'a> {
-    pub path: &'a Path,
-    pub configuration: &'a str,
-    pub targets: &'a [&'a str],
-    pub tool: &'a dyn BuildTool,
-    pub packager: &'a str
+#[derive(Deserialize)]
+pub struct Package {
+    pub name: String,
+    pub version: String
 }
 
-impl<'a> Context<'a> {
-    pub fn get_target_path(&self, target: &str) -> PathBuf {
-        self.path.join("target").join(target).join(self.configuration)
+#[derive(Deserialize)]
+pub struct Config {
+    pub package: Option<Package>
+}
+
+simple_error! {
+    pub Error {
+        Io(std::io::Error) => "io error: {}",
+        Toml(toml::de::Error) => "toml error: {}"
     }
 }
 
-pub fn build_target(context: &Context, target: &str) -> Result<List, bp3d_build::core::Error> {
-    let ctx = bp3d_build::system::Context {
-        path: context.path,
-        configuration: context.configuration,
-        features: Features::All
-    };
-    //FIXME: configure is not called at this point.
-    let data = context.tool.pre_package(&ctx, target)?;
-    Ok(data)
-}
-
-pub trait Packager<'a>: Sized {
-    const NAME: &'static str;
-
-    type Error: Error;
-
-    type Config: DeserializeOwned;
-
-    fn new(config: Option<Self::Config>, context: &'a Context<'a>) -> Result<Self, Self::Error>;
-
-    fn do_build_target(&self, target: &str) -> Result<List, Self::Error>;
-
-    fn do_build(&self) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
-    fn do_package_target(&self, _list: &List, _target: &str) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
-    fn do_package(&self) -> Result<(), Self::Error> {
-        Ok(())
+pub fn parse_config(root: &Path) -> Result<Option<Config>, Error> {
+    let path = root.join("bp3d.toml");
+    if path.exists() && path.is_file() {
+        let bytes = std::fs::read(root.join("bp3d.toml")).map_err(Error::Io)?;
+        let config: Config = toml::from_slice(&bytes).map_err(Error::Toml)?;
+        Ok(Some(config))
+    } else {
+        Ok(None)
     }
 }

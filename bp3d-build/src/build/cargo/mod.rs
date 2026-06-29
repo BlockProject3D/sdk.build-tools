@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -35,7 +35,8 @@ simple_error! {
     pub Error {
         Cargo(cargo_toml::Error) => "cargo manifest error: {}",
         Io(std::io::Error) => "io error: {}",
-        InvalidUtf8 => "invalid utf-8"
+        InvalidUtf8 => "invalid utf-8",
+        Config(crate::config::Error) => "config error: {}"
     }
 }
 

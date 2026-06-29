@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -37,3 +37,4 @@ pub mod lua;
 
 // Build system implementations.
 mod build;
+mod config;

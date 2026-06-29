@@ -70,10 +70,10 @@ fn create_context<'a>(vm: &'a Vm, context: &Context) -> bp3d_lua::vm::Result<Tab
 impl<'a> Packager<'a> for Lua<'a> {
     const NAME: &'static str = "Lua";
     type Error = Error;
-    type Config = Option<HashMap<String, String>>;
+    type Config = HashMap<String, String>;
 
     #[allow(dependency_on_unit_never_type_fallback)]
-    fn new(config: Self::Config, context: &'a Context<'a>) -> Result<Self, Self::Error> {
+    fn new(config: Option<Self::Config>, context: &'a Context<'a>) -> Result<Self, Self::Error> {
         let mut vm = bp3d_build::lua::core::Vm::new(context.path)?;
         let path = vm.find(&format!("package/{}.lua", context.packager));
         if path.is_none() {

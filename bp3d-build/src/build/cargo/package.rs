@@ -29,6 +29,7 @@
 use std::borrow::Cow;
 use std::path::Path;
 use cargo_toml::{Manifest, Publish};
+use crate::config::parse_config;
 use crate::system::{static_string, Component, Package};
 use super::Error;
 
@@ -93,6 +94,13 @@ impl CargoWorkspace {
             }
         }
         let features = packages.iter().map(|v| v.features().iter().map(|v| String::from(&**v).into())).flatten().collect();
+        let config = parse_config(root).map_err(Error::Config)?;
+        if let Some(config) = config {
+            if let Some(package) = config.package {
+                core_name = Some(package.name);
+                core_version = Some(package.version);
+            }
+        }
         Ok(CargoWorkspace { packages, core_name: core_name.unwrap(), core_version: core_version.unwrap(), features })
     }
 

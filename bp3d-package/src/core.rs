@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -33,7 +33,7 @@ use crate::packager::{Context, Packager};
 
 pub fn run_packager<'a, T: Packager<'a>>(context: &'a Context) {
     println!("Initializing packager {}...", T::NAME);
-    let config: T::Config = parse_manifest(context.path)
+    let config: Option<T::Config> = parse_manifest(context.path, context.packager)
         .expect_exit("Failed to load packager configuration from root manifest", 1);
     let packager = T::new(config, context).expect_exit("Failed to initialize packager", 1);
     println!("Building targets...");
