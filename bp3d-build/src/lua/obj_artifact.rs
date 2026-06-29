@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -66,16 +66,16 @@ enum LuaLibType {
 }
 
 decl_lib_func! {
-    fn find_bin(vm: &Vm, path: SandboxPath, name: &str) -> Result<Option<Artifact>, SandboxError> {
-        path.to_path(vm).map(|v| artifact::Artifact::find_bin(&*v, name).map(Artifact))
+    fn find_bin(vm: &Vm, path: SandboxPath, name: &str, remove_debug_info: Option<bool>) -> Result<Option<Artifact>, SandboxError> {
+        path.to_path(vm).map(|v| artifact::Artifact::find_bin(&*v, name, remove_debug_info.unwrap_or_default()).map(Artifact))
     }
 }
 
 decl_lib_func! {
-    fn find_lib(vm: &Vm, path: SandboxPath, name: &str, ty: LuaLibType) -> Result<Option<Artifact>, SandboxError> {
+    fn find_lib(vm: &Vm, path: SandboxPath, name: &str, ty: LuaLibType, remove_debug_info: Option<bool>) -> Result<Option<Artifact>, SandboxError> {
         match ty {
-            LuaLibType::Dynamic => path.to_path(vm).map(|v| artifact::Artifact::find_lib(&*v, name, LibType::Dynamic).map(Artifact)),
-            LuaLibType::Static => path.to_path(vm).map(|v| artifact::Artifact::find_lib(&*v, name, LibType::Static).map(Artifact)),
+            LuaLibType::Dynamic => path.to_path(vm).map(|v| artifact::Artifact::find_lib(&*v, name, LibType::Dynamic, remove_debug_info.unwrap_or_default()).map(Artifact)),
+            LuaLibType::Static => path.to_path(vm).map(|v| artifact::Artifact::find_lib(&*v, name, LibType::Static, remove_debug_info.unwrap_or_default()).map(Artifact)),
         }
     }
 }

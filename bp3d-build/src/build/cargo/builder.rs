@@ -81,14 +81,15 @@ impl BuildSystem for CargoBuilder {
         cmd.status().map_err(Error::Io)?;
         let mut artifacts = List::new();
         let target_folder = ctx.path.join("target").join(target).join(ctx.configuration);
+        let remove_debug_info = ctx.configuration == "release";
         for lib in package.libs() {
-            let dy = Artifact::find_lib(&target_folder, lib, LibType::Dynamic);
-            let st = Artifact::find_lib(&target_folder, lib, LibType::Static);
+            let dy = Artifact::find_lib(&target_folder, lib, LibType::Dynamic, remove_debug_info);
+            let st = Artifact::find_lib(&target_folder, lib, LibType::Static, remove_debug_info);
             artifacts.add_if_some(dy);
             artifacts.add_if_some(st);
         }
         for bin in package.bins() {
-            let bin = Artifact::find_bin(&target_folder, bin);
+            let bin = Artifact::find_bin(&target_folder, bin, remove_debug_info);
             artifacts.add_if_some(bin);
         }
         artifacts.add_folder(Type::Header, &ctx.path.join("include"), "").map_err(Error::Io)?;

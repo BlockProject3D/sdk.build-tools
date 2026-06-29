@@ -39,12 +39,13 @@ function UnixDist:buildTarget(ctx)
     if not bp3d.files.exists(extPath) then return artifacts end
     local bin = extPath:join("bin")
     local lib = extPath:join("lib")
+    local removeDebugInfo = ctx.configuration == "release"
     if bp3d.files.exists(bin) then
-        BaseDist.appendObjects(artifacts, bin, function(path, name) return bp3d.build.Artifact.findBin(path:parent(), name) end)
+        BaseDist.appendObjects(artifacts, bin, function(path, name) return bp3d.build.Artifact.findBin(path:parent(), name, removeDebugInfo) end)
     end
     if bp3d.files.exists(lib) then
-        BaseDist.appendObjects(artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "dynamic") end)
-        BaseDist.appendObjects(artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "static") end)
+        BaseDist.appendObjects(artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "dynamic", removeDebugInfo) end)
+        BaseDist.appendObjects(artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "static", removeDebugInfo) end)
     end
     BaseDist.addExtUsr(ctx, artifacts)
     return artifacts

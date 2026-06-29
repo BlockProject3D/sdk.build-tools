@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -75,8 +75,11 @@ impl Artifact {
         self.ty
     }
 
-    pub fn find_bin(path: &Path, name: &str) -> Option<Self> {
-        let res = Finder::new(path).find_bin(name);
+    pub fn find_bin(path: &Path, name: &str, remove_debug_info: bool) -> Option<Self> {
+        let mut res = Finder::new(path).find_bin(name);
+        if remove_debug_info {
+            res.debug_info = None;
+        }
         Some(Self {
             path: res.path?,
             debug_info: res.debug_info,
@@ -86,8 +89,11 @@ impl Artifact {
         })
     }
 
-    pub fn find_lib(path: &Path, name: &str, ty: LibType) -> Option<Self> {
-        let res = Finder::new(path).find_lib(name, ty);
+    pub fn find_lib(path: &Path, name: &str, ty: LibType, remove_debug_info: bool) -> Option<Self> {
+        let mut res = Finder::new(path).find_lib(name, ty);
+        if remove_debug_info {
+            res.debug_info = None;
+        }
         Some(Self {
             path: res.path?,
             debug_info: res.debug_info,
