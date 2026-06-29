@@ -51,7 +51,9 @@ function DistInstall:packageTarget(ctx, artifacts)
     end
     local libPath = bp3d.build.files.getLibraryPath()
     build.run("rustc", { "-L", libPath, "-linstaller", "--edition=2021", "--crate-type", "bin", "installer.rs", "-O", "-o", installerName }, { workdir = targetPath })
-    bp3d.files.rename(targetPath:join(installerName), ctx.path:join("target"):join(installerName))
+    local dstInstaller = ctx.path:join("target"):join(installerName)
+    bp3d.files.delete(dstInstaller)
+    bp3d.files.rename(targetPath:join(installerName), dstInstaller)
 end
 
 return DistInstall
