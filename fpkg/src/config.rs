@@ -110,7 +110,7 @@ pub struct Dependency {
     pub version: String
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 pub struct Config {
     /// Represents the default package source for publishing new packages.
     #[serde(rename="default")]
@@ -126,8 +126,7 @@ pub struct Config {
 simple_error! {
     pub Error {
         Toml(toml::de::Error) => "toml error: {}",
-        Io(std::io::Error) => "io error: {}",
-        Missing => "missing configuration for fpkg"
+        Io(std::io::Error) => "io error: {}"
     }
 }
 
@@ -136,12 +135,18 @@ pub struct ManifestExt {
     pub fpkg: Config
 }
 
-pub fn parse_config(project_root: &Path) -> Result<Config, Error> {
+pub fn parse_config(project_root: &Path) -> Result<Option<Config>, Error> {
     let path = project_root.join("bp3d.toml");
     if path.exists() && path.is_file() {
         let data = std::fs::read(path).map_err(Error::Io)?;
         let config: ManifestExt = toml::from_slice(&data).map_err(Error::Toml)?;
-        return Ok(config.fpkg);
+        return Ok(Some(config.fpkg));
     }
-    Err(Error::Missing)
+    Ok(None)
+}
+
+pub fn parse_standalone_config(path: &Path) -> Result<Config, Error> {
+    let data = std::fs::read(path).map_err(Error::Io)?;
+    let config: Config = toml::from_slice(&data).map_err(Error::Toml)?;
+    Ok(config)
 }

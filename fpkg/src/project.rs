@@ -35,7 +35,7 @@ use bpx::core::Container;
 use bpx::package::{Architecture, Package, Platform};
 use bpx::package::util::unpack;
 use bp3d_debug::debug;
-use crate::config::{parse_config, Config};
+use crate::config::{parse_config, parse_standalone_config, Config};
 use crate::source::interface::{Dependency, Source};
 use crate::source::registry::get_provider;
 
@@ -153,10 +153,23 @@ impl Project {
     pub fn new(path: &Path) -> Result<Self, Error> {
         let config = parse_config(path).map_err(Error::Config)?;
         Ok(Self {
-            config,
+            config: config.unwrap_or_default(),
             sources: HashMap::new(),
             path: PathBuf::from(path)
         })
+    }
+
+    pub fn add_config_if_exists(&mut self, path: &Path) -> Result<(), Error> {
+        if !path.exists() || !path.is_file() {
+            return Ok(());
+        }
+        debug!("adding config path: {:?}...", &path);
+        let config = parse_standalone_config(path).map_err(Error::Config)?;
+        if self.config.default_source.is_none() && config.default_source.is_some() {
+            self.config.default_source = config.default_source;
+        }
+        self.config.sources.extend(config.sources.into_iter());
+        Ok(())
     }
 
     pub fn load_sources(&mut self) -> Result<(), Error> {
