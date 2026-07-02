@@ -27,7 +27,6 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::HashMap;
-use std::ffi::OsString;
 use std::fs::{read_dir, File};
 use std::path::{Path, PathBuf};
 use bp3d_util::simple_error;
@@ -42,7 +41,7 @@ use crate::source::registry::get_provider;
 simple_error! {
     pub Error {
         Config(crate::config::Error) => "config error: {}",
-        InvalidUrl(OsString) => "invalid URL: {:?}",
+        InvalidUrl(String) => "invalid URL: {:?}",
         UnknownScheme(String) => "unknown URL scheme: {}",
         Provider(crate::source::interface::Error) => "source configuration error: {}",
         Source(crate::source::interface::Error) => "source error: {}",

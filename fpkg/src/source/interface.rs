@@ -26,7 +26,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::OsStr;
 use std::fmt::Display;
 use std::path::Path;
 use bp3d_util::simple_error;
@@ -133,7 +132,7 @@ pub trait Source {
 }
 
 pub trait Provider: Send + Sync {
-    fn open(&self, path: &OsStr, params: &Parameters) -> Result<Box<dyn Source>>;
+    fn open(&self, path: &str, params: &Parameters) -> Result<Box<dyn Source>>;
 
     fn scheme(&self) -> &str;
 }

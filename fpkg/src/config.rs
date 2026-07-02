@@ -27,12 +27,12 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::HashMap;
-use std::ffi::{OsStr, OsString};
 use std::path::Path;
 use bp3d_util::simple_error;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(untagged)]
 pub enum ParamValue {
     String(String),
     Integer(i64),
@@ -76,30 +76,28 @@ pub type Parameters = HashMap<String, ParamValue>;
 
 #[derive(Deserialize)]
 pub struct Source {
-    pub url: OsString,
+    pub url: String,
     pub params: Parameters
 }
 
 impl Source {
     pub fn scheme(&self) -> Option<&str> {
-        let id = self.url.as_os_str().as_encoded_bytes().iter().position(|b| *b == b':')?;
-        std::str::from_utf8(&self.url.as_encoded_bytes()[..id]).ok()
+        let id = self.url.as_bytes().iter().position(|b| *b == b':')?;
+        Some(&self.url[..id])
     }
 
-    pub fn path(&self) -> &OsStr {
-        let id = self.url.as_os_str().as_encoded_bytes().iter().position(|b| *b == b':');
+    pub fn path(&self) -> &str {
+        let id = self.url.as_bytes().iter().position(|b| *b == b':');
         match id {
             Some(id) => {
-                let bytes = &self.url.as_os_str().as_encoded_bytes()[id + 1..];
-                if bytes.len() > 2 && bytes[0] == b'/' && bytes[1] == b'/' {
-                    // Safety: This is only constructured from as_ecnoded_bytes and after a valid ascii comparison
-                    unsafe { OsStr::from_encoded_bytes_unchecked(&bytes[2..]) }
+                let bytes = &self.url[id + 1..];
+                if bytes.len() > 2 && bytes.as_bytes()[0] == b'/' && bytes.as_bytes()[1] == b'/' {
+                    &bytes[2..]
                 } else {
-                    // Safety: This is only constructured from as_ecnoded_bytes
-                    unsafe { OsStr::from_encoded_bytes_unchecked(&bytes) }
+                    bytes
                 }
             },
-            None => self.url.as_os_str()
+            None => &self.url
         }
     }
 }

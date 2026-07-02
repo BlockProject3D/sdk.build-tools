@@ -27,7 +27,6 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::boxed::Box;
-use std::ffi::OsStr;
 use std::string::String;
 use std::path::Path;
 use std::fs::File;
@@ -163,8 +162,8 @@ impl Source for GitLab {
 struct GitLabProvider;
 
 impl Provider for GitLabProvider {
-    fn open(&self, path: &OsStr, params: &Parameters) -> Result<Box<dyn Source>> {
-        let base_url = path.to_str().ok_or(Error::InvalidPath)?;
+    fn open(&self, path: &str, params: &Parameters) -> Result<Box<dyn Source>> {
+        let base_url = path;
         let allow_guest = params.get("allow-guest")
             .map(|v| v.as_boolean().ok_or(Error::InvalidParameter("allow-guest")))
             .unwrap_or(Ok(true))?;
