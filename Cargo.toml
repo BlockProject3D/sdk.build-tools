@@ -1,2 +1,2 @@
 [workspace]
-members = ["bp3d", "bp3d-build", "bp3d-package", "bp3d-script", "bpxp", "fpkg", "installer"]
+members = ["bp3d", "bp3d-build", "bp3d-package", "bp3d-script", "bpxp", "fpkg", "glgp", "installer"]

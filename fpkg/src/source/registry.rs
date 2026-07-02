@@ -29,7 +29,7 @@
 use crate::source::interface::Provider;
 
 static PROVIDERS: &[&dyn Provider] = &[
-
+    super::gitlab::GLGP
 ];
 
 pub fn get_provider(scheme: &str) -> Option<&'static dyn Provider> {

@@ -26,11 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::ffi::OsStr;
 use std::fmt::Display;
-use std::fs::File;
 use std::path::Path;
 use bp3d_util::simple_error;
-use bpx::package::Package;
 use crate::config::Parameters;
 
 #[derive(Debug, Clone)]
@@ -70,8 +69,19 @@ simple_error! {
     pub Error {
         MissingDep(Dependency) => "could not find dependency {}",
         Io(std::io::Error) => "io error: {}",
-        InvalidParameter(String) => "invalid value for parameter: {}",
-        MissingParameter(String) => "missing value for parameter: {}"
+        InvalidPath => "invalid URL path",
+        InvalidParameter(&'static str) => "invalid value for parameter: {}",
+        MissingParameter(&'static str) => "missing value for parameter: {}",
+        Network(reqwest::Error) => "network error: {}",
+        InvalidDep(Dependency) => "unsupported dependency specification ({}) for package source",
+        AlreadyExists(Dependency) => "dependency already exists: {}",
+        Other(String) => "{}"
+    }
+}
+
+impl<T: Into<String>> From<T> for Error {
+    fn from(value: T) -> Self {
+        Error::Other(value.into())
     }
 }
 
@@ -123,7 +133,7 @@ pub trait Source {
 }
 
 pub trait Provider: Send + Sync {
-    fn open(&self, params: &Parameters) -> Result<Box<dyn Source>>;
+    fn open(&self, path: &OsStr, params: &Parameters) -> Result<Box<dyn Source>>;
 
     fn scheme(&self) -> &str;
 }

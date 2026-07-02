@@ -163,7 +163,7 @@ impl Project {
         for (name, cfg) in &self.config.sources {
             let scheme = cfg.scheme().ok_or_else(|| Error::InvalidUrl(cfg.url.clone()))?;
             let provider = get_provider(scheme).ok_or_else(|| Error::UnknownScheme(scheme.into()))?;
-            let source = provider.open(&cfg.params).map_err(Error::Provider)?;
+            let source = provider.open(cfg.path(), &cfg.params).map_err(Error::Provider)?;
             self.sources.insert(name.into(), source);
         }
         Ok(())

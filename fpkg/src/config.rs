@@ -31,15 +31,45 @@ use std::ffi::{OsStr, OsString};
 use std::path::Path;
 use bp3d_util::simple_error;
 use serde::Deserialize;
-use toml::value::Datetime;
 
 #[derive(Deserialize)]
 pub enum ParamValue {
     String(String),
     Integer(i64),
     Float(f64),
-    Boolean(bool),
-    Datetime(Datetime)
+    Boolean(bool)
+}
+
+impl ParamValue {
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            ParamValue::String(s) => Some(s.as_str()),
+            _ => None
+        }
+    }
+
+    pub fn as_number(&self) -> Option<f64> {
+        match self {
+            ParamValue::Integer(v) => Some(*v as _),
+            ParamValue::Float(v) => Some(*v),
+            _ => None
+        }
+    }
+
+    pub fn as_integer(&self) -> Option<i64> {
+        match self {
+            ParamValue::Integer(v) => Some(*v),
+            ParamValue::Float(v) => Some(*v as _),
+            _ => None
+        }
+    }
+
+    pub fn as_boolean(&self) -> Option<bool> {
+        match self {
+            ParamValue::Boolean(v) => Some(*v),
+            _ => None
+        }
+    }
 }
 
 pub type Parameters = HashMap<String, ParamValue>;

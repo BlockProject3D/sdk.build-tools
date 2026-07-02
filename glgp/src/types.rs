@@ -26,6 +26,21 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod interface;
-pub mod registry;
-mod gitlab;
+use reqwest::Error;
+use serde::Deserialize;
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Deserialize)]
+pub struct PackageFile {
+    pub id: u64,
+    pub file_name: String,
+    pub size: u64
+}
+
+#[derive(Deserialize)]
+pub struct PackageEntry {
+    pub id: u64,
+    pub version: String,
+    pub name: String
+}
