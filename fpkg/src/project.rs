@@ -33,7 +33,7 @@ use bp3d_util::simple_error;
 use bpx::core::Container;
 use bpx::package::{Architecture, Package, Platform};
 use bpx::package::util::unpack;
-use bp3d_debug::debug;
+use bp3d_debug::{debug, trace};
 use crate::config::{parse_config, parse_standalone_config, Config};
 use crate::source::interface::{Dependency, Source};
 use crate::source::registry::get_provider;
@@ -94,7 +94,7 @@ fn ensure_bpxp_compatible<T>(package: &Package<T>, dep: Dependency, target: &str
 }
 
 fn publish_packages_rec(path: &Path, target: &str, source: &mut dyn Source) -> Result<(), Error> {
-    debug!("Publishing packages in {:?}...", path);
+    trace!("Publishing packages in {:?}...", path);
     for entry in read_dir(path).map_err(Error::Io)? {
         let entry = entry.map_err(Error::Io)?;
         if entry.path().is_dir() {
@@ -135,7 +135,7 @@ fn publish_packages_rec(path: &Path, target: &str, source: &mut dyn Source) -> R
                     }
                 }
             } else {
-                debug!("Skipping {:?}: not a BPX file", entry.path());
+                trace!("Skipping {:?}: not a BPX file", entry.path());
             }
         }
     }

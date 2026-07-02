@@ -39,7 +39,7 @@ pub struct Dependency {
 
 impl Display for Dependency {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}-{}", self.version, self.name)
+        write!(f, "{}-{}", self.name, self.version)
     }
 }
 
