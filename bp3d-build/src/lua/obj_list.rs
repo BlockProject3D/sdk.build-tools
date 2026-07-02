@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -81,6 +81,18 @@ impl_userdata! {
             };
             let path = path.to_path(vm).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
             this.0.borrow_mut().add_folder(ty, &*path, name)
+        }
+
+        fn add_folder_exclude(this: &List, vm: &Vm, ty: ArtifactType, path: SandboxPath, excluded: &str, name: &str) -> std::io::Result<()> {
+            let ty = match ty {
+                ArtifactType::Bin => Type::Bin,
+                ArtifactType::Lib => Type::Lib(LibType::Dynamic),
+                ArtifactType::Header => Type::Header,
+                ArtifactType::Config => Type::Config,
+                ArtifactType::Other => Type::Resource
+            };
+            let path = path.to_path(vm).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            this.0.borrow_mut().add_folder_exclude(ty, &*path, excluded, name)
         }
     }
     static {

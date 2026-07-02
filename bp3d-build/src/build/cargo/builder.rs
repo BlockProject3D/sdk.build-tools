@@ -93,7 +93,8 @@ impl BuildSystem for CargoBuilder {
             artifacts.add_if_some(bin);
         }
         artifacts.add_folder(Type::Header, &ctx.path.join("include"), "").map_err(Error::Io)?;
-        artifacts.add_folder(Type::Resource, &ctx.path.join("res"), "").map_err(Error::Io)?;
+        artifacts.add_folder_exclude(Type::Resource, &ctx.path.join("res"), "config", "").map_err(Error::Io)?;
+        artifacts.add_folder(Type::Config, &ctx.path.join("res").join("config"), "").map_err(Error::Io)?;
         Ok(artifacts)
     }
 }

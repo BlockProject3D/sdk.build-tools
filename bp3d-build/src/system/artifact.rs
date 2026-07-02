@@ -158,13 +158,16 @@ impl List {
         self.content.push(artifact);
     }
 
-    pub fn add_folder(&mut self, ty1: Type, path: &Path, name: &str) -> std::io::Result<()> {
+    pub fn add_folder_exclude(&mut self, ty1: Type, path: &Path, excluded: &str, name: &str) -> std::io::Result<()> {
         if path.exists() {
             let files = std::fs::read_dir(path)?;
             for file in files {
                 let file = file?;
                 let ty = file.file_type()?;
                 let name1 = String::from(name) + file.file_name().to_str().ok_or_else(|| Error::new(ErrorKind::Other, "invalid filename"))?;
+                if !excluded.is_empty() && name1.starts_with(excluded) { // Skip excluded folder
+                    continue;
+                }
                 if ty.is_file() {
                     let artifact = Artifact {
                         path: file.path(),
@@ -175,11 +178,15 @@ impl List {
                     };
                     self.add(artifact);
                 } else if ty.is_dir() {
-                    self.add_folder(ty1, &file.path(), &(name1 + "/"))?;
+                    self.add_folder_exclude(ty1, &file.path(), excluded, &(name1 + "/"))?;
                 }
             }
         }
         Ok(())
+    }
+
+    pub fn add_folder(&mut self, ty1: Type, path: &Path, name: &str) -> std::io::Result<()> {
+        self.add_folder_exclude(ty1, path, "", name)
     }
 
     pub fn find(&self, ty: Type) -> impl Iterator<Item = &Artifact> {
