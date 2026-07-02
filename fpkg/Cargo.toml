@@ -1,0 +1,14 @@
+[package]
+name = "fpkg"
+version = "0.1.0"
+edition = "2024"
+description = "A minimalistic package generator/installer tool"
+
+[dependencies]
+clap = { version = "4.5.49", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
+bp3d-util = { version = "2.2.0", features = ["result", "simple-error"] }
+toml = "1.1.2+spec-1.1.0"
+bpx = { version = "4.0.0-rc.13.3.1", features = ["package"] }
+bp3d-debug = "1.0.0"
+current_platform = "0.2.0"
