@@ -35,6 +35,7 @@ use std::io::Write;
 use std::io;
 use bp3d_debug::error;
 use regex::Regex;
+use glgp::util::{get_base_url, get_project_id};
 use crate::config::Parameters;
 use super::interface::{Dependency, Error, Provider, Result, Source};
 
@@ -163,7 +164,13 @@ struct GitLabProvider;
 
 impl Provider for GitLabProvider {
     fn open(&self, path: &str, params: &Parameters) -> Result<Box<dyn Source>> {
-        let base_url = path;
+        let ppath = params.get("project-path").ok_or(Error::MissingParameter("project-path"))?.as_str().ok_or(Error::InvalidParameter("project-path"))?;
+        let id = ppath.find('/').ok_or(Error::InvalidParameter("project-path"))?;
+        let namespace = &ppath[..id];
+        let name = &ppath[id + 1..];
+        let mut base_url = get_base_url(path);
+        let pid = get_project_id(&base_url, namespace, name).map_err(Error::Network)?;
+        base_url += &format!("/{}", pid);
         let allow_guest = params.get("allow-guest")
             .map(|v| v.as_boolean().ok_or(Error::InvalidParameter("allow-guest")))
             .unwrap_or(Ok(true))?;
@@ -173,14 +180,14 @@ impl Provider for GitLabProvider {
         };
         if allow_guest {
             Ok(Box::new(GitLab {
-                list: glgp::list::PackageList::new_guest(base_url.into()),
-                manager: token.map(|v| glgp::manager::PackageManager::new(base_url.into(), v.into()))
+                list: glgp::list::PackageList::new_guest(base_url.clone()),
+                manager: token.map(|v| glgp::manager::PackageManager::new(base_url, v.into()))
             }))
         } else {
             let token = token.ok_or(Error::MissingParameter("token"))?;
             Ok(Box::new(GitLab {
-                list: glgp::list::PackageList::new_authenticated(base_url.into(), token.into()),
-                manager: Some(glgp::manager::PackageManager::new(base_url.into(), token.into()))
+                list: glgp::list::PackageList::new_authenticated(base_url.clone(), token.into()),
+                manager: Some(glgp::manager::PackageManager::new(base_url, token.into()))
             }))
         }
     }
