@@ -30,7 +30,7 @@ use reqwest::blocking::Client;
 use reqwest::blocking::Response;
 use std::fs::File;
 use regex::Regex;
-
+use reqwest::StatusCode;
 use crate::types::Result;
 use crate::types::PackageEntry;
 use crate::types::PackageFile;
@@ -62,7 +62,8 @@ impl PackageManager {
         path.push_str(&package.version);
         path.push('/');
         path.push_str(&file.file_name);
-        self.client.get(&path).header("PRIVATE-TOKEN", &self.access_token).send()
+        self.client.get(&path).header("PRIVATE-TOKEN", &self.access_token).send()?
+            .error_for_status()
     }
 
     pub fn upload(&mut self, package_name: &str, package_version: &str, file_name: &str, file: File) -> Result<()> {
@@ -83,7 +84,7 @@ impl PackageManager {
         path.push_str(&package_version);
         path.push('/');
         path.push_str(&file_name);
-        self.client.put(&path).header("PRIVATE-TOKEN", &self.access_token).body(file).send()?;
-        Ok(())
+        self.client.put(&path).header("PRIVATE-TOKEN", &self.access_token).body(file).send()?
+            .error_for_status().map(|_| ())
     }
 }

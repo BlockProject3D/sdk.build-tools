@@ -74,7 +74,7 @@ impl PackageList {
         if let Some(token) = &self.access_token {
             request = request.header("PRIVATE-TOKEN", token);
         }
-        request.send()?.json::<Vec<PackageEntry>>()
+        request.send()?.error_for_status()?.json::<Vec<PackageEntry>>()
     }
 
     pub fn search(&mut self, page: usize, name: &str) -> Result<Vec<PackageEntry>> {
@@ -95,7 +95,7 @@ impl PackageList {
         if let Some(token) = &self.access_token {
             request = request.header("PRIVATE-TOKEN", token);
         }
-        request.send()?.json::<Vec<PackageEntry>>()
+        request.send()?.error_for_status()?.json::<Vec<PackageEntry>>()
     }
 
     pub fn list_files(&mut self, page: usize, package: &PackageEntry) -> Result<Vec<PackageFile>> {
@@ -111,6 +111,6 @@ impl PackageList {
         if let Some(token) = &self.access_token {
             request = request.header("PRIVATE-TOKEN", token);
         }
-        request.send()?.json::<Vec<PackageFile>>()
+        request.send()?.error_for_status()?.json::<Vec<PackageFile>>()
     }
 }
