@@ -96,6 +96,9 @@ fn ensure_bpxp_compatible<T>(package: &Package<T>, dep: Dependency, target: &str
 }
 
 fn publish_packages_rec(path: &Path, target: &str, source: &mut dyn Source) -> Result<(), Error> {
+    if !path.exists() {
+        return Ok(());
+    }
     trace!("Publishing packages in {:?}...", path);
     for entry in read_dir(path).map_err(Error::Io)? {
         let entry = entry.map_err(Error::Io)?;
