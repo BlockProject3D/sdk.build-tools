@@ -172,13 +172,13 @@ impl Project {
         if self.config.default_source.is_none() && config.default_source.is_some() {
             self.config.default_source = config.default_source;
         }
-        self.config.sources.extend(config.sources.into_iter());
+        self.config.sources.get_or_insert_default().extend(config.sources.unwrap_or_default().into_iter());
         Ok(())
     }
 
     pub fn load_sources(&mut self, params: &Vec<String>) -> Result<(), Error> {
         if let Some(source) = &self.config.default_source {
-            let source = self.config.sources.get_mut(source).ok_or_else(|| Error::UnknownSource(source.into()))?;
+            let source = self.config.sources.get_or_insert_default().get_mut(source).ok_or_else(|| Error::UnknownSource(source.into()))?;
             for kv in params {
                 let mut kv = kv.split("=");
                 let key = kv.next().ok_or(Error::InvalidParameter)?;
@@ -196,7 +196,7 @@ impl Project {
                 }
             }
         }
-        for (name, cfg) in &self.config.sources {
+        for (name, cfg) in self.config.sources.get_or_insert_default() {
             let scheme = cfg.scheme().ok_or_else(|| Error::InvalidUrl(cfg.url.clone()))?;
             let provider = get_provider(scheme).ok_or_else(|| Error::UnknownScheme(scheme.into()))?;
             let source = provider.open(cfg.path(), &cfg.params).map_err(Error::Provider)?;
@@ -209,7 +209,7 @@ impl Project {
     pub fn install(&mut self, target: &str) -> Result<(), Error> {
         let target_path = self.path.join("target").join(target).join("ext");
         std::fs::create_dir_all(&target_path).map_err(Error::Io)?;
-        for (name, dep) in &self.config.dependencies {
+        for (name, dep) in self.config.dependencies.get_or_insert_default() {
             let source = dep.source().or_else(|| self.config.default_source.as_deref()).ok_or(Error::NoSource)?;
             let source = self.sources.get_mut(source).ok_or_else(|| Error::UnknownSource(source.into()))?;
             let mut dep = Dependency::new(name, dep.version());

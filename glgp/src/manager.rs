@@ -30,7 +30,6 @@ use reqwest::blocking::Client;
 use reqwest::blocking::Response;
 use std::fs::File;
 use regex::Regex;
-use reqwest::StatusCode;
 use crate::types::Result;
 use crate::types::PackageEntry;
 use crate::types::PackageFile;

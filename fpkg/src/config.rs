@@ -138,10 +138,10 @@ pub struct Config {
     pub default_source: Option<String>,
 
     /// The list of dependencies to be installed.
-    pub dependencies: HashMap<String, Dependency>,
+    pub dependencies: Option<HashMap<String, Dependency>>,
 
     /// A declaration of all available package sources.
-    pub sources: HashMap<String, Source>
+    pub sources: Option<HashMap<String, Source>>
 }
 
 simple_error! {
