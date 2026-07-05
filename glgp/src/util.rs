@@ -43,9 +43,9 @@ pub fn get_base_url(url: &str) -> String {
     }
 }
 
-pub fn get_project_id(base_url: &str, namespace: &str, name: &str) -> Result<usize> {
+pub fn get_project_id(base_url: &str, path: &str) -> Result<usize> {
     let client = Client::new();
-    let url = format!("{}/{}%2F{}", base_url, namespace, name);
+    let url = format!("{}/{}", base_url, path.replace("/", "%2F"));
     let req = client.get(&url)
         .header("Content-Type", "application/json");
     let res: ProjectInfo = req.send()?.json()?;

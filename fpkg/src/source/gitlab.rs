@@ -162,11 +162,9 @@ struct GitLabProvider;
 impl Provider for GitLabProvider {
     fn open(&self, path: &str, params: &Parameters) -> Result<Box<dyn Source>> {
         let ppath = params.get("project-path").ok_or(Error::MissingParameter("project-path"))?.as_str().ok_or(Error::InvalidParameter("project-path"))?;
-        let id = ppath.find('/').ok_or(Error::InvalidParameter("project-path"))?;
-        let namespace = &ppath[..id];
-        let name = &ppath[id + 1..];
+        ppath.find('/').ok_or(Error::InvalidParameter("project-path"))?;
         let mut base_url = get_base_url(path);
-        let pid = get_project_id(&base_url, namespace, name).map_err(Error::Network)?;
+        let pid = get_project_id(&base_url, ppath).map_err(Error::Network)?;
         base_url += &format!("/{}", pid);
         let allow_guest = params.get("allow-guest")
             .map(|v| v.as_boolean().ok_or(Error::InvalidParameter("allow-guest")))
