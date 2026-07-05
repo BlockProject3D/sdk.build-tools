@@ -116,6 +116,13 @@ fn compress(args: &Args) -> bpx::package::Result<()> {
         }
         opts = opts.metadata(Value::Object(obj.detach()));
     }
+    if let Some(type_code) = &args.type_code {
+        if type_code.len() == 2 {
+            opts = opts.type_code([type_code.as_bytes()[0], type_code.as_bytes()[1]]);
+        } else {
+            eprintln!("Cannot set type code {}: type code must be a 2 bytes ASCII string", type_code);
+        }
+    }
     let mut package = Package::create(opts)?;
     for f in &args.file_names {
         let vname = f.to_str().ok_or(bpx::package::error::Error::Strings(bpx::strings::Error::Utf8))?;

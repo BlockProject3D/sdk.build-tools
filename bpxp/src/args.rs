@@ -50,5 +50,8 @@ pub struct Args {
     #[arg(short='t', long="target", help="Specify optionally the target triple when generating the package...")]
     pub target: Option<String>,
 
+    #[arg(short='p', long="type-code", help="Specify an optional type code to override the default 'PK' code...")]
+    pub type_code: Option<String>,
+
     pub file_names: Vec<PathBuf>,
 }
