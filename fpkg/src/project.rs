@@ -113,6 +113,10 @@ fn publish_packages_rec(path: &Path, target: &str, source: &mut dyn Source) -> R
                         debug!("Skipping {:?}: not a BPXP file", entry.path());
                     }
                     let package = Package::try_from(bpx).map_err(Error::Bpxp)?;
+                    if &package.settings().type_code != b"PK" {
+                        debug!("Skipping {:?}: package is not a valid FPKG binary package", entry.path());
+                        continue;
+                    }
                     let arch = get_architecture_from_target(target);
                     let platform = get_platform_from_target(target);
                     if arch != package.settings().architecture || platform != package.settings().platform {
