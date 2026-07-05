@@ -103,9 +103,32 @@ impl Source {
 }
 
 #[derive(Deserialize)]
-pub struct Dependency {
+pub struct SourceDep {
     pub source: String,
     pub version: String
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+pub enum Dependency {
+    WithSource(SourceDep),
+    Version(String)
+}
+
+impl Dependency {
+    pub fn version(&self) -> &str {
+        match self {
+            Dependency::WithSource(v) => &v.version,
+            Dependency::Version(v) => v
+        }
+    }
+
+    pub fn source(&self) -> Option<&str> {
+        match self {
+            Dependency::WithSource(v) => Some(&v.source),
+            Dependency::Version(_) => None
+        }
+    }
 }
 
 #[derive(Deserialize, Default)]

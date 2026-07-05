@@ -46,6 +46,7 @@ simple_error! {
         Provider(crate::source::interface::Error) => "source configuration error: {}",
         Source(crate::source::interface::Error) => "source error: {}",
         Io(std::io::Error) => "io error: {}",
+        NoSource => "no package source found",
         UnknownSource(String) => "unknown source: {}",
         DependencyNotFound(Dependency) => "dependency {} not found",
         Bpxp(bpx::package::error::Error) => "bpxp error: {}",
@@ -185,8 +186,9 @@ impl Project {
         let target_path = self.path.join("target").join(target).join("ext");
         std::fs::create_dir_all(&target_path).map_err(Error::Io)?;
         for (name, dep) in &self.config.dependencies {
-            let source = self.sources.get_mut(&dep.source).ok_or_else(|| Error::UnknownSource(dep.source.clone()))?;
-            let mut dep = Dependency::new(name, &dep.version);
+            let source = dep.source().or_else(|| self.config.default_source.as_deref()).ok_or(Error::NoSource)?;
+            let source = self.sources.get_mut(source).ok_or_else(|| Error::UnknownSource(source.into()))?;
+            let mut dep = Dependency::new(name, dep.version());
             if dep.version() == "latest" {
                 dep = source.find_latest(name).map_err(Error::Source)?.ok_or_else(|| Error::DependencyNotFound(dep))?;
             }
