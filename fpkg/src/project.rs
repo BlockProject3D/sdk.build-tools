@@ -197,10 +197,10 @@ impl Project {
             }
         }
         for (name, cfg) in self.config.sources.get_or_insert_default() {
+            debug!("Loading package source: {}", name);
             let scheme = cfg.scheme().ok_or_else(|| Error::InvalidUrl(cfg.url.clone()))?;
             let provider = get_provider(scheme).ok_or_else(|| Error::UnknownScheme(scheme.into()))?;
             let source = provider.open(cfg.path(), &cfg.params).map_err(Error::Provider)?;
-            debug!("Loading package source: {}, with params: {:?}", name, cfg.params);
             self.sources.insert(name.into(), source);
         }
         Ok(())

@@ -44,6 +44,9 @@ fn main() {
         args.targets.push(CURRENT_PLATFORM.into());
     }
     let mut project = Project::new(&args.root.unwrap_or(PathBuf::from("."))).expect_exit("unable to load project configuration", 1);
+    if let Some(path) = bp3d_os::dirs::system::get_user_home() {
+        project.add_config_if_exists(&path.join("fpkg.toml")).expect_exit("unable to load user supplied config", 1);
+    }
     let exe = bp3d_os::assets::get_executable_path().unwrap();
     project.add_config_if_exists(&exe.join("../etc/fpkg.toml")).expect_exit("unable to load built-in config", 1);
     project.add_config_if_exists(&exe.join("../../res/config/fpkg.toml")).expect_exit("unable to load built-in config", 1);
