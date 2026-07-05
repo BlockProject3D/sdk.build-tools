@@ -118,6 +118,7 @@ impl Source for GitLab {
         if let Some(mgr) = &mut self.manager {
             let f = File::open(&src_file).map_err(Error::Io)?;
             mgr.upload(dep.name(), dep.version(), target, f).map_err(Error::Network)?;
+            return Ok(());
         }
         Err(Error::from("The registry does not have a valid access token!"))
     }
