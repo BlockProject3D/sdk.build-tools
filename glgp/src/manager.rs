@@ -37,16 +37,28 @@ use crate::types::PackageFile;
 pub struct PackageManager {
     client: Client,
     base_url: String, //This way we support other gitlab instances (not just gitlab.com)
-    access_token: String
+    access_token: Option<String>
 }
 
 impl PackageManager {
-    pub fn new(base_url: String, access_token: String) -> PackageManager {
+    pub fn new_authenticated(base_url: String, access_token: String) -> PackageManager {
         PackageManager {
             client: Client::new(),
             base_url,
-            access_token
+            access_token: Some(access_token)
         }
+    }
+
+    pub fn new_guest(base_url: String) -> PackageManager {
+        PackageManager {
+            client: Client::new(),
+            base_url,
+            access_token: None
+        }
+    }
+
+    pub fn is_authenticated(&self) -> bool {
+        self.access_token.is_some()
     }
 
     pub fn download(&mut self, package: &PackageEntry, file: &PackageFile) -> Result<Response> {
@@ -61,8 +73,11 @@ impl PackageManager {
         path.push_str(&package.version);
         path.push('/');
         path.push_str(&file.file_name);
-        self.client.get(&path).header("PRIVATE-TOKEN", &self.access_token).send()?
-            .error_for_status()
+        let mut req = self.client.get(&path);
+        if let Some(access_token) = &self.access_token {
+            req = req.header("PRIVATE-TOKEN", access_token);
+        }
+        req.send()?.error_for_status()
     }
 
     pub fn upload(&mut self, package_name: &str, package_version: &str, file_name: &str, file: File) -> Result<()> {
@@ -83,7 +98,7 @@ impl PackageManager {
         path.push_str(&package_version);
         path.push('/');
         path.push_str(&file_name);
-        self.client.put(&path).header("PRIVATE-TOKEN", &self.access_token).body(file).send()?
-            .error_for_status().map(|_| ())
+        self.client.put(&path).header("PRIVATE-TOKEN", self.access_token.as_deref().unwrap_or_default())
+            .body(file).send()?.error_for_status().map(|_| ())
     }
 }

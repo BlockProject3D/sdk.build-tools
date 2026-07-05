@@ -41,7 +41,7 @@ use super::interface::{Dependency, Error, Provider, Result, Source};
 
 struct GitLab {
     list: glgp::list::PackageList,
-    manager: Option<glgp::manager::PackageManager>
+    manager: glgp::manager::PackageManager
 }
 
 impl GitLab {
@@ -115,9 +115,9 @@ impl Source for GitLab {
                 return Err(Error::AlreadyExists(dep.clone()));
             }
         }
-        if let Some(mgr) = &mut self.manager {
+        if self.manager.is_authenticated() {
             let f = File::open(&src_file).map_err(Error::Io)?;
-            mgr.upload(dep.name(), dep.version(), target, f).map_err(Error::Network)?;
+            self.manager.upload(dep.name(), dep.version(), target, f).map_err(Error::Network)?;
             return Ok(());
         }
         Err(Error::from("The registry does not have a valid access token!"))
@@ -141,23 +141,19 @@ impl Source for GitLab {
     }
 
     fn download(&mut self, dep: &Dependency, target: &str, target_path: &Path) -> Result<()> {
-        if let Some(mgr) = &mut self.manager {
-            let pkg = glgp::types::PackageEntry {
-                id: 0,
-                version: dep.version().into(),
-                name: dep.name().into(),
-            };
-            let file = glgp::types::PackageFile {
-                id: 0,
-                file_name: String::from(target),
-                size: 0
-            };
-            let mut response = mgr.download(&pkg, &file).map_err(Error::Network)?;
-            download_file(target_path, &mut response).map_err(Error::Io)?;
-            Ok(())
-        } else {
-            Err(Error::from("The registry does not have a valid access token!"))
-        }
+        let pkg = glgp::types::PackageEntry {
+            id: 0,
+            version: dep.version().into(),
+            name: dep.name().into(),
+        };
+        let file = glgp::types::PackageFile {
+            id: 0,
+            file_name: String::from(target),
+            size: 0
+        };
+        let mut response = self.manager.download(&pkg, &file).map_err(Error::Network)?;
+        download_file(target_path, &mut response).map_err(Error::Io)?;
+        Ok(())
     }
 }
 
@@ -182,13 +178,13 @@ impl Provider for GitLabProvider {
         if allow_guest {
             Ok(Box::new(GitLab {
                 list: glgp::list::PackageList::new_guest(base_url.clone()),
-                manager: token.map(|v| glgp::manager::PackageManager::new(base_url, v.into()))
+                manager: glgp::manager::PackageManager::new_guest(base_url)
             }))
         } else {
             let token = token.ok_or(Error::MissingParameter("token"))?;
             Ok(Box::new(GitLab {
                 list: glgp::list::PackageList::new_authenticated(base_url.clone(), token.into()),
-                manager: Some(glgp::manager::PackageManager::new(base_url, token.into()))
+                manager: glgp::manager::PackageManager::new_authenticated(base_url, token.into())
             }))
         }
     }
