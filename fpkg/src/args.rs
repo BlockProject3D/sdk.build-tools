@@ -32,7 +32,8 @@ use clap::{Parser, ValueEnum};
 #[derive(ValueEnum, Debug, Copy, Clone)]
 pub enum Command {
     Install,
-    Publish
+    Publish,
+    Clean
 }
 
 #[derive(Parser, Debug)]

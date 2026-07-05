@@ -206,6 +206,11 @@ impl Project {
         Ok(())
     }
 
+    pub fn clean(&self, target: &str) -> Result<(), Error> {
+        let target_path = self.path.join("target").join(target).join("ext");
+        std::fs::remove_dir_all(target_path).map_err(Error::Io)
+    }
+
     pub fn install(&mut self, target: &str) -> Result<(), Error> {
         let target_path = self.path.join("target").join(target).join("ext");
         std::fs::create_dir_all(&target_path).map_err(Error::Io)?;

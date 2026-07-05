@@ -53,10 +53,15 @@ fn main() {
             for target in args.targets {
                 project.install(&target).expect_exit("unable to install", 1);
             }
-        }
+        },
         Command::Publish => {
             for target in args.targets {
                 project.publish(&target).expect_exit("unable to publish", 1);
+            }
+        },
+        Command::Clean => {
+            for target in args.targets {
+                project.clean(&target).expect_exit("unable to clean", 1);
             }
         }
     }
