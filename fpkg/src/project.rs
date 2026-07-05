@@ -34,7 +34,7 @@ use bpx::core::Container;
 use bpx::package::{Architecture, Package, Platform};
 use bpx::package::util::unpack;
 use bp3d_debug::{debug, trace};
-use crate::config::{parse_config, parse_standalone_config, Config};
+use crate::config::{parse_config, parse_standalone_config, Config, ParamValue};
 use crate::source::interface::{Dependency, Source};
 use crate::source::registry::get_provider;
 
@@ -47,6 +47,7 @@ simple_error! {
         Source(crate::source::interface::Error) => "source error: {}",
         Io(std::io::Error) => "io error: {}",
         NoSource => "no package source found",
+        InvalidParameter => "invalid parameter specification",
         UnknownSource(String) => "unknown source: {}",
         DependencyNotFound(Dependency) => "dependency {} not found",
         Bpxp(bpx::package::error::Error) => "bpxp error: {}",
@@ -172,11 +173,31 @@ impl Project {
         Ok(())
     }
 
-    pub fn load_sources(&mut self) -> Result<(), Error> {
+    pub fn load_sources(&mut self, params: &Vec<String>) -> Result<(), Error> {
+        if let Some(source) = &self.config.default_source {
+            let source = self.config.sources.get_mut(source).ok_or_else(|| Error::UnknownSource(source.into()))?;
+            for kv in params {
+                let mut kv = kv.split("=");
+                let key = kv.next().ok_or(Error::InvalidParameter)?;
+                let value = kv.next().ok_or(Error::InvalidParameter)?;
+                if let Ok(v) = value.parse::<i64>() {
+                    source.params.insert(key.into(), ParamValue::Integer(v));
+                } else if let Ok(v) = value.parse::<f64>() {
+                    source.params.insert(key.into(), ParamValue::Float(v));
+                } else if value == "true" {
+                    source.params.insert(key.into(), ParamValue::Boolean(true));
+                } else if value == "false" {
+                    source.params.insert(key.into(), ParamValue::Boolean(false));
+                } else {
+                    source.params.insert(key.into(), ParamValue::String(value.into()));
+                }
+            }
+        }
         for (name, cfg) in &self.config.sources {
             let scheme = cfg.scheme().ok_or_else(|| Error::InvalidUrl(cfg.url.clone()))?;
             let provider = get_provider(scheme).ok_or_else(|| Error::UnknownScheme(scheme.into()))?;
             let source = provider.open(cfg.path(), &cfg.params).map_err(Error::Provider)?;
+            debug!("Loading package source: {}, with params: {:?}", name, cfg.params);
             self.sources.insert(name.into(), source);
         }
         Ok(())

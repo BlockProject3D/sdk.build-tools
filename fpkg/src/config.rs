@@ -31,7 +31,7 @@ use std::path::Path;
 use bp3d_util::simple_error;
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(untagged)]
 pub enum ParamValue {
     String(String),

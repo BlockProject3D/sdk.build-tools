@@ -47,7 +47,7 @@ fn main() {
     let exe = bp3d_os::assets::get_executable_path().unwrap();
     project.add_config_if_exists(&exe.join("../etc/fpkg.toml")).expect_exit("unable to load built-in config", 1);
     project.add_config_if_exists(&exe.join("../../res/config/fpkg.toml")).expect_exit("unable to load built-in config", 1);
-    project.load_sources().expect_exit("unable to load package sources", 1);
+    project.load_sources(&args.parameters).expect_exit("unable to load package sources", 1);
     match args.cmd {
         Command::Install => {
             for target in args.targets {
