@@ -28,6 +28,7 @@
 
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
+use bp3d_debug::warning;
 use crate::system::finder::Finder;
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
@@ -153,7 +154,8 @@ impl List {
     pub fn add(&mut self, artifact: Artifact) {
         let val = self.content.iter().any(|v| v.name == artifact.name);
         if val {
-            panic!("Duplicate artifact {} found", artifact.name);
+            warning!("Duplicate artifact {} found", artifact.name);
+            return;
         }
         self.content.push(artifact);
     }
