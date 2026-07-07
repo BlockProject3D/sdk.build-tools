@@ -36,7 +36,7 @@ local UnixDist = Class(BaseDist)
 local EXT_LIB = {
     "so",
     "dylib",
-    ".a"
+    "a"
 }
 
 local EXT_BIN = {

@@ -40,7 +40,6 @@ function BaseDist.appendObjects(filteredExts, artifacts, path, f)
             local ext = v.path:extension() or ""
             if bp3d.util.table.contains(filteredExts, ext) then
                 local name = v.path:name()
-                print(name)
                 assert(name ~= nil)
                 artifacts:add(f(v.path, name))
             end
