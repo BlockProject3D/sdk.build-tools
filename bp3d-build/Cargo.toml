@@ -10,8 +10,7 @@ cargo_toml = "0.22.3"
 bp3d-util = { version = "2.2.0", features = ["simple-error", "result", "path"] }
 bp3d-os = { version = "2.3.1", features = ["fs", "assets", "dirs"] }
 bp3d-debug = "1.0.3"
-bp3d-lua = { version = "1.0.0-rc.5.0.0", path = "../../tools.lua/core", features = ["base64", "root-vm", "libs", "dynamic", "send", "util-thread", "util-module"] }
+bp3d-lua = { version = "1.0.0-rc.5.0.0", path = "../../tools.lua/core", features = ["root-vm", "libs", "dynamic", "send", "util-thread", "util-module"] }
 bp3d-lua-codegen = { path = "../../tools.lua/codegen" }
-json-deserializer = "0.4.4"
 serde = { version = "1.0.228", features = ["derive"] }
 toml = "0.9.8"

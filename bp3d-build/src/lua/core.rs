@@ -55,7 +55,6 @@ use crate::system::{Context, Features};
 use bp3d_lua::libs::files::chroot;
 use bp3d_lua::libs::files::chroot::Permissions;
 use bp3d_os::module::loader::ModuleLoader;
-use crate::lua::lib_json::JsonLib;
 
 pub fn dump_backtrace<T>(res: Result<T>) -> Result<T> {
     if let Err(e) = &res {
@@ -156,7 +155,6 @@ impl Vm {
         FilesLib.register(&vm)?;
         ObjArtifact.register(&vm)?;
         ObjList.register(&vm)?;
-        JsonLib.register(&vm)?;
         vm.run_code(c"require = bp3d.lua.require")?;
         Ok(Vm {
             vm,
