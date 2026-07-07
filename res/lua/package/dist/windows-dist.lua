@@ -33,16 +33,14 @@ local build = require "bp3d.util.build"
 
 local WindowsDist = Class(BaseDist)
 
-local function appendObjects(artifacts, path, f)
-    local files = bp3d.files.list(path)
-    for _, v in ipairs(files) do
-        if v.type == "file" then
-            local name = v.path:name()
-            assert(name ~= nil)
-            artifacts:add(f(v.path, name))
-        end
-    end
-end
+local EXT_LIB = {
+    "dll",
+    "lib"
+}
+
+local EXT_BIN = {
+    "exe"
+}
 
 function WindowsDist:buildTarget(ctx)
     local artifacts = baseBuild(ctx)
@@ -52,11 +50,11 @@ function WindowsDist:buildTarget(ctx)
     local lib = extPath:join("lib")
     local removeDebugInfo = ctx.configuration == "release"
     if bp3d.files.exists(bin) then
-        BaseDist.appendObjects(artifacts, bin, function(path, name) return bp3d.build.Artifact.findBin(path:parent(), name, removeDebugInfo) end)
-        BaseDist.appendObjects(artifacts, bin, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "dynamic", removeDebugInfo) end)
+        BaseDist.appendObjects(EXT_BIN, artifacts, bin, function(path, name) return bp3d.build.Artifact.findBin(path:parent(), name, removeDebugInfo) end)
+        BaseDist.appendObjects(EXT_LIB, artifacts, bin, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "dynamic", removeDebugInfo) end)
     end
     if bp3d.files.exists(lib) then
-        appendObjects(artifacts, lib,
+        BaseDist.appendObjects(EXT_LIB, artifacts, lib,
             function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "static", removeDebugInfo) end)
     end
     BaseDist.addExtUsr(ctx, artifacts)

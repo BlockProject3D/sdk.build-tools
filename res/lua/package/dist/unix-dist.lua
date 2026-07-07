@@ -33,6 +33,16 @@ local build = require "bp3d.util.build"
 
 local UnixDist = Class(BaseDist)
 
+local EXT_LIB = {
+    "so",
+    "dylib",
+    ".a"
+}
+
+local EXT_BIN = {
+    ""
+}
+
 function UnixDist:buildTarget(ctx)
     local artifacts = baseBuild(ctx)
     local extPath = BaseDist.getExtPath(ctx)
@@ -41,11 +51,11 @@ function UnixDist:buildTarget(ctx)
     local lib = extPath:join("lib")
     local removeDebugInfo = ctx.configuration == "release"
     if bp3d.files.exists(bin) then
-        BaseDist.appendObjects(artifacts, bin, function(path, name) return bp3d.build.Artifact.findBin(path:parent(), name, removeDebugInfo) end)
+        BaseDist.appendObjects(EXT_BIN, artifacts, bin, function(path, name) return bp3d.build.Artifact.findBin(path:parent(), name, false) end)
     end
     if bp3d.files.exists(lib) then
-        BaseDist.appendObjects(artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "dynamic", removeDebugInfo) end)
-        BaseDist.appendObjects(artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "static", removeDebugInfo) end)
+        BaseDist.appendObjects(EXT_LIB, artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "dynamic", removeDebugInfo) end)
+        BaseDist.appendObjects(EXT_LIB, artifacts, lib, function(path, name) return bp3d.build.Artifact.findLib(path:parent(), name, "static", removeDebugInfo) end)
     end
     BaseDist.addExtUsr(ctx, artifacts)
     return artifacts

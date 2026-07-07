@@ -33,13 +33,17 @@ local build = require "bp3d.util.build"
 
 local BaseDist = Class(Packager)
 
-function BaseDist.appendObjects(artifacts, path, f)
+function BaseDist.appendObjects(filteredExts, artifacts, path, f)
     local files = bp3d.files.list(path)
     for _, v in ipairs(files) do
         if v.type == "file" then
-            local name = v.path:name()
-            assert(name ~= nil)
-            artifacts:add(f(v.path, name))
+            local ext = v.path:extension() or ""
+            if bp3d.util.table.contains(filteredExts, ext) then
+                local name = v.path:name()
+                print(name)
+                assert(name ~= nil)
+                artifacts:add(f(v.path, name))
+            end
         end
     end
 end
