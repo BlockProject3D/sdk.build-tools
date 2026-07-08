@@ -35,7 +35,7 @@ use toml::Table;
 
 #[derive(Deserialize, Clone)]
 pub struct ManifestExtension {
-    packager: HashMap<String, Table>
+    packager: Option<HashMap<String, Table>>
 }
 
 #[derive(Debug)]
@@ -60,7 +60,7 @@ pub fn parse_manifest<T: DeserializeOwned>(root: &Path, packager_name: &str) -> 
     if path.exists() && path.is_file() {
         let bytes = std::fs::read(root.join("bp3d.toml")).map_err(Error::Io)?;
         let mut ext: ManifestExtension = toml::from_slice(&bytes).map_err(Error::Toml)?;
-        if let Some(packager) = ext.packager.remove(packager_name) {
+        if let Some(packager) = ext.packager.get_or_insert_default().remove(packager_name) {
             Ok(Some(T::deserialize(packager).map_err(Error::Toml)?))
         } else {
             Ok(None)
