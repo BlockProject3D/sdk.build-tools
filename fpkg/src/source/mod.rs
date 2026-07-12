@@ -29,3 +29,4 @@
 pub mod interface;
 pub mod registry;
 mod gitlab;
+mod local;
