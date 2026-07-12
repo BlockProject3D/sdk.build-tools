@@ -32,6 +32,7 @@ use current_platform::CURRENT_PLATFORM;
 use bp3d_build::system::Features;
 use crate::args::Args;
 use crate::core::{dispatch_run, Context};
+use bp3d_os::module::loader::ModuleLoader;
 
 mod args;
 mod core;
@@ -49,5 +50,7 @@ fn main() {
         configuration: args.configuration.as_deref().unwrap_or("debug"),
         features: if args.all_features { Features::All } else { Features::List(&features) },
     };
+    ModuleLoader::install(&[]);
     dispatch_run(ctx, args.cmd, args.package_type, args.other_args);
+    ModuleLoader::uninstall();
 }

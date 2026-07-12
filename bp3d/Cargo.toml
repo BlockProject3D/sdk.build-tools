@@ -11,3 +11,4 @@ bp3d-build = { path = "../bp3d-build" }
 bp3d-package = { path = "../bp3d-package" }
 bp3d-script = { path = "../bp3d-script" }
 current_platform = "0.2.0"
+bp3d-os = { version = "2.3.1", features = ["module"] }
