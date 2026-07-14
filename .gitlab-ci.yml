@@ -23,7 +23,7 @@ windows-test:
     stage: test
     script:
         - echo "Setting up rust/cargo..."
-        - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s
+        - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         - echo "Cloning tools.lua..."
         - cd ..
         - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
@@ -42,7 +42,7 @@ macos-test:
     stage: test
     script:
         - echo "Setting up rust/cargo..."
-        - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s
+        - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         - echo "Cloning tools.lua..."
         - cd ..
         - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
