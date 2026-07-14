@@ -7,13 +7,15 @@ linux-test:
     script:
         - echo "Cloning tools.lua..."
         - cd ..
-        - git clone https://gitlab.com/bp3d/lua.git tools.lua
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
         - cd -
         - echo "Building..."
         - cargo build
         - echo "Generating distinstall package..."
         - ./target/debug/bp3d package -p distinstall
-        - fpkg publish -p token=$CI_JOB_TOKEN
+    artifacts:
+        paths:
+            - target/install-*
 
 windows-test:
     tags:
@@ -24,10 +26,31 @@ windows-test:
         - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s
         - echo "Cloning tools.lua..."
         - cd ..
-        - git clone https://gitlab.com/bp3d/lua.git tools.lua
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
         - cd -
         - echo "Building..."
         - cargo build
         - echo "Generating distinstall package..."
         - ./target/debug/bp3d package -p distinstall
-        - fpkg publish -p token=$CI_JOB_TOKEN
+    artifacts:
+        paths:
+            - target/install-*
+
+macos-test:
+    tags:
+        - saas-macos-medium-m1
+    stage: test
+    script:
+        - echo "Setting up rust/cargo..."
+        - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s
+        - echo "Cloning tools.lua..."
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - cd -
+        - echo "Building..."
+        - cargo build
+        - echo "Generating distinstall package..."
+        - ./target/debug/bp3d package -p distinstall
+    artifacts:
+        paths:
+            - target/install-*
