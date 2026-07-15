@@ -26,7 +26,7 @@ windows-test:
         - (New-Object Net.WebClient).DownloadFile('https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe', "$env:TEMP\\rustup-init.exe")
         - cmd /c start /wait "$env:TEMP\\rustup-init.exe" -y
         - Remove-Item "$env:TEMP\\rustup-init.exe"
-        - [Environment]::SetEnvironmentVariable("$env:USERPROFILER\\.cargo\\bin", "$env:Path", [System.EnvironmentVariableTarget]::Machine)
+        - \[Environment\]::SetEnvironmentVariable("$env:USERPROFILER\\.cargo\\bin", "$env:Path", \[System.EnvironmentVariableTarget\]::Machine)
         - reload
         - echo "Cloning tools.lua..."
         - cd ..
