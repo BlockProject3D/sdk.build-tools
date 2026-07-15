@@ -23,11 +23,11 @@ windows-test:
     stage: test
     script:
         - echo "Setting up rust/cargo..."
-        - $exePath = "$env:TEMP\rustup-init.exe"
+        - $exePath = "$env:TEMP\\rustup-init.exe"
         - (New-Object Net.WebClient).DownloadFile('https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe', $exePath)
         - cmd /c start /wait $exePath -y
         - Remove-Item $exePath
-        - $addPath = "$env:USERPROFILE\.cargo\bin"
+        - $addPath = "$env:USERPROFILE\\.cargo\\bin"
         - [Environment]::SetEnvironmentVariable($addPath, $env:Path, [System.EnvironmentVariableTarget]::Machine)
         - reload
         - echo "Cloning tools.lua..."
