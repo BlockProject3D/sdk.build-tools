@@ -1,60 +1,66 @@
+include:
+    - project: bp3d/gitlab-tools
+      file: workflows/base-jobs.yml
+
 stages:
     - test
 
 linux-test:
-    image: rust:trixie
+    extends:
+        - .unix-base-job
     stage: test
     script:
-        - echo "Cloning tools.lua..."
+        - subsection setup "Cloning tools.lua..." collapsed
         - cd ..
         - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
         - cd -
-        - echo "Building..."
+        - endsection setup
+        - subsection build "Building..."
         - cargo build
-        - echo "Generating distinstall package..."
+        - endsection build
+        - subsection gen "Generating distinstall package..."
         - ./target/debug/bp3d package -p distinstall
+        - endsection gen
     artifacts:
         paths:
             - target/install-*
 
 windows-test:
-    tags:
-        - saas-windows-medium-amd64
+    extends:
+        - .win64-base-job
     stage: test
     script:
-        - echo "Setting up rust/cargo..."
-        - (New-Object Net.WebClient).DownloadFile('https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe', "$env:TEMP\\rustup-init.exe")
-        - cmd /c start /wait "$env:TEMP\\rustup-init.exe" -y
-        - Remove-Item "$env:TEMP\\rustup-init.exe"
-        - \[Environment\]::SetEnvironmentVariable("$env:USERPROFILER\\.cargo\\bin", "$env:Path", \[System.EnvironmentVariableTarget\]::Machine)
-        - reload
-        - echo "Cloning tools.lua..."
+        - subsection setup "Cloning tools.lua..." collapsed
         - cd ..
         - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
         - cd -
-        - echo "Building..."
+        - endsection setup
+        - subsection build "Building..."
         - cargo build
-        - echo "Generating distinstall package..."
+        - endsection build
+        - subsection gen "Generating distinstall package..."
         - ./target/debug/bp3d package -p distinstall
+        - endsection gen
     artifacts:
         paths:
             - target/install-*
 
 macos-test:
-    tags:
-        - saas-macos-medium-m1
+    extends:
+        - .mac-base-job
     stage: test
     script:
-        - echo "Setting up rust/cargo..."
-        - rustup update
-        - echo "Cloning tools.lua..."
+        - subsection setup "Cloning tools.lua..." collapsed
         - cd ..
         - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
         - cd -
-        - echo "Building..."
+        - endsection setup
+        - subsection build "Building..."
         - cargo build
-        - echo "Generating distinstall package..."
+        - endsection build
+        - subsection gen "Generating distinstall package..."
         - ./target/debug/bp3d package -p distinstall
+        - endsection gen
     artifacts:
         paths:
             - target/install-*
