@@ -10,7 +10,7 @@ linux-test:
         - .unix-base-job
     stage: test
     script:
-        - startsection setup "Cloning tools.lua..." collapsed
+        - startsection setup "Cloning tools.lua..."
         - cd ..
         - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
         - cd -
@@ -30,10 +30,11 @@ windows-test:
         - .win64-base-job
     stage: test
     script:
-        - startsection setup "Cloning tools.lua..." collapsed
+        - startsection setup "Cloning tools.lua..."
+        - pushd .
         - cd ..
         - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
-        - cd -
+        - popd
         - endsection setup
         - startsection build "Building..."
         - cargo build
@@ -50,7 +51,7 @@ macos-test:
         - .mac-base-job
     stage: test
     script:
-        - startsection setup "Cloning tools.lua..." collapsed
+        - startsection setup "Cloning tools.lua..."
         - cd ..
         - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
         - cd -
