@@ -10,15 +10,15 @@ linux-test:
         - .unix-base-job
     stage: test
     script:
-        - subsection setup "Cloning tools.lua..." collapsed
+        - startsection setup "Cloning tools.lua..." collapsed
         - cd ..
         - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
         - cd -
         - endsection setup
-        - subsection build "Building..."
+        - startsection build "Building..."
         - cargo build
         - endsection build
-        - subsection gen "Generating distinstall package..."
+        - startsection gen "Generating distinstall package..."
         - ./target/debug/bp3d package -p distinstall
         - endsection gen
     artifacts:
@@ -30,15 +30,15 @@ windows-test:
         - .win64-base-job
     stage: test
     script:
-        - subsection setup "Cloning tools.lua..." collapsed
+        - startsection setup "Cloning tools.lua..." collapsed
         - cd ..
         - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
         - cd -
         - endsection setup
-        - subsection build "Building..."
+        - startsection build "Building..."
         - cargo build
         - endsection build
-        - subsection gen "Generating distinstall package..."
+        - startsection gen "Generating distinstall package..."
         - ./target/debug/bp3d package -p distinstall
         - endsection gen
     artifacts:
@@ -50,15 +50,15 @@ macos-test:
         - .mac-base-job
     stage: test
     script:
-        - subsection setup "Cloning tools.lua..." collapsed
+        - startsection setup "Cloning tools.lua..." collapsed
         - cd ..
         - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
         - cd -
         - endsection setup
-        - subsection build "Building..."
+        - startsection build "Building..."
         - cargo build
         - endsection build
-        - subsection gen "Generating distinstall package..."
+        - startsection gen "Generating distinstall package..."
         - ./target/debug/bp3d package -p distinstall
         - endsection gen
     artifacts:
