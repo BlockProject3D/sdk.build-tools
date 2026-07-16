@@ -45,8 +45,5 @@ pub struct Args {
     #[arg(long="root", help="Root path of the project, where to find the manifest.")]
     pub root: Option<PathBuf>,
 
-    #[arg(short='p', long="parameter", help="Specify package source parameters from CLI.")]
-    pub parameters: Vec<String>,
-
     pub cmd: Command
 }
