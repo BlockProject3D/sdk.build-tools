@@ -122,6 +122,8 @@ fn compress(args: &Args) -> bpx::package::Result<()> {
         } else {
             eprintln!("Cannot set type code {}: type code must be a 2 bytes ASCII string", type_code);
         }
+    } else {
+        opts = opts.type_code([0x50, 0x4B]);
     }
     let mut package = Package::create(opts)?;
     for f in &args.file_names {
