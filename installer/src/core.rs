@@ -47,7 +47,8 @@ fn setup_exe_permissions(path: &Path) -> std::io::Result<()> {
         let fuck = path?;
         let path = fuck.path();
         if path.is_file() {
-            std::fs::set_permissions(path, Permissions::from_mode(0555))?;
+            println!("Setting executable permissions on {:?}...", path);
+            std::fs::set_permissions(path, Permissions::from_mode(0o555))?;
         }
     }
     Ok(())
@@ -65,9 +66,15 @@ fn set_path_ro(path: &Path) -> std::io::Result<()> {
             let entry = entry?;
             set_path_ro(&entry.path())?;
         }
-        std::fs::set_permissions(path, make_readonly(path)?)?;
+        if path.exists() {
+            println!("Setting permissions for {:?}...", path);
+            std::fs::set_permissions(path, make_readonly(path)?)?;
+        }
     } else {
-        std::fs::set_permissions(path, make_readonly(path)?)?;
+        if path.exists() {
+            println!("Setting permissions for {:?}...", path);
+            std::fs::set_permissions(path, make_readonly(path)?)?;
+        }
     }
     Ok(())
 }
@@ -116,7 +123,7 @@ impl Installer {
             let pack = Package::open(Cursor::new(self.package)).expect_exit("Unable to open embedded installer package", 1);
             let install_path = Path::new(&args.next().unwrap_or("/opt".into())).join(install_name);
             unpack(&pack, &install_path).expect_exit("Failed to extract application objects", 1);
-            let _ = setup_permissions(&install_path);
+            setup_permissions(&install_path).expect_exit("Failed to set permissions of extracted content", 1);
         } else if subcmd == "list" {
             let pack = Package::open(Cursor::new(self.package)).expect_exit("Unable to open embedded installer package", 1);
             let objects = pack.objects().expect_exit("Unable to read embedded installer package", 1);

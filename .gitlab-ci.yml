@@ -1,0 +1,67 @@
+include:
+    - project: bp3d/gitlab-tools
+      file: workflows/base-jobs.yml
+
+stages:
+    - test
+
+linux-test:
+    extends:
+        - .unix-base-job
+    stage: test
+    script:
+        - startsection setup "Cloning tools.lua..."
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - cd -
+        - endsection setup
+        - startsection build "Building..."
+        - cargo build
+        - endsection build
+        - startsection gen "Generating distinstall package..."
+        - ./target/debug/bp3d package -p distinstall
+        - endsection gen
+    artifacts:
+        paths:
+            - target/install-*
+
+windows-test:
+    extends:
+        - .win64-base-job
+    stage: test
+    script:
+        - startsection setup "Cloning tools.lua..."
+        - pushd .
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - popd
+        - endsection setup
+        - startsection build "Building..."
+        - cargo build
+        - endsection build
+        - startsection gen "Generating distinstall package..."
+        - ./target/debug/bp3d package -p distinstall
+        - endsection gen
+    artifacts:
+        paths:
+            - target/install-*
+
+macos-test:
+    extends:
+        - .mac-base-job
+    stage: test
+    script:
+        - startsection setup "Cloning tools.lua..."
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - cd -
+        - endsection setup
+        - startsection build "Building..."
+        - cargo build
+        - endsection build
+        - startsection gen "Generating distinstall package..."
+        - ./target/debug/bp3d package -p distinstall
+        - endsection gen
+    artifacts:
+        paths:
+            - target/install-*
