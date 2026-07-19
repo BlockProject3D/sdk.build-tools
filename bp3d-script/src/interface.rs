@@ -48,5 +48,5 @@ pub trait Script: Sized {
 
     fn needs_build(&self) -> Result<bool, Self::Error>;
 
-    fn execute(&self) -> Result<(), Self::Error>;
+    fn execute(&self) -> Result<i32, Self::Error>;
 }

@@ -126,10 +126,11 @@ impl Script for Lua {
         }).map_err(Error::Lua)
     }
 
-    fn execute(&self) -> Result<(), Self::Error> {
-        self.vm.with_class(|_, class| {
+    fn execute(&self) -> Result<i32, Self::Error> {
+        let val: Option<i32> = self.vm.with_class(|_, class| {
             let f: Function = class.get(c"run")?;
             dump_backtrace(f.call(class.clone()))
-        }).map_err(Error::Lua)
+        }).map_err(Error::Lua)?;
+        Ok(val.unwrap_or_default())
     }
 }

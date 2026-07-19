@@ -28,7 +28,6 @@
 
 use std::path::Path;
 use bp3d_debug::{debug, info};
-use bp3d_util::result::ResultExt;
 use bp3d_build::core;
 use bp3d_build::core::Error;
 use bp3d_build::system::Features;
@@ -45,7 +44,7 @@ pub struct Context<'a> {
     pub features: Features<'a>
 }
 
-fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager: Option<String>, other_args: Option<Vec<String>>) -> core::Result<()> {
+fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager: Option<String>, other_args: Option<Vec<String>>) -> core::Result<i32> {
     debug!("Running command: {:?} for package {}-{}", cmd, tool.package().get_primary_name(), tool.package().get_primary_version());
     let ctx2 = bp3d_build::system::Context {
         path: ctx.path,
@@ -55,7 +54,8 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
     match cmd {
         Command::Configure => {
             info!("Configuring package for targets {:?}...", ctx.targets);
-            tool.configure(&ctx2, ctx.targets)
+            tool.configure(&ctx2, ctx.targets)?;
+            Ok(0)
         },
         Command::Build => {
             info!("Configuring package for targets {:?}...", ctx.targets);
@@ -64,7 +64,7 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
                 info!("Building package for target {}...", target);
                 tool.build(&ctx2, target)?;
             }
-            Ok(())
+            Ok(0)
         }
         Command::PrePackage => {
             info!("Configuring package for targets {:?}...", ctx.targets);
@@ -73,7 +73,7 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
                 info!("Building package for target {}...", target);
                 tool.pre_package(&ctx2, target)?;
             }
-            Ok(())
+            Ok(0)
         }
         Command::Package => {
             if let Some(packager_name) = packager {
@@ -89,10 +89,10 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
                     Some(packager) => packager.call(&ctx),
                     None => run_packager::<Lua>(&ctx)
                 }
-                Ok(())
+                Ok(0)
             } else {
                 eprintln!("Please specify a packager type to run the packaging process");
-                std::process::exit(1);
+                Ok(1)
             }
         },
         Command::Run => {
@@ -105,7 +105,7 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
             };
             if other_args.as_ref().map(|v| v.is_empty()).unwrap_or(true) {
                 eprintln!("Please specify a script name to run");
-                std::process::exit(1);
+                return Ok(1);
             }
             let mut args = other_args.unwrap();
             let name = args.remove(0);
@@ -129,13 +129,24 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
                 }
             }
             info!("Running script {}...", name);
-            script.execute().map_err(|e| Error::ScriptSystem(e.to_string()))?;
-            Ok(())
+            script.execute().map_err(|e| Error::ScriptSystem(e.to_string()))
         }
     }
 }
 
-pub fn dispatch_run(ctx: Context, cmd: Command, packager: Option<String>, other_args: Option<Vec<String>>) {
-    let tool = core::open(&ctx.path).expect_exit("Failed to load package", 1);
-    run_command(&*tool, ctx, cmd, packager, other_args).expect_exit("Failed to run build", 2);
+macro_rules! expect_return {
+    ($expr: expr => ($msg: literal, $code: literal)) => {
+        match $expr {
+            Ok(v) => v,
+            Err(e) => {
+                eprintln!("{}: {}", $msg, e);
+                return $code;
+            }
+        }
+    };
+}
+
+pub fn dispatch_run(ctx: Context, cmd: Command, packager: Option<String>, other_args: Option<Vec<String>>) -> i32 {
+    let tool = expect_return!(core::open(&ctx.path) => ("Failed to load package", 1));
+    expect_return!(run_command(&*tool, ctx, cmd, packager, other_args) => ("Failed to run build", 2))
 }
