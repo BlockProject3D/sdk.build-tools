@@ -4,10 +4,9 @@ include:
 
 stages:
     - test
+    - deploy
 
-linux-test:
-    extends:
-        - .unix-base-job
+.base-unix-test-job:
     stage: test
     script:
         - startsection setup "Cloning tools.lua..."
@@ -25,9 +24,7 @@ linux-test:
         paths:
             - target/install-*
 
-windows-test:
-    extends:
-        - .win64-base-job
+.base-win64-test-job:
     stage: test
     script:
         - startsection setup "Cloning tools.lua..."
@@ -46,10 +43,28 @@ windows-test:
         paths:
             - target/install-*
 
+linux-test:
+    extends:
+        - .unix-base-job
+        - .base-unix-test-job
+
+windows-test:
+    extends:
+        - .win64-base-job
+        - .base-win64-test-job
+
 macos-test:
     extends:
         - .mac-base-job
-    stage: test
+        - .base-unix-test-job
+
+.base-unix-deploy-job:
+    rules:
+        - if: $CI_COMMIT_TAG
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    variables:
+        FPKG_PARAM_TOKEN: $CI_JOB_TOKEN
+    stage: deploy
     script:
         - startsection setup "Cloning tools.lua..."
         - cd ..
@@ -59,9 +74,44 @@ macos-test:
         - startsection build "Building..."
         - cargo build
         - endsection build
-        - startsection gen "Generating distinstall package..."
-        - ./target/debug/bp3d package -p distinstall
+        - startsection gen "Publishing package..."
+        - ./target/debug/bp3d package -p pubdist
         - endsection gen
-    artifacts:
-        paths:
-            - target/install-*
+
+.base-win64-deploy-job:
+    rules:
+        - if: $CI_COMMIT_TAG
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    variables:
+        FPKG_PARAM_TOKEN: $CI_JOB_TOKEN
+    stage: deploy
+    script:
+        - startsection setup "Cloning tools.lua..."
+        - pushd .
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - popd
+        - endsection setup
+        - startsection build "Building..."
+        - cargo build
+        - endsection build
+        - startsection gen "Publishing package..."
+        - ./target/debug/bp3d package -p pubdist
+        - endsection gen
+
+linux-deploy:
+    rules:
+        - if: $CI_COMMIT_TAG
+    extends:
+        - .unix-base-job
+        - .base-unix-deploy-job
+
+windows-deploy:
+    extends:
+        - .win64-base-job
+        - .base-win64-deploy-job
+
+macos-deploy:
+    extends:
+        - .mac-base-job
+        - .base-unix-deploy-job
