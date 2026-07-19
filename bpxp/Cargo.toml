@@ -2,6 +2,7 @@
 name = "bpxp"
 version = "0.1.0"
 edition = "2024"
+publish = false
 
 [dependencies]
 bpx = { version = "4.0.0-rc.13.3.1", features = ["package", "sd-formatting"] }

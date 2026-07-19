@@ -3,6 +3,7 @@ name = "bp3d-package"
 description = "BP3D Package is a tool used to package libraries and applications in OS native formats."
 version = "0.1.0"
 edition = "2021"
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
