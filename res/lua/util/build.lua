@@ -52,7 +52,11 @@ build.spawn = function(exe, args, eventThread, userdata, config)
     local co = coroutine.create(eventThread)
     coroutine.resume(co, userdata)
     local success, code = bp3d.build.command.spawn(config, co)
+    if config.ignoreFailure then
+        return success, code
+    end
     assert(success and code == 0, "command failed")
+    return success, code
 end
 
 build.getOutput = function(exe, args, config)
