@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::HashMap;
-use std::fs::{read_dir, File};
+use std::fs::{read_dir, File, Permissions};
 use std::path::{Path, PathBuf};
 use bp3d_util::simple_error;
 use bpx::core::Container;
@@ -215,6 +215,12 @@ impl Project {
         std::fs::remove_dir_all(target_path).map_err(Error::Io)
     }
 
+    fn make_readonly(path: &Path) -> std::io::Result<Permissions> {
+        let mut perms = std::fs::metadata(path)?.permissions();
+        perms.set_readonly(true);
+        Ok(perms)
+    }
+
     pub fn install(&mut self, target: &str) -> Result<(), Error> {
         let target_path = self.path.join("target").join(target).join("ext");
         std::fs::create_dir_all(&target_path).map_err(Error::Io)?;
@@ -239,6 +245,24 @@ impl Project {
             debug!("Unpacking dependency {}...", dep);
             unpack(&package, &target_path).map_err(Error::Bpxp)?;
             debug!("Installed dependency {}!", dep);
+            let objects = package.objects().map_err(Error::Bpxp)?;
+            for obj in &objects {
+                let path = objects.load_name(obj).map_err(Error::Bpxp)?;
+                #[cfg(unix)]
+                if path.starts_with("./bin") {
+                    let file_path = target_path.join(path);
+                    use std::os::unix::fs::PermissionsExt;
+                    std::fs::set_permissions(file_path, Permissions::from_mode(0o555)).map_err(Error::Io)?;
+                } else if !path.starts_with("./etc") {
+                    let file_path = target_path.join(path);
+                    std::fs::set_permissions(&file_path, Self::make_readonly(&file_path).map_err(Error::Io)?).map_err(Error::Io)?;
+                }
+                #[cfg(windows)]
+                if !path.starts_with("./etc") {
+                    let file_path = target_path.join(path);
+                    std::fs::set_permissions(&file_path, Self::make_readonly(&file_path).map_err(Error::Io)?).map_err(Error::Io)?;
+                }
+            }
         }
         Ok(())
     }
