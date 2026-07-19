@@ -28,6 +28,7 @@
 
 use std::path::Path;
 use bp3d_debug::{debug, info};
+use bp3d_util::expect_return;
 use bp3d_build::core;
 use bp3d_build::core::Error;
 use bp3d_build::system::Features;
@@ -132,18 +133,6 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
             script.execute().map_err(|e| Error::ScriptSystem(e.to_string()))
         }
     }
-}
-
-macro_rules! expect_return {
-    ($expr: expr => ($msg: literal, $code: literal)) => {
-        match $expr {
-            Ok(v) => v,
-            Err(e) => {
-                eprintln!("{}: {}", $msg, e);
-                return $code;
-            }
-        }
-    };
 }
 
 pub fn dispatch_run(ctx: Context, cmd: Command, packager: Option<String>, other_args: Option<Vec<String>>) -> i32 {
