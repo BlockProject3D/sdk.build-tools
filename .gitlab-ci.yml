@@ -4,6 +4,7 @@ include:
 
 stages:
     - test
+    - release
     - deploy
 
 .base-unix-test-job:
@@ -61,7 +62,6 @@ macos-test:
 .base-unix-deploy-job:
     rules:
         - if: $CI_COMMIT_TAG
-        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     variables:
         FPKG_PARAM_TOKEN: $CI_JOB_TOKEN
     stage: deploy
@@ -81,7 +81,6 @@ macos-test:
 .base-win64-deploy-job:
     rules:
         - if: $CI_COMMIT_TAG
-        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     variables:
         FPKG_PARAM_TOKEN: $CI_JOB_TOKEN
     stage: deploy
@@ -99,9 +98,41 @@ macos-test:
         - ./target/debug/bp3d package -p pubdist
         - endsection gen
 
-linux-deploy:
+release-info:
+    stage: release
     rules:
         - if: $CI_COMMIT_TAG
+          when: never
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    extends:
+        - .unix-base-job
+    script:
+        - startsection setup "Cloning tools.lua..."
+        - pushd .
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - popd
+        - endsection setup
+        - startsection build "Building..."
+        - cargo build
+        - endsection build
+        - ./target/debug/bp3d run release-info
+    artifacts:
+        reports:
+            dotenv:
+                - target/release-info.env
+
+create-release:
+    stage: release
+    image: registry.gitlab.com/gitlab-org/cli:latest
+    needs:
+        - release-info
+    release:
+        tag_name: "$TAG"
+        description: "$COMPONENTS"
+        name: "$NAME"
+
+linux-deploy:
     extends:
         - .unix-base-job
         - .base-unix-deploy-job
