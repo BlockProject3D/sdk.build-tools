@@ -118,7 +118,7 @@ release-info:
           when: never
         - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     extends:
-        - .unix-base-job
+        - .linux-base-job
     script:
         - startsection setup "Cloning tools.lua..."
         - pushd .
@@ -153,7 +153,7 @@ create-release:
 
 linux-deploy:
     extends:
-        - .unix-base-job
+        - .linux-base-job
         - .base-unix-deploy-job
 
 windows-deploy:
