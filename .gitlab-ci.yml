@@ -124,9 +124,15 @@ release-info:
 
 create-release:
     stage: release
+    rules:
+        - if: $CI_COMMIT_TAG
+          when: never
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     image: registry.gitlab.com/gitlab-org/cli:latest
     needs:
         - release-info
+    script:
+        - /usr/bin/true
     release:
         tag_name: "$TAG"
         description: "$COMPONENTS"
