@@ -4,6 +4,7 @@ include:
 
 stages:
     - test
+    - check
     - release
     - deploy
 
@@ -60,11 +61,15 @@ macos-test:
         - .base-unix-test-job
 
 format-code:
+    stage: check
     rules:
         - if: $CI_COMMIT_BRANCH != "master"
+        - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+          when: never
     extends:
         - .linux-base-job
     script:
+        - rustup component add rustfmt
         - cargo fmt --all-features
         - git commit -am "Formatted code"
         - git config user.email "bp3d-format@gitlab.com"
