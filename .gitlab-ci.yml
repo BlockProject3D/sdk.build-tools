@@ -70,7 +70,7 @@ format-code:
         - .linux-base-job
     script:
         - rustup component add rustfmt
-        - cargo fmt --all-features
+        - cargo fmt
         - git commit -am "Formatted code"
         - git config user.email "bp3d-format@gitlab.com"
         - git config user.name "BP3D Code Format"
