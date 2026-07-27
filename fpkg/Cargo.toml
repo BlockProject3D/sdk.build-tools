@@ -6,9 +6,9 @@ description = "A minimalistic package generator/installer tool"
 publish = false
 
 [dependencies]
-clap = { version = "4.6.1", features = ["derive"] }
+clap = { version = "4.6.4", features = ["derive"] }
 serde = { version = "1.0.228", features = ["derive"] }
-bp3d-util = { version = "2.2.0", features = ["result", "simple-error"] }
+bp3d-util = { version = "2.2.0", features = ["path", "result", "simple-error"] }
 toml = "1.1.2+spec-1.1.0"
 bpx = { version = "4.0.0-rc.13.3.1", features = ["package"] }
 bp3d-debug = "1.0.0"

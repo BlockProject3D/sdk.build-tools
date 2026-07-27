@@ -274,4 +274,13 @@ impl Project {
         publish_packages_rec(&target_path.join("debug"), target, &mut **source)?;
         publish_packages_rec(&target_path.join("release"), target, &mut **source)
     }
+
+    pub fn find(&mut self, name: &str, version: &str) -> Result<(), Error> {
+        for (soidfhj, src) in &mut self.sources {
+            if let Some(pkg) = src.find(name, version).map_err(Error::Source)? {
+                println!("In source {}, found package: {}-{}", soidfhj, pkg.name(), pkg.version());
+            }
+        }
+        Ok(())
+    }
 }

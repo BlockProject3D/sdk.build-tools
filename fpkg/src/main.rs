@@ -52,7 +52,16 @@ fn main() {
     project.add_config_if_exists(&exe.join("../../res/config/fpkg.toml")).expect_exit("unable to load built-in config", 1);
     let params: Vec<String> = std::env::args().filter(|v| v.starts_with("FPKG_PARAM_")).map(|v| v[12..].to_lowercase()).collect();
     project.load_sources(&params).expect_exit("unable to load package sources", 1);
-    match args.cmd {
+    if !args.search.is_empty() {
+        let name = &*args.search[0];
+        let mut version = "latest";
+        if args.search.len() == 2 {
+            version = &*args.search[1];
+        }
+        project.find(name, version).expect_exit("Failed to find matching packages", 1);
+        return;
+    }
+    match args.cmd.unwrap_or(Command::Install) {
         Command::Install => {
             for target in args.targets {
                 project.install(&target).expect_exit("unable to install", 1);

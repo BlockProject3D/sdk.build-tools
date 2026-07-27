@@ -27,7 +27,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::path::PathBuf;
-use clap::{Parser, ValueEnum};
+use clap::{Parser, ValueEnum, ArgAction};
 
 #[derive(ValueEnum, Debug, Copy, Clone)]
 pub enum Command {
@@ -45,5 +45,8 @@ pub struct Args {
     #[arg(long="root", help="Root path of the project, where to find the manifest.")]
     pub root: Option<PathBuf>,
 
-    pub cmd: Command
+    #[arg(short='s', long="search", help="Name of the package to search for (name, version).", num_args=1..3, action=ArgAction::Set)]
+    pub search: Vec<String>,
+
+    pub cmd: Option<Command>
 }
