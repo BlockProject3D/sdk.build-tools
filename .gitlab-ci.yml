@@ -82,7 +82,7 @@ format-code:
         - git config user.name "BP3D Code Format"
         - git commit -am "Formatted code"
         - git remote add gitlab_origin "https://oauth2:${BP3D_FORMAT_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git"
-        - git push gitlab_origin $CI_COMMIT_BRANCH
+        - git push gitlab_origin HEAD:$CI_COMMIT_BRANCH
 
 .base-unix-deploy-job:
     rules:
