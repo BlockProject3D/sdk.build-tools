@@ -79,6 +79,9 @@ impl Source for Local {
     }
 
     fn find(&mut self, name: &str, version: &str) -> Result<Option<Dependency>> {
+        if let Some(dep) = self.find_latest(name)? {
+            return Ok(Some(dep));
+        }
         let path = self.path.join(name).join(version);
         if path.exists() && path.is_dir() {
             Ok(Some(Dependency::new(name, version)))
