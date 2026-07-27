@@ -91,15 +91,21 @@ artifact.copyTo = function(artifact, dstPath)
     end
     if artifact:path() ~= nil then
         local fullName = artifact:path():fullName()
-        bp3d.files.copyFile(artifact:path(), dstPath:join(subPath .. fullName))
+        if not bp3d.files.exists(dstPath:join(subPath .. fullName)) then
+            bp3d.files.copyFile(artifact:path(), dstPath:join(subPath .. fullName))
+        end
     end
     if artifact:debugInfo() ~= nil then
         local fullName = artifact:debugInfo():fullName()
-        bp3d.files.copyFile(artifact:debugInfo(), dstPath:join(subPath .. fullName))
+        if not bp3d.files.exists(dstPath:join(subPath .. fullName)) then
+            bp3d.files.copyFile(artifact:debugInfo(), dstPath:join(subPath .. fullName))
+        end
     end
     if artifact:exports() ~= nil then
         local fullName = artifact:exports():fullName()
-        bp3d.files.copyFile(artifact:exports(), dstPath:join(subPath .. fullName))
+        if not bp3d.files.exists(dstPath:join(subPath .. fullName)) then
+            bp3d.files.copyFile(artifact:exports(), dstPath:join(subPath .. fullName))
+        end
     end
 end
 
