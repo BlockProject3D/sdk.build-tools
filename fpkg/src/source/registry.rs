@@ -28,9 +28,7 @@
 
 use crate::source::interface::Provider;
 
-static PROVIDERS: &[&dyn Provider] = &[
-    super::gitlab::GLGP, super::local::LOCAL
-];
+static PROVIDERS: &[&dyn Provider] = &[super::gitlab::GLGP, super::local::LOCAL];
 
 pub fn get_provider(scheme: &str) -> Option<&'static dyn Provider> {
     PROVIDERS.iter().find(|p| p.scheme() == scheme).map(|v| *v)

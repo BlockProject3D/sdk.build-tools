@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::borrow::Cow;
-use std::path::Path;
-use cargo_toml::{Manifest, Publish};
+use super::Error;
 use crate::config::parse_config;
 use crate::system::{static_string, Component, Package};
-use super::Error;
+use cargo_toml::{Manifest, Publish};
+use std::borrow::Cow;
+use std::path::Path;
 
 const SUPPORTED_TARGETS: &[Cow<str>] = &[
     static_string("aarch64-apple-darwin"),
@@ -41,19 +41,16 @@ const SUPPORTED_TARGETS: &[Cow<str>] = &[
     static_string("aarch64-unknown-linux-gnu"),
     static_string("x86_64-unknown-linux-gnu"),
     static_string("aarch64-pc-windows-msvc"),
-    static_string("x86_64-pc-windows-msvc")
+    static_string("x86_64-pc-windows-msvc"),
 ];
 
-const SUPPORTED_CONFIGURATIONS: &[Cow<str>] = &[
-    static_string("debug"),
-    static_string("release")
-];
+const SUPPORTED_CONFIGURATIONS: &[Cow<str>] = &[static_string("debug"), static_string("release")];
 
 pub struct CargoWorkspace {
     packages: Vec<CargoPackage>,
     core_name: String,
     core_version: String,
-    features: Vec<Cow<'static, str>>
+    features: Vec<Cow<'static, str>>,
 }
 
 impl CargoWorkspace {
@@ -72,7 +69,8 @@ impl CargoWorkspace {
                     packages.push(package)
                 } else {
                     for member in &v.members {
-                        let mut package = CargoPackage::load(&root.join(&member).join("Cargo.toml"))?;
+                        let mut package =
+                            CargoPackage::load(&root.join(&member).join("Cargo.toml"))?;
                         package.short_name = member.clone();
                         if core_name.is_none() {
                             core_name = Some(package.get_primary_name().into());
@@ -85,7 +83,7 @@ impl CargoWorkspace {
                         packages.push(package);
                     }
                 }
-            },
+            }
             None => {
                 let package = CargoPackage::open(manifest);
                 core_name = Some(package.get_primary_name().into());
@@ -93,7 +91,11 @@ impl CargoWorkspace {
                 packages.push(package)
             }
         }
-        let features = packages.iter().map(|v| v.features().iter().map(|v| String::from(&**v).into())).flatten().collect();
+        let features = packages
+            .iter()
+            .map(|v| v.features().iter().map(|v| String::from(&**v).into()))
+            .flatten()
+            .collect();
         let config = parse_config(root).map_err(Error::Config)?;
         if let Some(config) = config {
             if let Some(package) = config.package {
@@ -101,7 +103,12 @@ impl CargoWorkspace {
                 core_version = Some(package.version);
             }
         }
-        Ok(CargoWorkspace { packages, core_name: core_name.unwrap(), core_version: core_version.unwrap(), features })
+        Ok(CargoWorkspace {
+            packages,
+            core_name: core_name.unwrap(),
+            core_version: core_version.unwrap(),
+            features,
+        })
     }
 
     pub fn bins(&self) -> impl Iterator<Item = &str> {
@@ -146,16 +153,20 @@ impl Package for CargoWorkspace {
 struct CargoPackage {
     manifest: Manifest,
     short_name: String,
-    features: Vec<Cow<'static, str>>
+    features: Vec<Cow<'static, str>>,
 }
 
 impl CargoPackage {
     pub fn open(manifest: Manifest) -> CargoPackage {
-        let features = manifest.features.iter().map(|(name, _)| name.clone().into()).collect();
+        let features = manifest
+            .features
+            .iter()
+            .map(|(name, _)| name.clone().into())
+            .collect();
         CargoPackage {
             manifest,
             short_name: "".into(),
-            features
+            features,
         }
     }
 
@@ -165,11 +176,17 @@ impl CargoPackage {
     }
 
     pub fn bins(&self) -> impl Iterator<Item = &str> {
-        self.manifest.bin.iter().map(|v| v.name.as_deref().unwrap_or(self.manifest.package().name()))
+        self.manifest
+            .bin
+            .iter()
+            .map(|v| v.name.as_deref().unwrap_or(self.manifest.package().name()))
     }
 
     pub fn libs(&self) -> impl Iterator<Item = &str> {
-        self.manifest.lib.iter().map(|v| v.name.as_deref().unwrap_or(self.manifest.package().name()))
+        self.manifest
+            .lib
+            .iter()
+            .map(|v| v.name.as_deref().unwrap_or(self.manifest.package().name()))
     }
 }
 
@@ -195,10 +212,15 @@ impl Component for CargoPackage {
     }
 
     fn is_public(&self) -> bool {
-        self.manifest.package().publish.get().map(|v| match v {
-            Publish::Flag(v) => *v,
-            Publish::Registry(_) => true
-        }).unwrap_or(true)
+        self.manifest
+            .package()
+            .publish
+            .get()
+            .map(|v| match v {
+                Publish::Flag(v) => *v,
+                Publish::Registry(_) => true,
+            })
+            .unwrap_or(true)
     }
 }
 

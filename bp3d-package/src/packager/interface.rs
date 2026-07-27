@@ -26,24 +26,27 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::error::Error;
-use std::path::{Path, PathBuf};
-use serde::de::DeserializeOwned;
 use bp3d_build::core::BuildTool;
 use bp3d_build::system::artifact::List;
 use bp3d_build::system::Features;
+use serde::de::DeserializeOwned;
+use std::error::Error;
+use std::path::{Path, PathBuf};
 
 pub struct Context<'a> {
     pub path: &'a Path,
     pub configuration: &'a str,
     pub targets: &'a [&'a str],
     pub tool: &'a dyn BuildTool,
-    pub packager: &'a str
+    pub packager: &'a str,
 }
 
 impl<'a> Context<'a> {
     pub fn get_target_path(&self, target: &str) -> PathBuf {
-        self.path.join("target").join(target).join(self.configuration)
+        self.path
+            .join("target")
+            .join(target)
+            .join(self.configuration)
     }
 }
 
@@ -51,7 +54,7 @@ pub fn build_target(context: &Context, target: &str) -> Result<List, bp3d_build:
     let ctx = bp3d_build::system::Context {
         path: context.path,
         configuration: context.configuration,
-        features: Features::All
+        features: Features::All,
     };
     //FIXME: configure is not called at this point.
     let data = context.tool.pre_package(&ctx, target)?;

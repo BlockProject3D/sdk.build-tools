@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::Path;
+use crate::args::Args;
+use crate::core::{Context, dispatch_run};
+use bp3d_build::system::Features;
+use bp3d_os::module::loader::ModuleLoader;
 use clap::Parser;
 use current_platform::CURRENT_PLATFORM;
-use bp3d_build::system::Features;
-use crate::args::Args;
-use crate::core::{dispatch_run, Context};
-use bp3d_os::module::loader::ModuleLoader;
+use std::path::Path;
 
 mod args;
 mod core;
@@ -48,7 +48,11 @@ fn main() {
         path: args.root.as_deref().unwrap_or(Path::new("./")),
         targets: &targets,
         configuration: args.configuration.as_deref().unwrap_or("debug"),
-        features: if args.all_features { Features::All } else { Features::List(&features) },
+        features: if args.all_features {
+            Features::All
+        } else {
+            Features::List(&features)
+        },
     };
     ModuleLoader::install(&[]);
     dispatch_run(ctx, args.cmd, args.package_type, args.other_args);

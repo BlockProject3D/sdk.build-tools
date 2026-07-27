@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::system::finder::Finder;
+use bp3d_debug::warning;
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
-use bp3d_debug::warning;
-use crate::system::finder::Finder;
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum LibType {
     Dynamic,
-    Static
+    Static,
 }
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
@@ -43,7 +43,7 @@ pub enum Type {
     Lib(LibType),
     Header,
     Config,
-    Resource
+    Resource,
 }
 
 #[derive(Clone)]
@@ -52,7 +52,7 @@ pub struct Artifact {
     debug_info: Option<PathBuf>,
     exports: Option<PathBuf>,
     name: String,
-    ty: Type
+    ty: Type,
 }
 
 impl Artifact {
@@ -86,7 +86,7 @@ impl Artifact {
             debug_info: res.debug_info,
             exports: res.exports,
             name: name.into(),
-            ty: Type::Bin
+            ty: Type::Bin,
         })
     }
 
@@ -100,7 +100,7 @@ impl Artifact {
             debug_info: res.debug_info,
             exports: res.exports,
             name: name.into(),
-            ty: Type::Lib(ty)
+            ty: Type::Lib(ty),
         })
     }
 
@@ -110,7 +110,7 @@ impl Artifact {
             name: name.into(),
             debug_info: None,
             exports: None,
-            ty: Type::Header
+            ty: Type::Header,
         }
     }
 
@@ -120,7 +120,7 @@ impl Artifact {
             name: name.into(),
             debug_info: None,
             exports: None,
-            ty: Type::Config
+            ty: Type::Config,
         }
     }
 
@@ -130,7 +130,7 @@ impl Artifact {
             name: name.into(),
             debug_info: None,
             exports: None,
-            ty: Type::Resource
+            ty: Type::Resource,
         }
     }
 }
@@ -142,7 +142,9 @@ pub struct List {
 
 impl List {
     pub fn new() -> Self {
-        Self { content: Vec::new() }
+        Self {
+            content: Vec::new(),
+        }
     }
 
     pub fn add_if_some(&mut self, artifact: Option<Artifact>) {
@@ -160,14 +162,25 @@ impl List {
         self.content.push(artifact);
     }
 
-    pub fn add_folder_exclude(&mut self, ty1: Type, path: &Path, excluded: &str, name: &str) -> std::io::Result<()> {
+    pub fn add_folder_exclude(
+        &mut self,
+        ty1: Type,
+        path: &Path,
+        excluded: &str,
+        name: &str,
+    ) -> std::io::Result<()> {
         if path.exists() {
             let files = std::fs::read_dir(path)?;
             for file in files {
                 let file = file?;
                 let ty = file.file_type()?;
-                let name1 = String::from(name) + file.file_name().to_str().ok_or_else(|| Error::new(ErrorKind::Other, "invalid filename"))?;
-                if !excluded.is_empty() && name1.starts_with(excluded) { // Skip excluded folder
+                let name1 = String::from(name)
+                    + file
+                        .file_name()
+                        .to_str()
+                        .ok_or_else(|| Error::new(ErrorKind::Other, "invalid filename"))?;
+                if !excluded.is_empty() && name1.starts_with(excluded) {
+                    // Skip excluded folder
                     continue;
                 }
                 if ty.is_file() {
@@ -176,7 +189,7 @@ impl List {
                         debug_info: None,
                         exports: None,
                         name: name1,
-                        ty: ty1
+                        ty: ty1,
                     };
                     self.add(artifact);
                 } else if ty.is_dir() {

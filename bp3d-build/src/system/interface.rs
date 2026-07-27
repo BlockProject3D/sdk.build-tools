@@ -33,7 +33,7 @@ use std::path::Path;
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub enum Features<'a> {
     All,
-    List(&'a [&'a str])
+    List(&'a [&'a str]),
 }
 
 impl<'a> Deref for Features<'a> {
@@ -42,7 +42,7 @@ impl<'a> Deref for Features<'a> {
     fn deref(&self) -> &Self::Target {
         match self {
             Features::All => &[],
-            Features::List(v) => v
+            Features::List(v) => v,
         }
     }
 }
@@ -57,7 +57,7 @@ impl<'a> Deref for Features<'a> {
 pub struct Context<'a> {
     pub path: &'a Path,
     pub configuration: &'a str,
-    pub features: Features<'a>
+    pub features: Features<'a>,
 }
 
 pub trait BuildSystem {
@@ -65,16 +65,31 @@ pub trait BuildSystem {
     type Package: Package;
 
     /// Configure the build.
-    fn configure(&self, package: &Self::Package, ctx: &Context, targets: &[&str]) -> Result<(), Self::Error>;
+    fn configure(
+        &self,
+        package: &Self::Package,
+        ctx: &Context,
+        targets: &[&str],
+    ) -> Result<(), Self::Error>;
 
     /// Build the project.
-    fn build(&self, package: &Self::Package, ctx: &Context, target: &str) -> Result<(), Self::Error>;
+    fn build(
+        &self,
+        package: &Self::Package,
+        ctx: &Context,
+        target: &str,
+    ) -> Result<(), Self::Error>;
 
     /// Prepares the project for packaging to a specific target.
     ///
     /// This function is intended to build a flat list of artifacts which can be used by
     /// bp3d-package.
-    fn pre_package(&self, package: &Self::Package, ctx: &Context, target: &str) -> Result<crate::system::artifact::List, Self::Error>;
+    fn pre_package(
+        &self,
+        package: &Self::Package,
+        ctx: &Context,
+        target: &str,
+    ) -> Result<crate::system::artifact::List, Self::Error>;
 }
 
 pub trait Component {

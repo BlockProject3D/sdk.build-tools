@@ -35,12 +35,12 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub struct PackageFile {
     pub id: u64,
     pub file_name: String,
-    pub size: u64
+    pub size: u64,
 }
 
 #[derive(Deserialize)]
 pub struct PackageEntry {
     pub id: u64,
     pub version: String,
-    pub name: String
+    pub name: String,
 }

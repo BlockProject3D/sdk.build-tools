@@ -26,26 +26,30 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use super::interface::{Dependency, Error, Provider, Result, Source};
+use crate::config::Parameters;
+use bp3d_debug::error;
+use glgp::util::{get_base_url, get_project_id};
+use regex::Regex;
 use std::boxed::Box;
-use std::string::String;
-use std::path::Path;
 use std::fs::File;
+use std::io;
 use std::io::Read;
 use std::io::Write;
-use std::io;
-use bp3d_debug::error;
-use regex::Regex;
-use glgp::util::{get_base_url, get_project_id};
-use crate::config::Parameters;
-use super::interface::{Dependency, Error, Provider, Result, Source};
+use std::path::Path;
+use std::string::String;
 
 struct GitLab {
     list: glgp::list::PackageList,
-    manager: glgp::manager::PackageManager
+    manager: glgp::manager::PackageManager,
 }
 
 impl GitLab {
-    fn find_package(&mut self, name: &str, version: &str) -> Result<Option<glgp::types::PackageEntry>> {
+    fn find_package(
+        &mut self,
+        name: &str,
+        version: &str,
+    ) -> Result<Option<glgp::types::PackageEntry>> {
         let mut page = 1;
         loop {
             let mut data = self.list.search(page, name).map_err(Error::Network)?;
@@ -61,10 +65,17 @@ impl GitLab {
         }
     }
 
-    fn find_file(&mut self, package: &glgp::types::PackageEntry, file_name: &str) -> Result<Option<glgp::types::PackageFile>> {
+    fn find_file(
+        &mut self,
+        package: &glgp::types::PackageEntry,
+        file_name: &str,
+    ) -> Result<Option<glgp::types::PackageFile>> {
         let mut page = 1;
         loop {
-            let mut data = self.list.list_files(page, &package).map_err(Error::Network)?;
+            let mut data = self
+                .list
+                .list_files(page, &package)
+                .map_err(Error::Network)?;
             if data.len() == 0 {
                 return Ok(None);
             }
@@ -111,16 +122,20 @@ impl Source for GitLab {
     fn publish(&mut self, dep: &Dependency, target: &str, src_file: &Path) -> Result<()> {
         if let Some(pkg) = self.find_package(dep.name(), dep.version())? {
             if let Some(_) = self.find_file(&pkg, target)? {
-                error!({target}, "Package {} already exists for target", dep);
+                error!({ target }, "Package {} already exists for target", dep);
                 return Err(Error::AlreadyExists(dep.clone()));
             }
         }
         if self.manager.is_authenticated() {
             let f = File::open(&src_file).map_err(Error::Io)?;
-            self.manager.upload(dep.name(), dep.version(), target, f).map_err(Error::Network)?;
+            self.manager
+                .upload(dep.name(), dep.version(), target, f)
+                .map_err(Error::Network)?;
             return Ok(());
         }
-        Err(Error::from("The registry does not have a valid access token!"))
+        Err(Error::from(
+            "The registry does not have a valid access token!",
+        ))
     }
 
     fn find_latest(&mut self, name: &str) -> Result<Option<Dependency>> {
@@ -149,7 +164,7 @@ impl Source for GitLab {
         let file = glgp::types::PackageFile {
             id: 0,
             file_name: String::from(target),
-            size: 0
+            size: 0,
         };
         let mut response = self.manager.download(&pkg, &file).map_err(Error::Network)?;
         download_file(target_path, &mut response).map_err(Error::Io)?;
@@ -161,28 +176,35 @@ struct GitLabProvider;
 
 impl Provider for GitLabProvider {
     fn open(&self, path: &str, params: &Parameters) -> Result<Box<dyn Source>> {
-        let ppath = params.get("project-path").ok_or(Error::MissingParameter("project-path"))?.as_str().ok_or(Error::InvalidParameter("project-path"))?;
-        ppath.find('/').ok_or(Error::InvalidParameter("project-path"))?;
+        let ppath = params
+            .get("project-path")
+            .ok_or(Error::MissingParameter("project-path"))?
+            .as_str()
+            .ok_or(Error::InvalidParameter("project-path"))?;
+        ppath
+            .find('/')
+            .ok_or(Error::InvalidParameter("project-path"))?;
         let mut base_url = get_base_url(path);
         let pid = get_project_id(&base_url, ppath).map_err(Error::Network)?;
         base_url += &format!("/{}", pid);
-        let allow_guest = params.get("allow-guest")
+        let allow_guest = params
+            .get("allow-guest")
             .map(|v| v.as_boolean().ok_or(Error::InvalidParameter("allow-guest")))
             .unwrap_or(Ok(true))?;
         let token = match params.get("token") {
             Some(token) => Some(token.as_str().ok_or(Error::InvalidParameter("token"))?),
-            None => None
+            None => None,
         };
         if allow_guest {
             Ok(Box::new(GitLab {
                 list: glgp::list::PackageList::new_guest(base_url.clone()),
-                manager: glgp::manager::PackageManager::new_guest(base_url)
+                manager: glgp::manager::PackageManager::new_guest(base_url),
             }))
         } else {
             let token = token.ok_or(Error::MissingParameter("token"))?;
             Ok(Box::new(GitLab {
                 list: glgp::list::PackageList::new_authenticated(base_url.clone(), token.into()),
-                manager: glgp::manager::PackageManager::new_authenticated(base_url, token.into())
+                manager: glgp::manager::PackageManager::new_authenticated(base_url, token.into()),
             }))
         }
     }

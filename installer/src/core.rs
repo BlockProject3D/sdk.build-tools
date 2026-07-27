@@ -26,18 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use bp3d_util::result::ResultExt;
+use bpx::package::Package;
+use bpx::package::util::unpack;
 use std::fs::Permissions;
 use std::io::Cursor;
 use std::path::Path;
-use bpx::package::Package;
-use bpx::package::util::unpack;
-use bp3d_util::result::ResultExt;
 
 #[derive(Default)]
 pub struct Installer {
     name: &'static str,
     version: &'static str,
-    package: &'static [u8]
+    package: &'static [u8],
 }
 
 #[cfg(unix)]
@@ -114,29 +114,42 @@ impl Installer {
         let subcmd = match args.next() {
             Some(value) => value,
             None => {
-                println!("Usage: {} <install/list/info> [optional install prefix]", installer);
+                println!(
+                    "Usage: {} <install/list/info> [optional install prefix]",
+                    installer
+                );
                 std::process::exit(2);
             }
         };
         if subcmd == "install" {
             let install_name = String::from(self.name) + "-" + &self.version;
-            let pack = Package::open(Cursor::new(self.package)).expect_exit("Unable to open embedded installer package", 1);
+            let pack = Package::open(Cursor::new(self.package))
+                .expect_exit("Unable to open embedded installer package", 1);
             let install_path = Path::new(&args.next().unwrap_or("/opt".into())).join(install_name);
             unpack(&pack, &install_path).expect_exit("Failed to extract application objects", 1);
-            setup_permissions(&install_path).expect_exit("Failed to set permissions of extracted content", 1);
+            setup_permissions(&install_path)
+                .expect_exit("Failed to set permissions of extracted content", 1);
         } else if subcmd == "list" {
-            let pack = Package::open(Cursor::new(self.package)).expect_exit("Unable to open embedded installer package", 1);
-            let objects = pack.objects().expect_exit("Unable to read embedded installer package", 1);
+            let pack = Package::open(Cursor::new(self.package))
+                .expect_exit("Unable to open embedded installer package", 1);
+            let objects = pack
+                .objects()
+                .expect_exit("Unable to read embedded installer package", 1);
             println!("Installer {} - Objects:", installer);
             for obj in &objects {
-                let name = objects.load_name(obj).expect_exit("Unable to read name of object", 1);
+                let name = objects
+                    .load_name(obj)
+                    .expect_exit("Unable to read name of object", 1);
                 println!("    > {}: {} kbit(s)", name, obj.size / 1024)
             }
         } else if subcmd == "info" {
             println!("Installer {}:", installer);
             println!("    > App name: {}", self.name);
             println!("    > App version: {}", self.version);
-            println!("    > Size of package: {} kbit(s)", self.package.len() / 1024);
+            println!(
+                "    > Size of package: {} kbit(s)",
+                self.package.len() / 1024
+            );
         }
     }
 }

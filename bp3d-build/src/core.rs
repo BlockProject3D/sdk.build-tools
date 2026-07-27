@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::Path;
-use bp3d_util::simple_error;
 use crate::build::cargo::{CargoBuilder, CargoWorkspace};
 use crate::build::lua::{LuaBuilder, LuaPackage};
-use crate::system::{BuildSystem, Context, Features, Package};
 use crate::system::artifact::List;
+use crate::system::{BuildSystem, Context, Features, Package};
+use bp3d_util::simple_error;
+use std::path::Path;
 
 simple_error! {
     pub Error {
@@ -59,17 +59,22 @@ pub trait BuildTool {
 
 struct BuildSystemWrapper<P, B> {
     package: P,
-    build_system: B
+    build_system: B,
 }
 
 impl<P, B> BuildSystemWrapper<P, B> {
     fn new(package: P, build_system: B) -> Self {
-        Self { package, build_system }
+        Self {
+            package,
+            build_system,
+        }
     }
 }
 
 impl<P, B> BuildSystemWrapper<P, B>
-    where P: Package {
+where
+    P: Package,
+{
     fn check_context(&self, ctx: &Context, target: &str) -> Result<()> {
         let targets = self.package.targets();
         let features = self.package.features();
@@ -95,7 +100,10 @@ impl<P, B> BuildSystemWrapper<P, B>
 }
 
 impl<P, B> BuildTool for BuildSystemWrapper<P, B>
-    where P: Package, B: BuildSystem<Package = P> {
+where
+    P: Package,
+    B: BuildSystem<Package = P>,
+{
     fn package(&self) -> &dyn Package {
         &self.package
     }
@@ -104,24 +112,31 @@ impl<P, B> BuildTool for BuildSystemWrapper<P, B>
         for v in targets {
             self.check_context(ctx, v)?;
         }
-        self.build_system.configure(&self.package, ctx, targets).map_err(|v| Error::BuildSystem(v.to_string()))
+        self.build_system
+            .configure(&self.package, ctx, targets)
+            .map_err(|v| Error::BuildSystem(v.to_string()))
     }
 
     fn build(&self, ctx: &Context, target: &str) -> Result<()> {
         self.check_context(ctx, target)?;
-        self.build_system.build(&self.package, &ctx, target).map_err(|v| Error::BuildSystem(v.to_string()))
+        self.build_system
+            .build(&self.package, &ctx, target)
+            .map_err(|v| Error::BuildSystem(v.to_string()))
     }
 
     fn pre_package(&self, ctx: &Context, target: &str) -> Result<List> {
         self.check_context(ctx, target)?;
-        self.build_system.pre_package(&self.package, &ctx, target).map_err(|v| Error::BuildSystem(v.to_string()))
+        self.build_system
+            .pre_package(&self.package, &ctx, target)
+            .map_err(|v| Error::BuildSystem(v.to_string()))
     }
 }
 
 pub fn open(path: &Path) -> Result<Box<dyn BuildTool>> {
     let manifest = path.join("Cargo.toml");
     if manifest.exists() {
-        let package = CargoWorkspace::load(path).map_err(|e| Error::InvalidPackage(e.to_string()))?;
+        let package =
+            CargoWorkspace::load(path).map_err(|e| Error::InvalidPackage(e.to_string()))?;
         Ok(Box::new(BuildSystemWrapper::new(package, CargoBuilder)))
     } else if path.join("build.lua").exists() {
         let package = LuaPackage::new(path).map_err(|e| Error::InvalidPackage(e.to_string()))?;

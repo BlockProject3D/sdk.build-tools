@@ -26,25 +26,25 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::lua::core::dump_backtrace;
+use bp3d_lua::decl_lib_func;
+use bp3d_lua::libs::files::{SandboxPath, SandboxPathBuf};
+use bp3d_lua::libs::Lib;
+use bp3d_lua::util::thread::UnsafeLuaThread;
+use bp3d_lua::util::LuaThread;
+use bp3d_lua::util::Namespace;
+use bp3d_lua::vm::function::types::RFunction;
+use bp3d_lua::vm::table::Table;
+use bp3d_lua::vm::thread::value::Thread;
+use bp3d_lua::vm::Vm;
+use bp3d_os::assets::get_executable_path;
+use bp3d_util::simple_error;
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
-use bp3d_lua::decl_lib_func;
-use bp3d_lua::libs::files::{SandboxPath, SandboxPathBuf};
-use bp3d_lua::libs::Lib;
-use bp3d_lua::util::Namespace;
-use bp3d_lua::vm::function::types::RFunction;
-use bp3d_lua::vm::table::Table;
-use bp3d_lua::vm::thread::value::Thread;
-use bp3d_lua::vm::Vm;
-use bp3d_lua::util::LuaThread;
-use bp3d_lua::util::thread::UnsafeLuaThread;
-use bp3d_os::assets::get_executable_path;
-use bp3d_util::simple_error;
-use crate::lua::core::dump_backtrace;
 
 simple_error! {
     pub Error {
@@ -57,13 +57,15 @@ struct CommandInfo {
     pub exe: SandboxPathBuf,
     pub args: Option<Vec<SandboxPathBuf>>,
     pub env: Option<HashMap<String, String>>,
-    pub workdir: Option<PathBuf>
+    pub workdir: Option<PathBuf>,
 }
 
 impl CommandInfo {
     pub fn from_table(vm: &Vm, table: &Table) -> bp3d_lua::vm::Result<Self> {
         let workdir: Option<SandboxPath> = table.get(c"workdir")?;
-        let workdir = workdir.map(|v| v.to_path(vm).ok().map(PathBuf::from)).flatten();
+        let workdir = workdir
+            .map(|v| v.to_path(vm).ok().map(PathBuf::from))
+            .flatten();
         Ok(CommandInfo {
             exe: table.get(c"exe")?,
             args: table.get(c"args")?,
@@ -87,7 +89,9 @@ fn join_file_cross_platform(exe_name: &OsStr, path: &Path) -> PathBuf {
 
 impl CommandInfo {
     pub fn into_command(self) -> Command {
-        let self_exe_path = get_executable_path().map(|path| join_file_cross_platform(self.exe.as_os_str(), &path)).unwrap_or(PathBuf::from("/does/not/exist"));
+        let self_exe_path = get_executable_path()
+            .map(|path| join_file_cross_platform(self.exe.as_os_str(), &path))
+            .unwrap_or(PathBuf::from("/does/not/exist"));
         let mut cmd = if self_exe_path.exists() {
             Command::new(self_exe_path)
         } else {
@@ -172,7 +176,7 @@ impl Lib for CommandLib {
         namespace.add([
             ("run", RFunction::wrap(command_run)),
             ("output", RFunction::wrap(command_output)),
-            ("spawn", RFunction::wrap(command_spawn))
+            ("spawn", RFunction::wrap(command_spawn)),
         ])
     }
 }

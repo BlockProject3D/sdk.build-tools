@@ -26,16 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::{Path, PathBuf};
-use bp3d_util::path::PathExt;
 use crate::config::Parameters;
 use crate::source::interface::{Dependency, Error, Provider, Result, Source};
+use bp3d_util::path::PathExt;
+use std::path::{Path, PathBuf};
 
 const DEFAULT_MAX_DEP_NAME_SIZE: i64 = 32;
 
 struct Local {
     path: PathBuf,
-    dep_name_size_limit: usize
+    dep_name_size_limit: usize,
 }
 
 impl Source for Local {
@@ -66,7 +66,9 @@ impl Source for Local {
             }
         }
         if let Some(version) = version {
-            let version = version.to_str().ok_or_else(|| Error::InvalidDep(Dependency::new(name, "latest")))?;
+            let version = version
+                .to_str()
+                .ok_or_else(|| Error::InvalidDep(Dependency::new(name, "latest")))?;
             let target = path.join(version);
             if target.exists() && target.is_dir() {
                 Ok(Some(Dependency::new(name, version)))
@@ -91,7 +93,11 @@ impl Source for Local {
     }
 
     fn download(&mut self, dep: &Dependency, target: &str, target_path: &Path) -> Result<()> {
-        let path = self.path.join(dep.name()).join(dep.version()).join(format!("{}.bpx", target));
+        let path = self
+            .path
+            .join(dep.name())
+            .join(dep.version())
+            .join(format!("{}.bpx", target));
         if path.exists() && path.is_file() {
             std::fs::copy(path, target_path).map_err(Error::Io)?;
             Ok(())
@@ -105,11 +111,14 @@ struct LocalProvider;
 
 impl Provider for LocalProvider {
     fn open(&self, path: &str, params: &Parameters) -> Result<Box<dyn Source>> {
-        let dep_name_max_size = params.get("max-dep-name-size").map(|v| v.as_integer())
-            .unwrap_or(Some(DEFAULT_MAX_DEP_NAME_SIZE)).ok_or(Error::InvalidParameter("max-dep-name-size"))?;
+        let dep_name_max_size = params
+            .get("max-dep-name-size")
+            .map(|v| v.as_integer())
+            .unwrap_or(Some(DEFAULT_MAX_DEP_NAME_SIZE))
+            .ok_or(Error::InvalidParameter("max-dep-name-size"))?;
         Ok(Box::new(Local {
             path: path.into(),
-            dep_name_size_limit: dep_name_max_size as _
+            dep_name_size_limit: dep_name_max_size as _,
         }))
     }
 

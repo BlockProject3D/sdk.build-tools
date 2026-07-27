@@ -26,35 +26,35 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::{Path, PathBuf};
-use bp3d_debug::debug;
-use bp3d_lua::libs::files::{Files, SandboxPath};
-use bp3d_lua::libs::Lib;
-use bp3d_lua::libs::lua::{Lua, Module};
-use bp3d_lua::libs::lua::require::{Provider, Source};
-use bp3d_lua::libs::os::{Compat, Instant, Time};
-use bp3d_lua::libs::util::Util;
-use bp3d_lua::vm::closure::arc::Shared;
-use bp3d_lua::vm::core::load::Script;
-use bp3d_lua::vm::error::Error;
-use bp3d_lua::vm::registry::core::Key;
-use bp3d_lua::vm::RootVm;
-use bp3d_lua::vm::Result;
-use bp3d_lua::vm::table::Table;
-use bp3d_lua::vm::userdata::UserDataImmutable;
-use bp3d_lua::vm::value::any::AnyParam;
-use bp3d_lua::vm::value::{FromLua, IntoLua};
-use bp3d_lua::vm::value::types::Function;
-use bp3d_os::assets::get_executable_path;
-use bp3d_util::path::PathExt;
 use crate::lua::lib_command::CommandLib;
 use crate::lua::lib_files::FilesLib;
 use crate::lua::obj_artifact::ObjArtifact;
 use crate::lua::obj_list::ObjList;
 use crate::system::{Context, Features};
+use bp3d_debug::debug;
 use bp3d_lua::libs::files::chroot;
 use bp3d_lua::libs::files::chroot::Permissions;
+use bp3d_lua::libs::files::{Files, SandboxPath};
+use bp3d_lua::libs::lua::require::{Provider, Source};
+use bp3d_lua::libs::lua::{Lua, Module};
+use bp3d_lua::libs::os::{Compat, Instant, Time};
+use bp3d_lua::libs::util::Util;
+use bp3d_lua::libs::Lib;
+use bp3d_lua::vm::closure::arc::Shared;
+use bp3d_lua::vm::core::load::Script;
+use bp3d_lua::vm::error::Error;
+use bp3d_lua::vm::registry::core::Key;
+use bp3d_lua::vm::table::Table;
+use bp3d_lua::vm::userdata::UserDataImmutable;
+use bp3d_lua::vm::value::any::AnyParam;
+use bp3d_lua::vm::value::types::Function;
+use bp3d_lua::vm::value::{FromLua, IntoLua};
+use bp3d_lua::vm::Result;
+use bp3d_lua::vm::RootVm;
+use bp3d_os::assets::get_executable_path;
 use bp3d_os::module::loader::ModuleLoader;
+use bp3d_util::path::PathExt;
+use std::path::{Path, PathBuf};
 
 pub fn dump_backtrace<T>(res: Result<T>) -> Result<T> {
     if let Err(e) = &res {
@@ -99,7 +99,7 @@ pub struct Vm {
     vm: RootVm,
     provider: Shared<Provider>,
     search_paths: Vec<PathBuf>,
-    main_class: Option<Key<bp3d_lua::vm::registry::types::Table>>
+    main_class: Option<Key<bp3d_lua::vm::registry::types::Table>>,
 }
 
 impl Vm {
@@ -124,14 +124,17 @@ impl Vm {
         if let Ok(path) = bp3d_os::fs::get_absolute_path(path) {
             if let Some(name) = path.file_name().map(|v| v.to_str()).flatten() {
                 let path = path.join("bp3d-build");
-                debug!({name}, "Adding project lua path: {:?}...", path);
+                debug!({ name }, "Adding project lua path: {:?}...", path);
                 search_paths.push(path.clone());
                 provider.add_source(name.into(), SourcePath::new(path));
             }
         }
         search_paths.push(annoyingrust);
         let vm = RootVm::new();
-        Lua::new().provider(provider.clone()).build().register(&vm)?;
+        Lua::new()
+            .provider(provider.clone())
+            .build()
+            .register(&vm)?;
         Module.register(&vm)?;
         {
             let mut loader = ModuleLoader::lock();
@@ -160,18 +163,25 @@ impl Vm {
             vm,
             provider,
             search_paths,
-            main_class: None
+            main_class: None,
         })
     }
 
-    pub fn with_class<R: 'static>(&self, f: impl FnOnce(&bp3d_lua::vm::Vm, Table) -> Result<R>) -> Result<R> {
+    pub fn with_class<R: 'static>(
+        &self,
+        f: impl FnOnce(&bp3d_lua::vm::Vm, Table) -> Result<R>,
+    ) -> Result<R> {
         self.vm.scope(|vm| {
             let class = self.main_class.as_ref().unwrap().push(vm);
             f(vm, class)
         })
     }
 
-    pub fn call_main<'a>(&self, len: usize, args: impl Iterator<Item = (&'a str, &'a str)>) -> Result<()> {
+    pub fn call_main<'a>(
+        &self,
+        len: usize,
+        args: impl Iterator<Item = (&'a str, &'a str)>,
+    ) -> Result<()> {
         assert!(self.main_class.is_some());
         self.vm.scope(|vm| {
             let mut args2 = Table::with_capacity(vm, 0, len);
@@ -184,7 +194,14 @@ impl Vm {
         })
     }
 
-    fn _call<'a, A: IntoLua, R: FromLua<'a>>(class: Table<'a>, vm: &bp3d_lua::vm::Vm, f: &'a Function<'a>, context: &Context, target: &str, arg: A) -> Result<R> {
+    fn _call<'a, A: IntoLua, R: FromLua<'a>>(
+        class: Table<'a>,
+        vm: &bp3d_lua::vm::Vm,
+        f: &'a Function<'a>,
+        context: &Context,
+        target: &str,
+        arg: A,
+    ) -> Result<R> {
         let mut ctx = Table::with_capacity(vm, 0, 4);
         ctx.set(c"path", SandboxPath::from_path_unchecked(context.path))?;
         ctx.set(c"target", target)?;
@@ -199,7 +216,14 @@ impl Vm {
         dump_backtrace(f.call((class, ctx, arg)))
     }
 
-    fn _call2<'a, A: IntoLua, R: FromLua<'a>>(class: Table<'a>, vm: &bp3d_lua::vm::Vm, f: &'a Function<'a>, context: &Context, targets: &[&str], arg: A) -> Result<R> {
+    fn _call2<'a, A: IntoLua, R: FromLua<'a>>(
+        class: Table<'a>,
+        vm: &bp3d_lua::vm::Vm,
+        f: &'a Function<'a>,
+        context: &Context,
+        targets: &[&str],
+        arg: A,
+    ) -> Result<R> {
         let mut ctx = Table::with_capacity(vm, 0, 4);
         ctx.set(c"path", SandboxPath::from_path_unchecked(context.path))?;
         let mut targets2 = Table::with_capacity(vm, targets.len(), 0);
@@ -218,7 +242,12 @@ impl Vm {
         dump_backtrace(f.call((class, ctx, arg)))
     }
 
-    pub fn call_userdata<R: 'static + UserDataImmutable + Clone>(&self, name: &str, context: &Context, target: &str) -> Result<R> {
+    pub fn call_userdata<R: 'static + UserDataImmutable + Clone>(
+        &self,
+        name: &str,
+        context: &Context,
+        target: &str,
+    ) -> Result<R> {
         assert!(self.main_class.is_some());
         self.vm.scope(|vm| {
             let class = self.main_class.as_ref().unwrap().push(vm);
@@ -228,7 +257,13 @@ impl Vm {
         })
     }
 
-    pub fn call_target_list<A: IntoLua>(&self, name: &str, context: &Context, targets: &[&str], arg: A) -> Result<()> {
+    pub fn call_target_list<A: IntoLua>(
+        &self,
+        name: &str,
+        context: &Context,
+        targets: &[&str],
+        arg: A,
+    ) -> Result<()> {
         assert!(self.main_class.is_some());
         self.vm.scope(|vm| {
             let class = self.main_class.as_ref().unwrap().push(vm);
@@ -237,7 +272,13 @@ impl Vm {
         })
     }
 
-    pub fn call_context<A: IntoLua>(&self, name: &str, context: &Context, target: &str, arg: A) -> Result<()> {
+    pub fn call_context<A: IntoLua>(
+        &self,
+        name: &str,
+        context: &Context,
+        target: &str,
+        arg: A,
+    ) -> Result<()> {
         assert!(self.main_class.is_some());
         self.vm.scope(|vm| {
             let class = self.main_class.as_ref().unwrap().push(vm);
@@ -260,7 +301,8 @@ impl Vm {
     pub fn run(&mut self, script_path: &Path) -> Result<()> {
         assert!(self.main_class.is_none());
         self.vm.scope(|vm| {
-            let cl: Table = vm.run(Script::from_path(script_path).map_err(|e| Error::Loader(e.to_string()))?)?;
+            let cl: Table =
+                vm.run(Script::from_path(script_path).map_err(|e| Error::Loader(e.to_string()))?)?;
             self.main_class = Some(Key::new(cl));
             Ok(())
         })

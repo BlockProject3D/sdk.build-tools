@@ -26,18 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::borrow::Cow;
-use std::path::Path;
-use bp3d_lua::vm::table::Table;
 use crate::lua::core::Vm;
 use crate::system::{Component, Package};
+use bp3d_lua::vm::table::Table;
+use std::borrow::Cow;
+use std::path::Path;
 
 struct ComponentInfo {
     name: String,
     version: String,
     short_name: String,
     description: Option<String>,
-    private: Option<bool>
+    private: Option<bool>,
 }
 
 impl Component for ComponentInfo {
@@ -99,7 +99,7 @@ impl LuaPackage {
                         name: tbl.get("name")?,
                         version: tbl.get("version")?,
                         description: tbl.get("description")?,
-                        private: tbl.get("private")?
+                        private: tbl.get("private")?,
                     })
                 }
                 if !comps.is_empty() {
@@ -119,7 +119,7 @@ impl LuaPackage {
             features,
             name,
             version,
-            components: comps
+            components: comps,
         })
     }
 

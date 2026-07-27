@@ -26,18 +26,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::types::PackageEntry;
+use crate::types::PackageFile;
+use crate::types::Result;
+use regex::Regex;
 use reqwest::blocking::Client;
 use reqwest::blocking::Response;
 use std::fs::File;
-use regex::Regex;
-use crate::types::Result;
-use crate::types::PackageEntry;
-use crate::types::PackageFile;
 
 pub struct PackageManager {
     client: Client,
     base_url: String, //This way we support other gitlab instances (not just gitlab.com)
-    access_token: Option<String>
+    access_token: Option<String>,
 }
 
 impl PackageManager {
@@ -45,7 +45,7 @@ impl PackageManager {
         PackageManager {
             client: Client::new(),
             base_url,
-            access_token: Some(access_token)
+            access_token: Some(access_token),
         }
     }
 
@@ -53,7 +53,7 @@ impl PackageManager {
         PackageManager {
             client: Client::new(),
             base_url,
-            access_token: None
+            access_token: None,
         }
     }
 
@@ -80,7 +80,13 @@ impl PackageManager {
         req.send()?.error_for_status()
     }
 
-    pub fn upload(&mut self, package_name: &str, package_version: &str, file_name: &str, file: File) -> Result<()> {
+    pub fn upload(
+        &mut self,
+        package_name: &str,
+        package_version: &str,
+        file_name: &str,
+        file: File,
+    ) -> Result<()> {
         let re = Regex::new(r"^\A\d+\.\d+\.\d+\z$").unwrap();
         let re1 = Regex::new(r"^([a-z]|[A-Z]|\d|\.|-|_)+$").unwrap();
         assert!(re.is_match(package_version)); // It is a programmer error to pass non matched strings
@@ -98,7 +104,15 @@ impl PackageManager {
         path.push_str(&package_version);
         path.push('/');
         path.push_str(&file_name);
-        self.client.put(&path).header("PRIVATE-TOKEN", self.access_token.as_deref().unwrap_or_default())
-            .body(file).send()?.error_for_status().map(|_| ())
+        self.client
+            .put(&path)
+            .header(
+                "PRIVATE-TOKEN",
+                self.access_token.as_deref().unwrap_or_default(),
+            )
+            .body(file)
+            .send()?
+            .error_for_status()
+            .map(|_| ())
     }
 }

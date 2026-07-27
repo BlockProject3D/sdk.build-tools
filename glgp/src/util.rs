@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::types::Result;
 use reqwest::blocking::Client;
 use serde::Deserialize;
-use crate::types::Result;
 
 #[derive(Deserialize)]
 struct ProjectInfo {
-    id: usize
+    id: usize,
 }
 
 pub fn get_base_url(url: &str) -> String {
@@ -46,8 +46,7 @@ pub fn get_base_url(url: &str) -> String {
 pub fn get_project_id(base_url: &str, path: &str) -> Result<usize> {
     let client = Client::new();
     let url = format!("{}/{}", base_url, path.replace("/", "%2F"));
-    let req = client.get(&url)
-        .header("Content-Type", "application/json");
+    let req = client.get(&url).header("Content-Type", "application/json");
     let res: ProjectInfo = req.send()?.json()?;
     Ok(res.id)
 }

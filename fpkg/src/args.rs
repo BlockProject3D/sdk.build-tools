@@ -26,27 +26,34 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use clap::{ArgAction, Parser, ValueEnum};
 use std::path::PathBuf;
-use clap::{Parser, ValueEnum, ArgAction};
 
 #[derive(ValueEnum, Debug, Copy, Clone)]
 pub enum Command {
     Install,
     Publish,
-    Clean
+    Clean,
 }
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    #[arg(short='t', long="target", help="Specify which target to install or publish for.")]
+    #[arg(
+        short = 't',
+        long = "target",
+        help = "Specify which target to install or publish for."
+    )]
     pub targets: Vec<String>,
 
-    #[arg(long="root", help="Root path of the project, where to find the manifest.")]
+    #[arg(
+        long = "root",
+        help = "Root path of the project, where to find the manifest."
+    )]
     pub root: Option<PathBuf>,
 
     #[arg(short='s', long="search", help="Name of the package to search for (name, version).", num_args=1..3, action=ArgAction::Set)]
     pub search: Vec<String>,
 
-    pub cmd: Option<Command>
+    pub cmd: Option<Command>,
 }

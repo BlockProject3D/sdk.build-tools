@@ -26,7 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::{decl_lib_func, decl_userdata, impl_userdata};
+use crate::system::artifact;
+use crate::system::artifact::{LibType, List, Type};
 use bp3d_lua::libs::files::chroot::SandboxError;
 use bp3d_lua::libs::files::SandboxPath;
 use bp3d_lua::libs::Lib;
@@ -35,9 +36,8 @@ use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::userdata::case::Camel;
 use bp3d_lua::vm::value::IntoLua;
 use bp3d_lua::vm::Vm;
+use bp3d_lua::{decl_lib_func, decl_userdata, impl_userdata};
 use bp3d_lua_codegen::{FromParam, LuaType};
-use crate::system::artifact;
-use crate::system::artifact::{LibType, List, Type};
 
 decl_userdata!(pub struct Artifact(artifact::Artifact));
 
@@ -62,7 +62,7 @@ impl From<&Artifact> for artifact::Artifact {
 #[derive(LuaType, FromParam)]
 enum LuaLibType {
     Dynamic,
-    Static
+    Static,
 }
 
 decl_lib_func! {

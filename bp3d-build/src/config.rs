@@ -26,19 +26,19 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::Path;
 use bp3d_util::simple_error;
 use serde::Deserialize;
+use std::path::Path;
 
 #[derive(Deserialize)]
 pub struct Package {
     pub name: String,
-    pub version: String
+    pub version: String,
 }
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub package: Option<Package>
+    pub package: Option<Package>,
 }
 
 simple_error! {

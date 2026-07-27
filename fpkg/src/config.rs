@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
-use std::path::Path;
 use bp3d_util::simple_error;
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::path::Path;
 
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
@@ -37,14 +37,14 @@ pub enum ParamValue {
     String(String),
     Integer(i64),
     Float(f64),
-    Boolean(bool)
+    Boolean(bool),
 }
 
 impl ParamValue {
     pub fn as_str(&self) -> Option<&str> {
         match self {
             ParamValue::String(s) => Some(s.as_str()),
-            _ => None
+            _ => None,
         }
     }
 
@@ -52,7 +52,7 @@ impl ParamValue {
         match self {
             ParamValue::Integer(v) => Some(*v as _),
             ParamValue::Float(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -60,14 +60,14 @@ impl ParamValue {
         match self {
             ParamValue::Integer(v) => Some(*v),
             ParamValue::Float(v) => Some(*v as _),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn as_boolean(&self) -> Option<bool> {
         match self {
             ParamValue::Boolean(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -77,7 +77,7 @@ pub type Parameters = HashMap<String, ParamValue>;
 #[derive(Deserialize)]
 pub struct Source {
     pub url: String,
-    pub params: Parameters
+    pub params: Parameters,
 }
 
 impl Source {
@@ -96,8 +96,8 @@ impl Source {
                 } else {
                     bytes
                 }
-            },
-            None => &self.url
+            }
+            None => &self.url,
         }
     }
 }
@@ -105,28 +105,28 @@ impl Source {
 #[derive(Deserialize)]
 pub struct SourceDep {
     pub source: String,
-    pub version: String
+    pub version: String,
 }
 
 #[derive(Deserialize)]
 #[serde(untagged)]
 pub enum Dependency {
     WithSource(SourceDep),
-    Version(String)
+    Version(String),
 }
 
 impl Dependency {
     pub fn version(&self) -> &str {
         match self {
             Dependency::WithSource(v) => &v.version,
-            Dependency::Version(v) => v
+            Dependency::Version(v) => v,
         }
     }
 
     pub fn source(&self) -> Option<&str> {
         match self {
             Dependency::WithSource(v) => Some(&v.source),
-            Dependency::Version(_) => None
+            Dependency::Version(_) => None,
         }
     }
 }
@@ -134,14 +134,14 @@ impl Dependency {
 #[derive(Deserialize, Default)]
 pub struct Config {
     /// Represents the default package source for publishing new packages.
-    #[serde(rename="default")]
+    #[serde(rename = "default")]
     pub default_source: Option<String>,
 
     /// The list of dependencies to be installed.
     pub dependencies: Option<HashMap<String, Dependency>>,
 
     /// A declaration of all available package sources.
-    pub sources: Option<HashMap<String, Source>>
+    pub sources: Option<HashMap<String, Source>>,
 }
 
 simple_error! {
@@ -153,7 +153,7 @@ simple_error! {
 
 #[derive(Deserialize)]
 pub struct ManifestExt {
-    pub fpkg: Config
+    pub fpkg: Config,
 }
 
 pub fn parse_config(project_root: &Path) -> Result<Option<Config>, Error> {

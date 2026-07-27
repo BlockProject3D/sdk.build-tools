@@ -28,8 +28,8 @@
 
 use bp3d_util::simple_error;
 
-mod package;
 mod builder;
+mod package;
 
 simple_error! {
     pub Error {
@@ -40,5 +40,5 @@ simple_error! {
     }
 }
 
-pub use package::CargoWorkspace;
 pub use builder::CargoBuilder;
+pub use package::CargoWorkspace;

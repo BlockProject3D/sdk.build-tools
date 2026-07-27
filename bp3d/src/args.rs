@@ -26,8 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
 use clap::{Parser, ValueEnum};
+use std::path::PathBuf;
 
 #[derive(ValueEnum, Debug, Copy, Clone)]
 pub enum Command {
@@ -35,28 +35,43 @@ pub enum Command {
     Build,
     PrePackage,
     Package,
-    Run
+    Run,
 }
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    #[arg(short='t', long="target", help="Specify which target to build for.")]
+    #[arg(
+        short = 't',
+        long = "target",
+        help = "Specify which target to build for."
+    )]
     pub targets: Vec<String>,
 
-    #[arg(short='f', long="feature", help="Specify which feature(s) to build with.")]
+    #[arg(
+        short = 'f',
+        long = "feature",
+        help = "Specify which feature(s) to build with."
+    )]
     pub features: Vec<String>,
 
-    #[arg(short='c', long="config", help="Build rust target in release mode.")]
+    #[arg(
+        short = 'c',
+        long = "config",
+        help = "Build rust target in release mode."
+    )]
     pub configuration: Option<String>,
 
-    #[arg(short='a', long="all-features", help="Build with all features.")]
+    #[arg(short = 'a', long = "all-features", help = "Build with all features.")]
     pub all_features: bool,
 
-    #[arg(long="root", help="Root path of the project, where to find the manifest.")]
+    #[arg(
+        long = "root",
+        help = "Root path of the project, where to find the manifest."
+    )]
     pub root: Option<PathBuf>,
 
-    #[arg(short='p', long="package", help="The packager engine to use.")]
+    #[arg(short = 'p', long = "package", help = "The packager engine to use.")]
     pub package_type: Option<String>,
 
     pub cmd: Command,

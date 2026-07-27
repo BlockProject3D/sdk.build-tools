@@ -26,19 +26,19 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Display, Formatter};
-use bp3d_lua::libs::files::SandboxPath;
-use bp3d_lua::vm::table::Table;
-use bp3d_lua::vm::value::types::Function;
+use crate::interface::{Context, Script};
 use bp3d_build::lua::core::{dump_backtrace, Vm};
 use bp3d_build::lua::util::convert_package;
 use bp3d_build::system::Features;
-use crate::interface::{Context, Script};
+use bp3d_lua::libs::files::SandboxPath;
+use bp3d_lua::vm::table::Table;
+use bp3d_lua::vm::value::types::Function;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub enum Error {
     Lua(bp3d_lua::vm::error::Error),
-    NotFound(String)
+    NotFound(String),
 }
 
 impl Display for Error {
@@ -53,10 +53,13 @@ impl Display for Error {
 impl std::error::Error for Error {}
 
 pub struct Lua {
-    vm: Vm
+    vm: Vm,
 }
 
-fn create_context<'a>(vm: &'a bp3d_lua::vm::Vm, context: &Context) -> bp3d_lua::vm::Result<Table<'a>> {
+fn create_context<'a>(
+    vm: &'a bp3d_lua::vm::Vm,
+    context: &Context,
+) -> bp3d_lua::vm::Result<Table<'a>> {
     let mut tbl = Table::with_capacity(vm, 0, 5);
     tbl.set(c"path", SandboxPath::from_path_unchecked(context.path))?;
     tbl.set(c"configuration", context.configuration)?;
@@ -94,11 +97,9 @@ impl Script for Lua {
         if args.is_empty() {
             vm.call_main(0, [].into_iter()).map_err(Error::Lua)?;
         } else {
-            let args = args.iter().map(|v| {
-                match v.find('=') {
-                    Some(pos) => (&v[..pos], &v[pos + 1..]),
-                    None => (*v, "")
-                }
+            let args = args.iter().map(|v| match v.find('=') {
+                Some(pos) => (&v[..pos], &v[pos + 1..]),
+                None => (*v, ""),
             });
             vm.call_main(args.len(), args).map_err(Error::Lua)?;
         }
@@ -106,31 +107,37 @@ impl Script for Lua {
             let f: Function = class.get(c"init2")?;
             let ctx = create_context(vm, context)?;
             dump_backtrace(f.call((class.clone(), ctx)))
-        }).map_err(Error::Lua)?;
-        Ok(Lua {
-            vm
         })
+        .map_err(Error::Lua)?;
+        Ok(Lua { vm })
     }
 
     fn needs_configure(&self) -> Result<bool, Self::Error> {
-        self.vm.with_class(|_, class| {
-            let f: Function = class.get(c"needsConfigure")?;
-            dump_backtrace(f.call(class.clone()))
-        }).map_err(Error::Lua)
+        self.vm
+            .with_class(|_, class| {
+                let f: Function = class.get(c"needsConfigure")?;
+                dump_backtrace(f.call(class.clone()))
+            })
+            .map_err(Error::Lua)
     }
 
     fn needs_build(&self) -> Result<bool, Self::Error> {
-        self.vm.with_class(|_, class| {
-            let f: Function = class.get(c"needsBuild")?;
-            dump_backtrace(f.call(class.clone()))
-        }).map_err(Error::Lua)
+        self.vm
+            .with_class(|_, class| {
+                let f: Function = class.get(c"needsBuild")?;
+                dump_backtrace(f.call(class.clone()))
+            })
+            .map_err(Error::Lua)
     }
 
     fn execute(&self) -> Result<i32, Self::Error> {
-        let val: Option<i32> = self.vm.with_class(|_, class| {
-            let f: Function = class.get(c"run")?;
-            dump_backtrace(f.call(class.clone()))
-        }).map_err(Error::Lua)?;
+        let val: Option<i32> = self
+            .vm
+            .with_class(|_, class| {
+                let f: Function = class.get(c"run")?;
+                dump_backtrace(f.call(class.clone()))
+            })
+            .map_err(Error::Lua)?;
         Ok(val.unwrap_or_default())
     }
 }

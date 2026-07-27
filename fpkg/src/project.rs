@@ -26,17 +26,17 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
-use std::fs::{read_dir, File, Permissions};
-use std::path::{Path, PathBuf};
-use bp3d_util::simple_error;
-use bpx::core::Container;
-use bpx::package::{Architecture, Package, Platform};
-use bpx::package::util::unpack;
-use bp3d_debug::{debug, trace};
-use crate::config::{parse_config, parse_standalone_config, Config, ParamValue};
+use crate::config::{Config, ParamValue, parse_config, parse_standalone_config};
 use crate::source::interface::{Dependency, Source};
 use crate::source::registry::get_provider;
+use bp3d_debug::{debug, trace};
+use bp3d_util::simple_error;
+use bpx::core::Container;
+use bpx::package::util::unpack;
+use bpx::package::{Architecture, Package, Platform};
+use std::collections::HashMap;
+use std::fs::{File, Permissions, read_dir};
+use std::path::{Path, PathBuf};
 
 simple_error! {
     pub Error {
@@ -83,14 +83,18 @@ fn get_architecture_from_target(target: &str) -> Architecture {
     }
 }
 
-fn ensure_bpxp_compatible<T>(package: &Package<T>, dep: Dependency, target: &str) -> Result<(), Error> {
+fn ensure_bpxp_compatible<T>(
+    package: &Package<T>,
+    dep: Dependency,
+    target: &str,
+) -> Result<(), Error> {
     let arch = get_architecture_from_target(target);
     let platform = get_platform_from_target(target);
     if arch != package.settings().architecture {
-        return Err(Error::IncompatibleArch(dep))
+        return Err(Error::IncompatibleArch(dep));
     }
     if platform != package.settings().platform {
-        return Err(Error::IncompatiblePlatform(dep))
+        return Err(Error::IncompatiblePlatform(dep));
     }
     Ok(())
 }
@@ -114,13 +118,22 @@ fn publish_packages_rec(path: &Path, target: &str, source: &mut dyn Source) -> R
                     }
                     let package = Package::try_from(bpx).map_err(Error::Bpxp)?;
                     if &package.settings().type_code != b"PK" {
-                        debug!("Skipping {:?}: package is not a valid FPKG binary package ({:?})", entry.path(), package.settings().type_code);
+                        debug!(
+                            "Skipping {:?}: package is not a valid FPKG binary package ({:?})",
+                            entry.path(),
+                            package.settings().type_code
+                        );
                         continue;
                     }
                     let arch = get_architecture_from_target(target);
                     let platform = get_platform_from_target(target);
-                    if arch != package.settings().architecture || platform != package.settings().platform {
-                        debug!("Skipping {:?}: package is not compatible with published target", entry.path());
+                    if arch != package.settings().architecture
+                        || platform != package.settings().platform
+                    {
+                        debug!(
+                            "Skipping {:?}: package is not compatible with published target",
+                            entry.path()
+                        );
                         continue;
                     }
                     if let Some(val) = package.load_metadata().map_err(Error::Bpxp)?.as_object() {
@@ -129,17 +142,25 @@ fn publish_packages_rec(path: &Path, target: &str, source: &mut dyn Source) -> R
                         match (name, version) {
                             (Some(name), Some(version)) => {
                                 let dep = Dependency::new(name, version);
-                                debug!({target}, "Publishing {:?} ({})...", entry.path(), dep);
+                                debug!({ target }, "Publishing {:?} ({})...", entry.path(), dep);
                                 source.ensure_valid_package(&dep).map_err(Error::Source)?;
-                                source.publish(&dep, target, &entry.path()).map_err(Error::Source)?;
-                            },
+                                source
+                                    .publish(&dep, target, &entry.path())
+                                    .map_err(Error::Source)?;
+                            }
                             _ => {
-                                debug!("Skipping {:?}: package is not a valid FPKG binary package", entry.path());
+                                debug!(
+                                    "Skipping {:?}: package is not a valid FPKG binary package",
+                                    entry.path()
+                                );
                                 continue;
                             }
                         }
                     } else {
-                        debug!("Skipping {:?}: package is not a valid FPKG binary package", entry.path());
+                        debug!(
+                            "Skipping {:?}: package is not a valid FPKG binary package",
+                            entry.path()
+                        );
                         continue;
                     }
                 }
@@ -154,7 +175,7 @@ fn publish_packages_rec(path: &Path, target: &str, source: &mut dyn Source) -> R
 pub struct Project {
     config: Config,
     sources: HashMap<String, Box<dyn Source>>,
-    path: PathBuf
+    path: PathBuf,
 }
 
 impl Project {
@@ -163,7 +184,7 @@ impl Project {
         Ok(Self {
             config: config.unwrap_or_default(),
             sources: HashMap::new(),
-            path: PathBuf::from(path)
+            path: PathBuf::from(path),
         })
     }
 
@@ -176,13 +197,21 @@ impl Project {
         if self.config.default_source.is_none() && config.default_source.is_some() {
             self.config.default_source = config.default_source;
         }
-        self.config.sources.get_or_insert_default().extend(config.sources.unwrap_or_default().into_iter());
+        self.config
+            .sources
+            .get_or_insert_default()
+            .extend(config.sources.unwrap_or_default().into_iter());
         Ok(())
     }
 
     pub fn load_sources(&mut self, params: &Vec<String>) -> Result<(), Error> {
         if let Some(source) = &self.config.default_source {
-            let source = self.config.sources.get_or_insert_default().get_mut(source).ok_or_else(|| Error::UnknownSource(source.into()))?;
+            let source = self
+                .config
+                .sources
+                .get_or_insert_default()
+                .get_mut(source)
+                .ok_or_else(|| Error::UnknownSource(source.into()))?;
             for kv in params {
                 let mut kv = kv.split("=");
                 let key = kv.next().ok_or(Error::InvalidParameter)?;
@@ -196,15 +225,22 @@ impl Project {
                 } else if value == "false" {
                     source.params.insert(key.into(), ParamValue::Boolean(false));
                 } else {
-                    source.params.insert(key.into(), ParamValue::String(value.into()));
+                    source
+                        .params
+                        .insert(key.into(), ParamValue::String(value.into()));
                 }
             }
         }
         for (name, cfg) in self.config.sources.get_or_insert_default() {
             debug!("Loading package source: {}", name);
-            let scheme = cfg.scheme().ok_or_else(|| Error::InvalidUrl(cfg.url.clone()))?;
-            let provider = get_provider(scheme).ok_or_else(|| Error::UnknownScheme(scheme.into()))?;
-            let source = provider.open(cfg.path(), &cfg.params).map_err(Error::Provider)?;
+            let scheme = cfg
+                .scheme()
+                .ok_or_else(|| Error::InvalidUrl(cfg.url.clone()))?;
+            let provider =
+                get_provider(scheme).ok_or_else(|| Error::UnknownScheme(scheme.into()))?;
+            let source = provider
+                .open(cfg.path(), &cfg.params)
+                .map_err(Error::Provider)?;
             self.sources.insert(name.into(), source);
         }
         Ok(())
@@ -225,11 +261,20 @@ impl Project {
         let target_path = self.path.join("target").join(target).join("ext");
         std::fs::create_dir_all(&target_path).map_err(Error::Io)?;
         for (name, dep) in self.config.dependencies.get_or_insert_default() {
-            let source = dep.source().or_else(|| self.config.default_source.as_deref()).ok_or(Error::NoSource)?;
-            let source = self.sources.get_mut(source).ok_or_else(|| Error::UnknownSource(source.into()))?;
+            let source = dep
+                .source()
+                .or_else(|| self.config.default_source.as_deref())
+                .ok_or(Error::NoSource)?;
+            let source = self
+                .sources
+                .get_mut(source)
+                .ok_or_else(|| Error::UnknownSource(source.into()))?;
             let mut dep = Dependency::new(name, dep.version());
             if dep.version() == "latest" {
-                dep = source.find_latest(name).map_err(Error::Source)?.ok_or_else(|| Error::DependencyNotFound(dep))?;
+                dep = source
+                    .find_latest(name)
+                    .map_err(Error::Source)?
+                    .ok_or_else(|| Error::DependencyNotFound(dep))?;
             }
             let dst_path = target_path.join(dep.get_package_filename());
             if dst_path.exists() && dst_path.is_file() {
@@ -237,7 +282,9 @@ impl Project {
                 continue;
             }
             debug!("Downloading dependency {}...", dep);
-            source.download(&dep, target, &dst_path).map_err(Error::Source)?;
+            source
+                .download(&dep, target, &dst_path)
+                .map_err(Error::Source)?;
             debug!("Checking dependency {}...", dep);
             let file = File::open(&dst_path).map_err(Error::Io)?;
             let package = Package::open(&file).map_err(Error::Bpxp)?;
@@ -252,15 +299,24 @@ impl Project {
                 if path.starts_with("./bin") {
                     let file_path = target_path.join(path);
                     use std::os::unix::fs::PermissionsExt;
-                    std::fs::set_permissions(file_path, Permissions::from_mode(0o555)).map_err(Error::Io)?;
+                    std::fs::set_permissions(file_path, Permissions::from_mode(0o555))
+                        .map_err(Error::Io)?;
                 } else if !path.starts_with("./etc") {
                     let file_path = target_path.join(path);
-                    std::fs::set_permissions(&file_path, Self::make_readonly(&file_path).map_err(Error::Io)?).map_err(Error::Io)?;
+                    std::fs::set_permissions(
+                        &file_path,
+                        Self::make_readonly(&file_path).map_err(Error::Io)?,
+                    )
+                    .map_err(Error::Io)?;
                 }
                 #[cfg(windows)]
                 if !path.starts_with("./etc") {
                     let file_path = target_path.join(path);
-                    std::fs::set_permissions(&file_path, Self::make_readonly(&file_path).map_err(Error::Io)?).map_err(Error::Io)?;
+                    std::fs::set_permissions(
+                        &file_path,
+                        Self::make_readonly(&file_path).map_err(Error::Io)?,
+                    )
+                    .map_err(Error::Io)?;
                 }
             }
         }
@@ -269,7 +325,10 @@ impl Project {
 
     pub fn publish(&mut self, target: &str) -> Result<(), Error> {
         let pubsrc = self.config.default_source.as_deref().unwrap_or("default");
-        let source = self.sources.get_mut(pubsrc).ok_or_else(|| Error::UnknownSource(pubsrc.into()))?;
+        let source = self
+            .sources
+            .get_mut(pubsrc)
+            .ok_or_else(|| Error::UnknownSource(pubsrc.into()))?;
         let target_path = self.path.join("target").join(target);
         publish_packages_rec(&target_path.join("debug"), target, &mut **source)?;
         publish_packages_rec(&target_path.join("release"), target, &mut **source)
@@ -278,7 +337,12 @@ impl Project {
     pub fn find(&mut self, name: &str, version: &str) -> Result<(), Error> {
         for (soidfhj, src) in &mut self.sources {
             if let Some(pkg) = src.find(name, version).map_err(Error::Source)? {
-                println!("In source {}, found package: {}-{}", soidfhj, pkg.name(), pkg.version());
+                println!(
+                    "In source {}, found package: {}-{}",
+                    soidfhj,
+                    pkg.name(),
+                    pkg.version()
+                );
             }
         }
         Ok(())

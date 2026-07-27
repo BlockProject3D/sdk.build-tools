@@ -26,17 +26,17 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::error::Error;
-use std::path::Path;
 use bp3d_build::core::BuildTool;
 use bp3d_build::system::Features;
+use std::error::Error;
+use std::path::Path;
 
 pub struct Context<'a> {
     pub path: &'a Path,
     pub configuration: &'a str,
     pub targets: &'a [&'a str],
     pub features: Features<'a>,
-    pub tool: &'a dyn BuildTool
+    pub tool: &'a dyn BuildTool,
 }
 
 pub trait Script: Sized {

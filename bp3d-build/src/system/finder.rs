@@ -26,25 +26,23 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::{Path, PathBuf};
 use crate::system::artifact::LibType;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub struct FinderResult {
     pub path: Option<PathBuf>,
     pub debug_info: Option<PathBuf>,
-    pub exports: Option<PathBuf>
+    pub exports: Option<PathBuf>,
 }
 
 pub struct Finder<'a> {
-    root: &'a Path
+    root: &'a Path,
 }
 
 impl<'a> Finder<'a> {
     pub fn new(root: &'a Path) -> Self {
-        Self {
-            root
-        }
+        Self { root }
     }
 
     pub fn get_path(&self, file_name: &str) -> Option<PathBuf> {
@@ -61,13 +59,13 @@ impl<'a> Finder<'a> {
         return FinderResult {
             path: self.get_path(name),
             debug_info: self.get_path(&format!("{}.d", name)),
-            exports: None
+            exports: None,
         };
         #[cfg(windows)]
         return FinderResult {
             path: self.get_path(&format!("{}.exe", name)),
             debug_info: self.get_path(&format!("{}.pdb", name)),
-            exports: None
+            exports: None,
         };
     }
 
@@ -76,42 +74,51 @@ impl<'a> Finder<'a> {
             LibType::Dynamic => {
                 #[cfg(unix)]
                 return FinderResult {
-                    path: self.get_path(&format!("lib{}.dylib", name))
+                    path: self
+                        .get_path(&format!("lib{}.dylib", name))
                         .or_else(|| self.get_path(&format!("lib{}.so", name)))
                         .or_else(|| self.get_path(&format!("{}.dylib", name)))
                         .or_else(|| self.get_path(&format!("{}.so", name))),
-                    debug_info: self.get_path(&format!("lib{}.d", name))
+                    debug_info: self
+                        .get_path(&format!("lib{}.d", name))
                         .or_else(|| self.get_path(&format!("{}.d", name))),
-                    exports: None
+                    exports: None,
                 };
                 #[cfg(windows)]
                 return FinderResult {
-                    path: self.get_path(&format!("{}.dll", name))
+                    path: self
+                        .get_path(&format!("{}.dll", name))
                         .or_else(|| self.get_path(&format!("lib{}.dll", name))),
-                    debug_info: self.get_path(&format!("{}.pdb", name))
+                    debug_info: self
+                        .get_path(&format!("{}.pdb", name))
                         .or_else(|| self.get_path(&format!("lib{}.pdb", name))),
-                    exports: self.get_path(&format!("{}.dll.lib", name))
+                    exports: self
+                        .get_path(&format!("{}.dll.lib", name))
                         .or_else(|| self.get_path(&format!("lib{}.dll.lib", name)))
                         .or_else(|| self.get_path(&format!("{}.lib", name)))
-                        .or_else(|| self.get_path(&format!("lib{}.lib", name)))
+                        .or_else(|| self.get_path(&format!("lib{}.lib", name))),
                 };
-            },
+            }
             LibType::Static => {
                 #[cfg(unix)]
                 return FinderResult {
-                    path: self.get_path(&format!("lib{}.a", name))
+                    path: self
+                        .get_path(&format!("lib{}.a", name))
                         .or_else(|| self.get_path(&format!("{}.a", name))),
-                    debug_info: self.get_path(&format!("lib{}.d", name))
+                    debug_info: self
+                        .get_path(&format!("lib{}.d", name))
                         .or_else(|| self.get_path(&format!("{}.d", name))),
-                    exports: None
+                    exports: None,
                 };
                 #[cfg(windows)]
                 return FinderResult {
-                    path: self.get_path(&format!("{}.lib", name))
+                    path: self
+                        .get_path(&format!("{}.lib", name))
                         .or_else(|| self.get_path(&format!("lib{}.lib", name))),
-                    debug_info: self.get_path(&format!("{}.pdb", name))
+                    debug_info: self
+                        .get_path(&format!("{}.pdb", name))
                         .or_else(|| self.get_path(&format!("lib{}.pdb", name))),
-                    exports: None
+                    exports: None,
                 };
             }
         }

@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fs::File;
-use bp3d_util::result::ResultExt;
-use bpx::package::{Architecture, CreateOptions, Package, Platform};
-use bpx::package::util::{pack_file_vname, unpack};
-use bpx::sd::debug::Debugger;
-use bpx::sd::{Object, Value};
-use bpx::sd::formatting::{Format, IndentType};
-use clap::Parser;
 use crate::args::Args;
+use bp3d_util::result::ResultExt;
+use bpx::package::util::{pack_file_vname, unpack};
+use bpx::package::{Architecture, CreateOptions, Package, Platform};
+use bpx::sd::debug::Debugger;
+use bpx::sd::formatting::{Format, IndentType};
+use bpx::sd::{Object, Value};
+use clap::Parser;
+use std::fs::File;
 
 mod args;
 
@@ -49,9 +49,13 @@ fn extract(args: &Args) -> bpx::package::Result<()> {
     } else {
         let destination = args.file_names.last().unwrap();
         let objects = package.objects()?;
-        for f in args.file_names.iter().rev().skip(1).rev(){
-            let name = f.to_str().ok_or(bpx::package::error::Error::Strings(bpx::strings::Error::Utf8))?;
-            let obj = objects.find(name)?.expect(&format!("Unknown object with name {}", name));
+        for f in args.file_names.iter().rev().skip(1).rev() {
+            let name = f.to_str().ok_or(bpx::package::error::Error::Strings(
+                bpx::strings::Error::Utf8,
+            ))?;
+            let obj = objects
+                .find(name)?
+                .expect(&format!("Unknown object with name {}", name));
             let out = File::create(destination.join(name))?;
             objects.load(obj, out)?;
         }
@@ -88,7 +92,8 @@ fn get_architecture_from_target(target: &str) -> Architecture {
 fn compress(args: &Args) -> bpx::package::Result<()> {
     let mut opts = CreateOptions::new(File::create(&args.file)?);
     if let Some(target) = &args.target {
-        opts = opts.architecture(get_architecture_from_target(target))
+        opts = opts
+            .architecture(get_architecture_from_target(target))
             .platform(get_platform_from_target(target));
     }
     if !args.metadata.is_empty() {
@@ -111,7 +116,7 @@ fn compress(args: &Args) -> bpx::package::Result<()> {
                         obj.set(key, Value::String(value.to_string()));
                     }
                 }
-                _ => continue
+                _ => continue,
             }
         }
         opts = opts.metadata(Value::Object(obj.detach()));
@@ -120,14 +125,19 @@ fn compress(args: &Args) -> bpx::package::Result<()> {
         if type_code.len() == 2 {
             opts = opts.type_code([type_code.as_bytes()[0], type_code.as_bytes()[1]]);
         } else {
-            eprintln!("Cannot set type code {}: type code must be a 2 bytes ASCII string", type_code);
+            eprintln!(
+                "Cannot set type code {}: type code must be a 2 bytes ASCII string",
+                type_code
+            );
         }
     } else {
         opts = opts.type_code([0x50, 0x4B]);
     }
     let mut package = Package::create(opts)?;
     for f in &args.file_names {
-        let vname = f.to_str().ok_or(bpx::package::error::Error::Strings(bpx::strings::Error::Utf8))?;
+        let vname = f.to_str().ok_or(bpx::package::error::Error::Strings(
+            bpx::strings::Error::Utf8,
+        ))?;
         pack_file_vname(&mut package, vname, f)?;
     }
     package.save()?;
@@ -149,7 +159,11 @@ fn info(args: &Args) -> bpx::package::Result<()> {
     println!("==> Objects <==");
     let objects = package.objects()?;
     for obj in &objects {
-        println!("{} ({} mbit(s))", objects.load_name(obj)?, (obj.size as f64) / 1024.0 / 1024.0);
+        println!(
+            "{} ({} mbit(s))",
+            objects.load_name(obj)?,
+            (obj.size as f64) / 1024.0 / 1024.0
+        );
     }
     Ok(())
 }

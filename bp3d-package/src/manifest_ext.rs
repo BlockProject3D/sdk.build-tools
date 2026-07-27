@@ -26,36 +26,39 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::path::Path;
-use serde::de::DeserializeOwned;
-use serde::Deserialize;
 use toml::Table;
 
 #[derive(Deserialize, Clone)]
 pub struct ManifestExtension {
-    packager: Option<HashMap<String, Table>>
+    packager: Option<HashMap<String, Table>>,
 }
 
 #[derive(Debug)]
 pub enum Error {
     Io(std::io::Error),
-    Toml(toml::de::Error)
+    Toml(toml::de::Error),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::Io(e) => write!(f, "io error: {}", e),
-            Error::Toml(e) => write!(f, "toml error: {}", e)
+            Error::Toml(e) => write!(f, "toml error: {}", e),
         }
     }
 }
 
 impl std::error::Error for Error {}
 
-pub fn parse_manifest<T: DeserializeOwned>(root: &Path, packager_name: &str) -> Result<Option<T>, Error> {
+pub fn parse_manifest<T: DeserializeOwned>(
+    root: &Path,
+    packager_name: &str,
+) -> Result<Option<T>, Error> {
     let path = root.join("bp3d.toml");
     if path.exists() && path.is_file() {
         let bytes = std::fs::read(root.join("bp3d.toml")).map_err(Error::Io)?;

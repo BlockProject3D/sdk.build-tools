@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use bp3d_lua::vm::table::Table;
-use bp3d_lua::vm::Vm;
 use crate::system::Package;
+use bp3d_lua::vm::table::Table;
 use bp3d_lua::vm::Result;
+use bp3d_lua::vm::Vm;
 
 pub fn convert_package<'a>(vm: &'a Vm, package: &dyn Package) -> Result<Table<'a>> {
     let mut res = Table::with_capacity(vm, 0, 3);

@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::config::Parameters;
+use bp3d_util::simple_error;
 use std::fmt::Display;
 use std::path::Path;
-use bp3d_util::simple_error;
-use crate::config::Parameters;
 
 #[derive(Debug, Clone)]
 pub struct Dependency {
@@ -47,7 +47,7 @@ impl Dependency {
     pub fn new(name: impl Into<String>, version: impl Into<String>) -> Self {
         Self {
             name: name.into(),
-            version: version.into()
+            version: version.into(),
         }
     }
 

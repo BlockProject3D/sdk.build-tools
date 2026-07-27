@@ -26,8 +26,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod packager;
-mod manifest_ext;
 mod core;
+mod manifest_ext;
+pub mod packager;
 
 pub use core::run_packager;

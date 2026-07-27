@@ -26,38 +26,49 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::Path;
-use bp3d_debug::{debug, info};
-use bp3d_util::expect_return;
+use crate::args::Command;
 use bp3d_build::core;
 use bp3d_build::core::Error;
 use bp3d_build::system::Features;
-use bp3d_package::packager::lua::Lua;
+use bp3d_debug::{debug, info};
 use bp3d_package::packager::PackagerType;
+use bp3d_package::packager::lua::Lua;
 use bp3d_package::run_packager;
 use bp3d_script::interface::Script;
-use crate::args::Command;
+use bp3d_util::expect_return;
+use std::path::Path;
 
 pub struct Context<'a> {
     pub path: &'a Path,
     pub configuration: &'a str,
     pub targets: &'a [&'a str],
-    pub features: Features<'a>
+    pub features: Features<'a>,
 }
 
-fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager: Option<String>, other_args: Option<Vec<String>>) -> core::Result<i32> {
-    debug!("Running command: {:?} for package {}-{}", cmd, tool.package().get_primary_name(), tool.package().get_primary_version());
+fn run_command(
+    tool: &dyn core::BuildTool,
+    ctx: Context,
+    cmd: Command,
+    packager: Option<String>,
+    other_args: Option<Vec<String>>,
+) -> core::Result<i32> {
+    debug!(
+        "Running command: {:?} for package {}-{}",
+        cmd,
+        tool.package().get_primary_name(),
+        tool.package().get_primary_version()
+    );
     let ctx2 = bp3d_build::system::Context {
         path: ctx.path,
         configuration: ctx.configuration,
-        features: ctx.features
+        features: ctx.features,
     };
     match cmd {
         Command::Configure => {
             info!("Configuring package for targets {:?}...", ctx.targets);
             tool.configure(&ctx2, ctx.targets)?;
             Ok(0)
-        },
+        }
         Command::Build => {
             info!("Configuring package for targets {:?}...", ctx.targets);
             tool.configure(&ctx2, ctx.targets)?;
@@ -83,26 +94,26 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
                     configuration: ctx.configuration,
                     targets: ctx.targets,
                     tool,
-                    packager: &packager_name
+                    packager: &packager_name,
                 };
                 let packager = PackagerType::from_name(&packager_name);
                 match packager {
                     Some(packager) => packager.call(&ctx),
-                    None => run_packager::<Lua>(&ctx)
+                    None => run_packager::<Lua>(&ctx),
                 }
                 Ok(0)
             } else {
                 eprintln!("Please specify a packager type to run the packaging process");
                 Ok(1)
             }
-        },
+        }
         Command::Run => {
             let ctx = bp3d_script::interface::Context {
                 path: ctx.path,
                 configuration: ctx.configuration,
                 targets: ctx.targets,
                 features: ctx.features,
-                tool
+                tool,
             };
             if other_args.as_ref().map(|v| v.is_empty()).unwrap_or(true) {
                 eprintln!("Please specify a script name to run");
@@ -114,11 +125,16 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
                 false => {
                     let args: Vec<&str> = args.iter().map(|v| &**v).collect();
                     bp3d_script::lua::Lua::new(&ctx, &name, &args)
-                },
-                true => bp3d_script::lua::Lua::new(&ctx, &name, &[])
-            }.map_err(|e| Error::ScriptSystem(e.to_string()))?;
-            let needs_configure = script.needs_configure().map_err(|e| Error::ScriptSystem(e.to_string()))?;
-            let needs_build = script.needs_build().map_err(|e| Error::ScriptSystem(e.to_string()))?;
+                }
+                true => bp3d_script::lua::Lua::new(&ctx, &name, &[]),
+            }
+            .map_err(|e| Error::ScriptSystem(e.to_string()))?;
+            let needs_configure = script
+                .needs_configure()
+                .map_err(|e| Error::ScriptSystem(e.to_string()))?;
+            let needs_build = script
+                .needs_build()
+                .map_err(|e| Error::ScriptSystem(e.to_string()))?;
             if needs_configure {
                 info!("Configuring package for targets {:?}...", ctx.targets);
                 tool.configure(&ctx2, ctx.targets)?;
@@ -130,12 +146,19 @@ fn run_command(tool: &dyn core::BuildTool, ctx: Context, cmd: Command, packager:
                 }
             }
             info!("Running script {}...", name);
-            script.execute().map_err(|e| Error::ScriptSystem(e.to_string()))
+            script
+                .execute()
+                .map_err(|e| Error::ScriptSystem(e.to_string()))
         }
     }
 }
 
-pub fn dispatch_run(ctx: Context, cmd: Command, packager: Option<String>, other_args: Option<Vec<String>>) -> i32 {
+pub fn dispatch_run(
+    ctx: Context,
+    cmd: Command,
+    packager: Option<String>,
+    other_args: Option<Vec<String>>,
+) -> i32 {
     let tool = expect_return!(core::open(&ctx.path) => ("Failed to load package", 1));
     expect_return!(run_command(&*tool, ctx, cmd, packager, other_args) => ("Failed to run build", 2))
 }

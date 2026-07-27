@@ -37,5 +37,5 @@ simple_error! {
     }
 }
 
-pub use package::LuaPackage;
 pub use builder::LuaBuilder;
+pub use package::LuaPackage;

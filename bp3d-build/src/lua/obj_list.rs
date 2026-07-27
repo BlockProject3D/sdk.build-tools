@@ -26,15 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::cell::RefCell;
-use bp3d_lua::{decl_lib_func, decl_userdata, impl_userdata};
+use crate::lua::obj_artifact::Artifact;
+use crate::system::artifact::{LibType, Type};
 use bp3d_lua::libs::files::SandboxPath;
 use bp3d_lua::libs::Lib;
 use bp3d_lua::util::Namespace;
 use bp3d_lua::vm::userdata::case::Camel;
+use bp3d_lua::{decl_lib_func, decl_userdata, impl_userdata};
 use bp3d_lua_codegen::{FromParam, LuaType};
-use crate::lua::obj_artifact::Artifact;
-use crate::system::artifact::{LibType, Type};
+use std::cell::RefCell;
 
 #[derive(LuaType, FromParam)]
 enum ArtifactType {
@@ -42,7 +42,7 @@ enum ArtifactType {
     Lib,
     Header,
     Config,
-    Other
+    Other,
 }
 
 decl_userdata!(#[derive(Clone)] pub struct List(RefCell<crate::system::artifact::List>));

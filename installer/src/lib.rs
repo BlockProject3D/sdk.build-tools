@@ -26,7 +26,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ffi::{c_char, CStr};
+use std::ffi::{CStr, c_char};
 
 mod core;
 
@@ -35,7 +35,7 @@ pub struct Installer {
     pub name: *const c_char,
     pub version: *const c_char,
     pub package_len: usize,
-    pub package: *const u8
+    pub package: *const u8,
 }
 
 #[allow(unsafe_op_in_unsafe_fn)]
@@ -45,5 +45,9 @@ unsafe extern "C" fn run_installer(config: *const Installer) {
     let name = CStr::from_ptr(config.name).to_str().unwrap_unchecked();
     let version = CStr::from_ptr(config.version).to_str().unwrap_unchecked();
     let package = std::slice::from_raw_parts(config.package, config.package_len);
-    core::Installer::new().version(version).name(name).package(package).run();
+    core::Installer::new()
+        .version(version)
+        .name(name)
+        .package(package)
+        .run();
 }

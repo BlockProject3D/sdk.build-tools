@@ -26,12 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::PathBuf;
-use bp3d_util::result::ResultExt;
-use clap::Parser;
 use crate::args::{Args, Command};
 use crate::project::Project;
+use bp3d_util::result::ResultExt;
+use clap::Parser;
 use current_platform::CURRENT_PLATFORM;
+use std::path::PathBuf;
 
 mod args;
 mod config;
@@ -43,22 +43,36 @@ fn main() {
     if args.targets.is_empty() {
         args.targets.push(CURRENT_PLATFORM.into());
     }
-    let mut project = Project::new(&args.root.unwrap_or(PathBuf::from("."))).expect_exit("unable to load project configuration", 1);
+    let mut project = Project::new(&args.root.unwrap_or(PathBuf::from(".")))
+        .expect_exit("unable to load project configuration", 1);
     if let Some(path) = bp3d_os::dirs::system::get_user_home() {
-        project.add_config_if_exists(&path.join("fpkg.toml")).expect_exit("unable to load user supplied config", 1);
+        project
+            .add_config_if_exists(&path.join("fpkg.toml"))
+            .expect_exit("unable to load user supplied config", 1);
     }
     let exe = bp3d_os::assets::get_executable_path().unwrap();
-    project.add_config_if_exists(&exe.join("../etc/fpkg.toml")).expect_exit("unable to load built-in config", 1);
-    project.add_config_if_exists(&exe.join("../../res/config/fpkg.toml")).expect_exit("unable to load built-in config", 1);
-    let params: Vec<String> = std::env::args().filter(|v| v.starts_with("FPKG_PARAM_")).map(|v| v[12..].to_lowercase()).collect();
-    project.load_sources(&params).expect_exit("unable to load package sources", 1);
+    project
+        .add_config_if_exists(&exe.join("../etc/fpkg.toml"))
+        .expect_exit("unable to load built-in config", 1);
+    project
+        .add_config_if_exists(&exe.join("../../res/config/fpkg.toml"))
+        .expect_exit("unable to load built-in config", 1);
+    let params: Vec<String> = std::env::args()
+        .filter(|v| v.starts_with("FPKG_PARAM_"))
+        .map(|v| v[12..].to_lowercase())
+        .collect();
+    project
+        .load_sources(&params)
+        .expect_exit("unable to load package sources", 1);
     if !args.search.is_empty() {
         let name = &*args.search[0];
         let mut version = "latest";
         if args.search.len() == 2 {
             version = &*args.search[1];
         }
-        project.find(name, version).expect_exit("Failed to find matching packages", 1);
+        project
+            .find(name, version)
+            .expect_exit("Failed to find matching packages", 1);
         return;
     }
     match args.cmd.unwrap_or(Command::Install) {
@@ -66,12 +80,12 @@ fn main() {
             for target in args.targets {
                 project.install(&target).expect_exit("unable to install", 1);
             }
-        },
+        }
         Command::Publish => {
             for target in args.targets {
                 project.publish(&target).expect_exit("unable to publish", 1);
             }
-        },
+        }
         Command::Clean => {
             for target in args.targets {
                 project.clean(&target).expect_exit("unable to clean", 1);

@@ -26,10 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::process::Command;
-use crate::system::{BuildSystem, Context, Features};
-use crate::system::artifact::{Artifact, LibType, List, Type};
 use super::Error;
+use crate::system::artifact::{Artifact, LibType, List, Type};
+use crate::system::{BuildSystem, Context, Features};
+use std::process::Command;
 
 pub struct CargoBuilder;
 
@@ -74,7 +74,12 @@ impl BuildSystem for CargoBuilder {
         Ok(())
     }
 
-    fn pre_package(&self, package: &Self::Package, ctx: &Context, target: &str) -> Result<List, Self::Error> {
+    fn pre_package(
+        &self,
+        package: &Self::Package,
+        ctx: &Context,
+        target: &str,
+    ) -> Result<List, Self::Error> {
         let mut cmd = Command::new("cargo");
         cmd.arg("build");
         gen_base_command(&mut cmd, ctx, target);
@@ -92,9 +97,15 @@ impl BuildSystem for CargoBuilder {
             let bin = Artifact::find_bin(&target_folder, bin, remove_debug_info);
             artifacts.add_if_some(bin);
         }
-        artifacts.add_folder(Type::Header, &ctx.path.join("include"), "").map_err(Error::Io)?;
-        artifacts.add_folder_exclude(Type::Resource, &ctx.path.join("res"), "config", "").map_err(Error::Io)?;
-        artifacts.add_folder(Type::Config, &ctx.path.join("res").join("config"), "").map_err(Error::Io)?;
+        artifacts
+            .add_folder(Type::Header, &ctx.path.join("include"), "")
+            .map_err(Error::Io)?;
+        artifacts
+            .add_folder_exclude(Type::Resource, &ctx.path.join("res"), "config", "")
+            .map_err(Error::Io)?;
+        artifacts
+            .add_folder(Type::Config, &ctx.path.join("res").join("config"), "")
+            .map_err(Error::Io)?;
         Ok(artifacts)
     }
 }

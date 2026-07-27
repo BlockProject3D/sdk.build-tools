@@ -85,7 +85,7 @@ impl Lib for FilesLib {
             ("getResourcesPath", RFunction::wrap(get_res_path)),
             ("getExecutablePath", RFunction::wrap(get_exe_path)),
             ("getLibraryPath", RFunction::wrap(get_lib_path)),
-            ("toString", RFunction::wrap(to_string))
+            ("toString", RFunction::wrap(to_string)),
         ])
     }
 }

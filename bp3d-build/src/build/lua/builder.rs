@@ -27,9 +27,9 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::build::lua::LuaPackage;
-use crate::system::{BuildSystem, Context};
-use crate::system::artifact::List;
 use crate::lua::List as LuaList;
+use crate::system::artifact::List;
+use crate::system::{BuildSystem, Context};
 
 pub struct LuaBuilder;
 
@@ -37,16 +37,31 @@ impl BuildSystem for LuaBuilder {
     type Error = bp3d_lua::vm::error::Error;
     type Package = LuaPackage;
 
-    fn configure(&self, package: &Self::Package, ctx: &Context, targets: &[&str]) -> Result<(), Self::Error> {
+    fn configure(
+        &self,
+        package: &Self::Package,
+        ctx: &Context,
+        targets: &[&str],
+    ) -> Result<(), Self::Error> {
         package.vm().call_main(0, [].into_iter())?;
         package.vm().call_target_list("configure", ctx, targets, ())
     }
 
-    fn build(&self, package: &Self::Package, ctx: &Context, target: &str) -> Result<(), Self::Error> {
+    fn build(
+        &self,
+        package: &Self::Package,
+        ctx: &Context,
+        target: &str,
+    ) -> Result<(), Self::Error> {
         package.vm().call_context("build", ctx, target, ())
     }
 
-    fn pre_package(&self, package: &Self::Package, ctx: &Context, target: &str) -> Result<List, Self::Error> {
+    fn pre_package(
+        &self,
+        package: &Self::Package,
+        ctx: &Context,
+        target: &str,
+    ) -> Result<List, Self::Error> {
         let lst: LuaList = package.vm().call_userdata("prePackage", ctx, target)?;
         Ok(lst.into_inner())
     }

@@ -26,13 +26,13 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use reqwest::blocking::Client;
 use std::string::String;
 use std::vec::Vec;
-use reqwest::blocking::Client;
 
-use crate::types::Result;
 use crate::types::PackageEntry;
 use crate::types::PackageFile;
+use crate::types::Result;
 
 pub struct PackageList {
     client: Client,
@@ -45,7 +45,7 @@ impl PackageList {
         PackageList {
             client: Client::new(),
             base_url,
-            access_token: Some(access_token)
+            access_token: Some(access_token),
         }
     }
 
@@ -53,7 +53,7 @@ impl PackageList {
         PackageList {
             client: Client::new(),
             base_url,
-            access_token: None
+            access_token: None,
         }
     }
 
@@ -69,12 +69,15 @@ impl PackageList {
             ("order_by", "version"),
             ("sort", "desc"),
             ("per_page", "100"),
-            ("page", &page.to_string())
+            ("page", &page.to_string()),
         ]);
         if let Some(token) = &self.access_token {
             request = request.header("PRIVATE-TOKEN", token);
         }
-        request.send()?.error_for_status()?.json::<Vec<PackageEntry>>()
+        request
+            .send()?
+            .error_for_status()?
+            .json::<Vec<PackageEntry>>()
     }
 
     pub fn search(&mut self, page: usize, name: &str) -> Result<Vec<PackageEntry>> {
@@ -90,12 +93,15 @@ impl PackageList {
             ("order_by", "version"),
             ("sort", "desc"),
             ("per_page", "100"),
-            ("page", &page.to_string())
+            ("page", &page.to_string()),
         ]);
         if let Some(token) = &self.access_token {
             request = request.header("PRIVATE-TOKEN", token);
         }
-        request.send()?.error_for_status()?.json::<Vec<PackageEntry>>()
+        request
+            .send()?
+            .error_for_status()?
+            .json::<Vec<PackageEntry>>()
     }
 
     pub fn list_files(&mut self, page: usize, package: &PackageEntry) -> Result<Vec<PackageFile>> {
@@ -107,10 +113,16 @@ impl PackageList {
         }
         path.push_str(&package.id.to_string());
         path.push_str("/package_files");
-        let mut request = self.client.get(&path).query(&[("page_count", "100"), ("page", &page.to_string())]);
+        let mut request = self
+            .client
+            .get(&path)
+            .query(&[("page_count", "100"), ("page", &page.to_string())]);
         if let Some(token) = &self.access_token {
             request = request.header("PRIVATE-TOKEN", token);
         }
-        request.send()?.error_for_status()?.json::<Vec<PackageFile>>()
+        request
+            .send()?
+            .error_for_status()?
+            .json::<Vec<PackageFile>>()
     }
 }
