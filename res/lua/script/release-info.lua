@@ -93,9 +93,8 @@ function ReleaseInfo:run()
         data = bp3d.util.utf8.replace(data, "\n", "\\n")
         data = bp3d.util.utf8.replace(data, "\r", "\\r")
         data = bp3d.util.utf8.replace(data, "\t", "\\t")
-        data = bp3d.util.utf8.replace(data, "\"", "\\\"")
         data = bp3d.util.utf8.replace(data, "'", "\\'")
-        text = text .. name .. "=" .. data .. "\n"
+        text = text .. name .. "='" .. data .. "'\n"
     end
     local out = self.context.path:join("target/release-info.env");
     bp3d.files.writeText(out, text)
