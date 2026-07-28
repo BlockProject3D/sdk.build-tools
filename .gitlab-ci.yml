@@ -63,9 +63,7 @@ macos-test:
 format-code:
     stage: check
     rules:
-        - if: $CI_COMMIT_BRANCH != "master"
-        - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-          when: never
+        - if: $CI_COMMIT_BRANCH != "master" && $CI_PIPELINE_SOURCE != "merge_request_event"
     extends:
         - .linux-base-job
     script:
