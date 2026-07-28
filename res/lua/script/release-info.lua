@@ -57,7 +57,7 @@ function ReleaseInfo:getParameters()
     end
     if #tag <= 1 then
         print("This package does not have any new release available")
-        return
+        return nil
     end
     tag = tag:sub(0, #tag - 1)
     return {
@@ -80,6 +80,9 @@ end
 
 function ReleaseInfo:run()
     local params = self:getParameters()
+    if params == nil then
+        return 1
+    end
     if self:checkTagExists(params.TAG) then
         print("Tag already exists, aborting...")
         return 1
