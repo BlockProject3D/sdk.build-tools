@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+/// Public interface.
+pub mod system;
 
-use crate::packager::util::packager_registry;
+/// Public core interface.
+pub mod core;
 
-packager_registry! {
-    lua::Lua
-}
+/// Public Lua engine.
+pub mod lua;
 
-pub use interface::*;
+// Build system implementations.
+mod build;
+mod config;

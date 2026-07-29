@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,44 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+use clap::Parser;
+use std::path::PathBuf;
 
-use crate::packager::util::packager_registry;
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Args {
+    #[arg(short = 'x', long = "extract", help = "Extraction mode.")]
+    pub extract: bool,
 
-packager_registry! {
-    lua::Lua
+    #[arg(short = 'c', long = "compress", help = "Compression mode.")]
+    pub compress: bool,
+
+    #[arg(short = 'i', long = "info", help = "Info mode.")]
+    pub info: bool,
+
+    #[arg(short = 'f', long = "file", help = "Specify a file name.")]
+    pub file: PathBuf,
+
+    #[arg(
+        short = 'm',
+        long = "metadata",
+        help = "Specify additional metadata parameters to embed."
+    )]
+    pub metadata: Vec<String>,
+
+    #[arg(
+        short = 't',
+        long = "target",
+        help = "Specify optionally the target triple when generating the package..."
+    )]
+    pub target: Option<String>,
+
+    #[arg(
+        short = 'p',
+        long = "type-code",
+        help = "Specify an optional type code to override the default 'PK' code..."
+    )]
+    pub type_code: Option<String>,
+
+    pub file_names: Vec<PathBuf>,
 }
-
-pub use interface::*;

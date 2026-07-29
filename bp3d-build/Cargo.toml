@@ -1,0 +1,17 @@
+[package]
+name = "bp3d-build"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cargo_toml = "0.22.3"
+bp3d-util = { version = "2.2.0", features = ["simple-error", "result", "path"] }
+bp3d-os = { version = "2.3.1", features = ["fs", "assets", "dirs"] }
+bp3d-debug = "1.0.3"
+bp3d-lua = { version = "1.0.0-rc.5.0.0", path = "../../tools.lua/core", features = ["root-vm", "libs", "dynamic", "send", "util-thread", "util-module"] }
+bp3d-lua-codegen = { path = "../../tools.lua/codegen" }
+serde = { version = "1.0.228", features = ["derive"] }
+toml = "0.9.8"

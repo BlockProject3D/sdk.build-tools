@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,19 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+use bp3d_util::simple_error;
 
-use crate::packager::util::packager_registry;
+mod builder;
+mod package;
 
-packager_registry! {
-    lua::Lua
+simple_error! {
+    pub Error {
+        Cargo(cargo_toml::Error) => "cargo manifest error: {}",
+        Io(std::io::Error) => "io error: {}",
+        InvalidUtf8 => "invalid utf-8",
+        Config(crate::config::Error) => "config error: {}"
+    }
 }
 
-pub use interface::*;
+pub use builder::CargoBuilder;
+pub use package::CargoWorkspace;

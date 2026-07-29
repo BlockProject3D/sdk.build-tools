@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,27 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+use bp3d_build::core::BuildTool;
+use bp3d_build::system::Features;
+use std::error::Error;
+use std::path::Path;
 
-use crate::packager::util::packager_registry;
-
-packager_registry! {
-    lua::Lua
+pub struct Context<'a> {
+    pub path: &'a Path,
+    pub configuration: &'a str,
+    pub targets: &'a [&'a str],
+    pub features: Features<'a>,
+    pub tool: &'a dyn BuildTool,
 }
 
-pub use interface::*;
+pub trait Script: Sized {
+    type Error: Error;
+
+    fn new(context: &Context, name: &str, args: &[&str]) -> Result<Self, Self::Error>;
+
+    fn needs_configure(&self) -> Result<bool, Self::Error>;
+
+    fn needs_build(&self) -> Result<bool, Self::Error>;
+
+    fn execute(&self) -> Result<i32, Self::Error>;
+}

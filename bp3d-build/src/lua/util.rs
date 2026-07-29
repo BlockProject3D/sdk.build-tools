@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,34 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+use crate::system::Package;
+use bp3d_lua::vm::table::Table;
+use bp3d_lua::vm::Result;
+use bp3d_lua::vm::Vm;
 
-use crate::packager::util::packager_registry;
-
-packager_registry! {
-    lua::Lua
+pub fn convert_package<'a>(vm: &'a Vm, package: &dyn Package) -> Result<Table<'a>> {
+    let mut res = Table::with_capacity(vm, 0, 3);
+    res.set(c"name", package.get_primary_name())?;
+    res.set(c"version", package.get_primary_version())?;
+    if package.get_components() > 0 {
+        let mut components = Table::with_capacity(vm, 0, package.get_components());
+        for i in 0..package.get_components() {
+            let mut component = Table::with_capacity(vm, 0, 3);
+            let c = package.get_component(i);
+            component.set("name", c.get_name())?;
+            component.set("version", c.get_version())?;
+            component.set("description", c.get_description())?;
+            component.set("public", c.is_public())?;
+            components.set(c.get_short_name(), component)?;
+        }
+        res.set("components", components)?;
+    }
+    if !package.features().is_empty() {
+        let mut features = Table::with_capacity(vm, package.features().len(), 0);
+        for feature in package.features() {
+            features.push(&**feature)?;
+        }
+        res.set("features", features)?;
+    }
+    Ok(res)
 }
-
-pub use interface::*;

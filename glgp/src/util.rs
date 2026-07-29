@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,27 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+use crate::types::Result;
+use reqwest::blocking::Client;
+use serde::Deserialize;
 
-use crate::packager::util::packager_registry;
-
-packager_registry! {
-    lua::Lua
+#[derive(Deserialize)]
+struct ProjectInfo {
+    id: usize,
 }
 
-pub use interface::*;
+pub fn get_base_url(url: &str) -> String {
+    if url.ends_with("/") {
+        String::from(url) + "api/v4/projects"
+    } else {
+        String::from(url) + "/api/v4/projects"
+    }
+}
+
+pub fn get_project_id(base_url: &str, path: &str) -> Result<usize> {
+    let client = Client::new();
+    let url = format!("{}/{}", base_url, path.replace("/", "%2F"));
+    let req = client.get(&url).header("Content-Type", "application/json");
+    let res: ProjectInfo = req.send()?.json()?;
+    Ok(res.id)
+}
