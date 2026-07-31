@@ -166,7 +166,7 @@ create-release:
     needs:
         - release-info
     script:
-        - /usr/bin/true
+        - /bin/true
     release:
         tag_name: "$TAG"
         description: "$COMPONENTS"
