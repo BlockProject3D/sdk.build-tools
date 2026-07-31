@@ -55,6 +55,7 @@ fn main() {
         },
     };
     ModuleLoader::install(&[]);
-    dispatch_run(ctx, args.cmd, args.package_type, args.other_args);
+    let code = dispatch_run(ctx, args.cmd, args.package_type, args.other_args);
     ModuleLoader::uninstall();
+    std::process::exit(code);
 }
