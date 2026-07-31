@@ -9,6 +9,8 @@ stages:
     - deploy
 
 .base-unix-test-job:
+    rules:
+        - if: $CI_COMMIT_BRANCH != "master"
     stage: test
     script:
         - startsection setup "Cloning tools.lua..."
@@ -27,6 +29,8 @@ stages:
             - target/install-*
 
 .base-win64-test-job:
+    rules:
+        - if: $CI_COMMIT_BRANCH != "master"
     stage: test
     script:
         - startsection setup "Cloning tools.lua..."
