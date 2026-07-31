@@ -78,6 +78,14 @@ function ReleaseInfo:checkTagExists(tag)
     return success and status == 0
 end
 
+function ReleaseInfo:getBlockVariables(params)
+    local components = params.COMPONENTS
+    params.COMPONENTS = nil
+    return {
+        body = components
+    }
+end
+
 function ReleaseInfo:run()
     local params = self:getParameters()
     if params == nil then
@@ -87,17 +95,22 @@ function ReleaseInfo:run()
         print("Tag already exists, aborting...")
         return 1
     end
+    local blocks = self:getBlockVariables(params)
     local text = ""
     for name, content in pairs(params) do
-        local data = bp3d.util.utf8.replace(content, "\\", "\\\\")
-        data = bp3d.util.utf8.replace(data, "\n", "\\n")
-        data = bp3d.util.utf8.replace(data, "\r", "\\r")
-        data = bp3d.util.utf8.replace(data, "\t", "\\t")
-        data = bp3d.util.utf8.replace(data, "'", "\\'")
-        text = text .. name .. "='" .. data .. "'\n"
+        local flag = bp3d.util.utf8.contains(content, "\n")
+        local flag1 = bp3d.util.utf8.contains(content, "\r")
+        -- Skip variables which contains CR or LF characters as these are not supported by GitLab dotenv format
+        if not flag and not flag1 then
+            text = text .. name .. "=" .. content .. "\n"
+        end
     end
     local out = self.context.path:join("target/release-info.env");
     bp3d.files.writeText(out, text)
+    for key, content in pairs(blocks) do
+        out = self.context.path:join("target/release-" .. key .. ".txt");
+        bp3d.files.writeText(out, content)
+    end
 end
 
 return ReleaseInfo
