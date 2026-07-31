@@ -48,7 +48,7 @@ fn main() {
         path: args.root.as_deref().unwrap_or(Path::new("./")),
         targets: &targets,
         configuration: args.configuration.as_deref().unwrap_or("debug"),
-        features: if args.all_features {
+        features: if args.all_features.unwrap_or(true) { // By default enable all features
             Features::All
         } else {
             Features::List(&features)

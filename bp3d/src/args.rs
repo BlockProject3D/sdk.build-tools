@@ -63,7 +63,7 @@ pub struct Args {
     pub configuration: Option<String>,
 
     #[arg(short = 'a', long = "all-features", help = "Build with all features.")]
-    pub all_features: bool,
+    pub all_features: Option<bool>,
 
     #[arg(
         long = "root",
