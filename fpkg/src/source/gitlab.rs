@@ -198,7 +198,8 @@ impl Provider for GitLabProvider {
         if allow_guest {
             Ok(Box::new(GitLab {
                 list: glgp::list::PackageList::new_guest(base_url.clone()),
-                manager: glgp::manager::PackageManager::new_guest(base_url),
+                manager: token.map(|v| glgp::manager::PackageManager::new_authenticated(base_url.clone(), v.into()))
+                    .unwrap_or(glgp::manager::PackageManager::new_guest(base_url)),
             }))
         } else {
             let token = token.ok_or(Error::MissingParameter("token"))?;

@@ -232,7 +232,7 @@ impl Project {
             }
         }
         for (name, cfg) in self.config.sources.get_or_insert_default() {
-            debug!("Loading package source: {}", name);
+            debug!("Loading package source {}, with params: {:?}", name, cfg.params);
             let scheme = cfg
                 .scheme()
                 .ok_or_else(|| Error::InvalidUrl(cfg.url.clone()))?;
