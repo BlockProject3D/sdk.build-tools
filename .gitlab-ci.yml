@@ -103,7 +103,11 @@ format-code:
         - endsection build
         - startsection gen "Publishing package..."
         - ./target/debug/bp3d package -p pubdist
+        - ./target/debug/bp3d package -p distinstall
         - endsection gen
+    artifacts:
+        paths:
+            - target/install-*
 
 .base-win64-deploy-job:
     rules:
@@ -123,7 +127,11 @@ format-code:
         - endsection build
         - startsection gen "Publishing package..."
         - ./target/debug/bp3d package -p pubdist
+        - ./target/debug/bp3d package -p distinstall
         - endsection gen
+    artifacts:
+        paths:
+            - target/install-*
 
 release-info:
     stage: release
@@ -178,3 +186,15 @@ macos-deploy:
     extends:
         - .mac-base-job
         - .base-unix-deploy-job
+
+unified-deploy:
+    rules:
+        - if: $CI_COMMIT_TAG
+    stage: deploy
+    image: registry.gitlab.com/gitlab-org/cli:latest
+    needs:
+        - linux-deploy
+        - windows-deploy
+        - macos-deploy
+    script:
+        - glab release upload $CI_COMMIT_TAG target/*
