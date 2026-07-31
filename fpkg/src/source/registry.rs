@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+use crate::source::interface::Provider;
 
-use crate::packager::util::packager_registry;
+static PROVIDERS: &[&dyn Provider] = &[super::gitlab::GLGP, super::local::LOCAL];
 
-packager_registry! {
-    lua::Lua
+pub fn get_provider(scheme: &str) -> Option<&'static dyn Provider> {
+    PROVIDERS.iter().find(|p| p.scheme() == scheme).map(|v| *v)
 }
-
-pub use interface::*;

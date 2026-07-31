@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,28 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+use std::ffi::{CStr, c_char};
 
-use crate::packager::util::packager_registry;
+mod core;
 
-packager_registry! {
-    lua::Lua
+#[repr(C)]
+pub struct Installer {
+    pub name: *const c_char,
+    pub version: *const c_char,
+    pub package_len: usize,
+    pub package: *const u8,
 }
 
-pub use interface::*;
+#[allow(unsafe_op_in_unsafe_fn)]
+#[unsafe(no_mangle)]
+unsafe extern "C" fn run_installer(config: *const Installer) {
+    let config = &*config;
+    let name = CStr::from_ptr(config.name).to_str().unwrap_unchecked();
+    let version = CStr::from_ptr(config.version).to_str().unwrap_unchecked();
+    let package = std::slice::from_raw_parts(config.package, config.package_len);
+    core::Installer::new()
+        .version(version)
+        .name(name)
+        .package(package)
+        .run();
+}

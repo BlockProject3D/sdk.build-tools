@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,37 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+use crate::args::Args;
+use crate::core::{Context, dispatch_run};
+use bp3d_build::system::Features;
+use bp3d_os::module::loader::ModuleLoader;
+use clap::Parser;
+use current_platform::CURRENT_PLATFORM;
+use std::path::Path;
 
-use crate::packager::util::packager_registry;
+mod args;
+mod core;
 
-packager_registry! {
-    lua::Lua
+fn main() {
+    let mut args = Args::parse();
+    if args.targets.is_empty() {
+        args.targets.push(CURRENT_PLATFORM.into());
+    }
+    let features: Vec<&str> = args.features.iter().map(|v| &**v).collect();
+    let targets: Vec<&str> = args.targets.iter().map(|v| &**v).collect();
+    let ctx = Context {
+        path: args.root.as_deref().unwrap_or(Path::new("./")),
+        targets: &targets,
+        configuration: args.configuration.as_deref().unwrap_or("debug"),
+        features: if args.all_features.unwrap_or(true) {
+            // By default enable all features
+            Features::All
+        } else {
+            Features::List(&features)
+        },
+    };
+    ModuleLoader::install(&[]);
+    let code = dispatch_run(ctx, args.cmd, args.package_type, args.other_args);
+    ModuleLoader::uninstall();
+    std::process::exit(code);
 }
-
-pub use interface::*;

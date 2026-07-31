@@ -26,13 +26,15 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
-
-use crate::packager::util::packager_registry;
-
-packager_registry! {
-    lua::Lua
+fn main() {
+    #[cfg(target_vendor = "apple")]
+    {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path");
+        println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../lib");
+    }
+    #[cfg(all(unix, not(target_vendor = "apple")))]
+    {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
+        println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN/../lib");
+    }
 }
-
-pub use interface::*;

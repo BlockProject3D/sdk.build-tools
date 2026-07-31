@@ -1,0 +1,176 @@
+include:
+    - project: bp3d/gitlab-tools
+      file: workflows/base-jobs.yml
+
+stages:
+    - test
+    - check
+    - release
+    - deploy
+
+.base-unix-test-job:
+    stage: test
+    script:
+        - startsection setup "Cloning tools.lua..."
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - cd -
+        - endsection setup
+        - startsection build "Building..."
+        - cargo build
+        - endsection build
+        - startsection gen "Generating distinstall package..."
+        - ./target/debug/bp3d package -p distinstall
+        - endsection gen
+    artifacts:
+        paths:
+            - target/install-*
+
+.base-win64-test-job:
+    stage: test
+    script:
+        - startsection setup "Cloning tools.lua..."
+        - pushd .
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - popd
+        - endsection setup
+        - startsection build "Building..."
+        - cargo build
+        - endsection build
+        - startsection gen "Generating distinstall package..."
+        - ./target/debug/bp3d package -p distinstall
+        - endsection gen
+    artifacts:
+        paths:
+            - target/install-*
+
+linux-test:
+    extends:
+        - .linux-base-job
+        - .base-unix-test-job
+
+windows-test:
+    extends:
+        - .win64-base-job
+        - .base-win64-test-job
+
+macos-test:
+    extends:
+        - .mac-base-job
+        - .base-unix-test-job
+
+format-code:
+    stage: check
+    rules:
+        - if: $CI_COMMIT_BRANCH != "master" && $CI_PIPELINE_SOURCE != "merge_request_event"
+    extends:
+        - .linux-base-job
+    script:
+        - startsection rustfmt "Installing rustfmt..."
+        - rustup component add rustfmt
+        - endsection rustfmt
+        - startsection setup "Cloning tools.lua..."
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - cd -
+        - endsection setup
+        - cargo fmt
+        - git config user.email "bp3d-format@gitlab.com"
+        - git config user.name "BP3D Code Format"
+        - git commit -am "Formatted code" || true
+        - git remote add gitlab_origin "https://oauth2:${BP3D_FORMAT_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git"
+        - git push gitlab_origin -o ci.skip HEAD:$CI_COMMIT_BRANCH
+
+.base-unix-deploy-job:
+    rules:
+        - if: $CI_COMMIT_TAG
+    variables:
+        FPKG_PARAM_TOKEN: $CI_JOB_TOKEN
+    stage: deploy
+    script:
+        - startsection setup "Cloning tools.lua..."
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - cd -
+        - endsection setup
+        - startsection build "Building..."
+        - cargo build
+        - endsection build
+        - startsection gen "Publishing package..."
+        - ./target/debug/bp3d package -p pubdist
+        - endsection gen
+
+.base-win64-deploy-job:
+    rules:
+        - if: $CI_COMMIT_TAG
+    variables:
+        FPKG_PARAM_TOKEN: $CI_JOB_TOKEN
+    stage: deploy
+    script:
+        - startsection setup "Cloning tools.lua..."
+        - pushd .
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - popd
+        - endsection setup
+        - startsection build "Building..."
+        - cargo build
+        - endsection build
+        - startsection gen "Publishing package..."
+        - ./target/debug/bp3d package -p pubdist
+        - endsection gen
+
+release-info:
+    stage: release
+    rules:
+        - if: $CI_COMMIT_TAG
+          when: never
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    extends:
+        - .linux-base-job
+    script:
+        - startsection setup "Cloning tools.lua..."
+        - cd ..
+        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - cd -
+        - endsection setup
+        - startsection build "Building..."
+        - cargo build
+        - endsection build
+        - ./target/debug/bp3d run release-info
+    artifacts:
+        reports:
+            dotenv:
+                - target/release-info.env
+
+create-release:
+    stage: release
+    rules:
+        - if: $CI_COMMIT_TAG
+          when: never
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    image: registry.gitlab.com/gitlab-org/cli:latest
+    needs:
+        - release-info
+    script:
+        - /usr/bin/true
+    release:
+        tag_name: "$TAG"
+        description: "$COMPONENTS"
+        name: "$NAME"
+
+linux-deploy:
+    extends:
+        - .linux-base-job
+        - .base-unix-deploy-job
+
+windows-deploy:
+    extends:
+        - .win64-base-job
+        - .base-win64-deploy-job
+
+macos-deploy:
+    extends:
+        - .mac-base-job
+        - .base-unix-deploy-job

@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,36 +26,49 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::{Display, Formatter};
-use std::path::Path;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
+use std::path::Path;
+use toml::Table;
 
 #[derive(Deserialize, Clone)]
-pub struct ManifestExtension<T> {
-    #[serde(rename = "bp3d-package")]
-    value: T
+pub struct ManifestExtension {
+    packager: Option<HashMap<String, Table>>,
 }
 
 #[derive(Debug)]
 pub enum Error {
     Io(std::io::Error),
-    Toml(toml::de::Error)
+    Toml(toml::de::Error),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::Io(e) => write!(f, "io error: {}", e),
-            Error::Toml(e) => write!(f, "toml error: {}", e)
+            Error::Toml(e) => write!(f, "toml error: {}", e),
         }
     }
 }
 
 impl std::error::Error for Error {}
 
-pub fn parse_manifest<T: DeserializeOwned>(root: &Path) -> Result<T, Error> {
-    let str = std::fs::read_to_string(root.join("Cargo.toml")).map_err(Error::Io)?;
-    let ext: ManifestExtension<T> = toml::from_str(&str).map_err(Error::Toml)?;
-    Ok(ext.value)
+pub fn parse_manifest<T: DeserializeOwned>(
+    root: &Path,
+    packager_name: &str,
+) -> Result<Option<T>, Error> {
+    let path = root.join("bp3d.toml");
+    if path.exists() && path.is_file() {
+        let bytes = std::fs::read(root.join("bp3d.toml")).map_err(Error::Io)?;
+        let mut ext: ManifestExtension = toml::from_slice(&bytes).map_err(Error::Toml)?;
+        if let Some(packager) = ext.packager.get_or_insert_default().remove(packager_name) {
+            Ok(Some(T::deserialize(packager).map_err(Error::Toml)?))
+        } else {
+            Ok(None)
+        }
+    } else {
+        Ok(None)
+    }
 }

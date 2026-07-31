@@ -26,13 +26,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+use bp3d_util::simple_error;
 
-use crate::packager::util::packager_registry;
+mod builder;
+mod package;
 
-packager_registry! {
-    lua::Lua
+simple_error! {
+    pub Error {
+        Lua(bp3d_lua::vm::error::Error) => "lua error: {}"
+    }
 }
 
-pub use interface::*;
+pub use builder::LuaBuilder;
+pub use package::LuaPackage;

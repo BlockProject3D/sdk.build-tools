@@ -1,0 +1,12 @@
+default = "build-tools"
+
+[sources.build-tools]
+# SDK build tools
+url = "gitlab://https://gitlab.com"
+params = { allow-guest = true, project-path = "bp3d/sdk/build-tools" }
+
+# TODO
+#[sources.sdk]
+# Main SDK repository (does not yet exist)
+#url = "gitlab://https://gitlab.com"
+#params = { allow-guest = true, project-path = "bp3d/sdk/main" }

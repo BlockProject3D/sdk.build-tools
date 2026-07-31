@@ -26,13 +26,12 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+pub mod artifact;
+pub mod finder;
 mod interface;
-mod util;
-
-use crate::packager::util::packager_registry;
-
-packager_registry! {
-    lua::Lua
-}
 
 pub use interface::*;
+
+pub const fn static_string(str: &'static str) -> std::borrow::Cow<'static, str> {
+    std::borrow::Cow::Borrowed(str)
+}

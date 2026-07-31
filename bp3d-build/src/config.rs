@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,35 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+use bp3d_util::simple_error;
+use serde::Deserialize;
+use std::path::Path;
 
-use crate::packager::util::packager_registry;
-
-packager_registry! {
-    lua::Lua
+#[derive(Deserialize)]
+pub struct Package {
+    pub name: String,
+    pub version: String,
 }
 
-pub use interface::*;
+#[derive(Deserialize)]
+pub struct Config {
+    pub package: Option<Package>,
+}
+
+simple_error! {
+    pub Error {
+        Io(std::io::Error) => "io error: {}",
+        Toml(toml::de::Error) => "toml error: {}"
+    }
+}
+
+pub fn parse_config(root: &Path) -> Result<Option<Config>, Error> {
+    let path = root.join("bp3d.toml");
+    if path.exists() && path.is_file() {
+        let bytes = std::fs::read(root.join("bp3d.toml")).map_err(Error::Io)?;
+        let config: Config = toml::from_slice(&bytes).map_err(Error::Toml)?;
+        Ok(Some(config))
+    } else {
+        Ok(None)
+    }
+}

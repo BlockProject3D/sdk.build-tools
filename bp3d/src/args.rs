@@ -1,4 +1,4 @@
-// Copyright (c) 2025, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,13 +26,55 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod interface;
-mod util;
+use clap::{Parser, ValueEnum};
+use std::path::PathBuf;
 
-use crate::packager::util::packager_registry;
-
-packager_registry! {
-    lua::Lua
+#[derive(ValueEnum, Debug, Copy, Clone)]
+pub enum Command {
+    Configure,
+    Build,
+    PrePackage,
+    Package,
+    Run,
 }
 
-pub use interface::*;
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Args {
+    #[arg(
+        short = 't',
+        long = "target",
+        help = "Specify which target to build for."
+    )]
+    pub targets: Vec<String>,
+
+    #[arg(
+        short = 'f',
+        long = "feature",
+        help = "Specify which feature(s) to build with."
+    )]
+    pub features: Vec<String>,
+
+    #[arg(
+        short = 'c',
+        long = "config",
+        help = "Build rust target in release mode."
+    )]
+    pub configuration: Option<String>,
+
+    #[arg(short = 'a', long = "all-features", help = "Build with all features.")]
+    pub all_features: Option<bool>,
+
+    #[arg(
+        long = "root",
+        help = "Root path of the project, where to find the manifest."
+    )]
+    pub root: Option<PathBuf>,
+
+    #[arg(short = 'p', long = "package", help = "The packager engine to use.")]
+    pub package_type: Option<String>,
+
+    pub cmd: Command,
+
+    pub other_args: Option<Vec<String>>,
+}

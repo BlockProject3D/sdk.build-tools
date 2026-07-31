@@ -1,4 +1,4 @@
-// Copyright (c) 2024, BlockProject 3D
+// Copyright (c) 2026, BlockProject 3D
 //
 // All rights reserved.
 //
@@ -26,69 +26,61 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use bp3d_build::core::BuildTool;
+use bp3d_build::system::artifact::List;
+use bp3d_build::system::Features;
+use serde::de::DeserializeOwned;
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use std::process::Command;
-use bp3d_build_common::output::Output;
 
-#[derive(Copy, Clone, Eq, PartialEq)]
-pub enum Config {
-    Debug,
-    Release
+pub struct Context<'a> {
+    pub path: &'a Path,
+    pub configuration: &'a str,
+    pub targets: &'a [&'a str],
+    pub tool: &'a dyn BuildTool,
+    pub packager: &'a str,
 }
 
-pub trait Package {
-    /// Returns the name of the package.
-    fn get_name(&self) -> &str;
-
-    /// Returns the version of this package.
-    fn get_version(&self) -> &str;
-
-    /// Returns an iterator over all outputs of this package.
-    fn get_outputs(&self) -> impl Iterator<Item = Output>;
-}
-
-pub struct Context<'a, P: Package> {
-    pub root: &'a Path,
-    pub package: P,
-    pub config: Config,
-    pub targets: &'a [&'a str]
-}
-
-impl<'a, P: Package> Context<'a, P> {
+impl<'a> Context<'a> {
     pub fn get_target_path(&self, target: &str) -> PathBuf {
-        let config_path_name = match self.config {
-            Config::Debug => "debug",
-            Config::Release => "release"
-        };
-        self.root.join("target").join(target).join(config_path_name)
+        self.path
+            .join("target")
+            .join(target)
+            .join(self.configuration)
     }
 }
 
-pub trait Packager {
+pub fn build_target(context: &Context, target: &str) -> Result<List, bp3d_build::core::Error> {
+    let ctx = bp3d_build::system::Context {
+        path: context.path,
+        configuration: context.configuration,
+        features: Features::All,
+    };
+    //FIXME: configure is not called at this point.
+    let data = context.tool.pre_package(&ctx, target)?;
+    Ok(data)
+}
+
+pub trait Packager<'a>: Sized {
     const NAME: &'static str;
 
-    type Error: Error + From<std::io::Error>;
+    type Error: Error;
 
-    fn do_build_target<P: Package>(&self, target: &str, context: &Context<P>) -> Result<(), Self::Error> {
-        Command::new("cargo")
-            .arg("build")
-            .arg("--target")
-            .arg(target)
-            .current_dir(context.root)
-            .status()?;
+    type Config: DeserializeOwned;
+
+    fn new(config: Option<Self::Config>, context: &'a Context<'a>) -> Result<Self, Self::Error>;
+
+    fn do_build_target(&self, target: &str) -> Result<List, Self::Error>;
+
+    fn do_build(&self) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn do_build<P: Package>(&self, _context: &Context<P>) -> Result<(), Self::Error> {
+    fn do_package_target(&self, _list: &List, _target: &str) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn do_package_target<P: Package>(&self, _target: &str, _context: &Context<P>) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
-    fn do_package<P: Package>(&self, _context: &Context<P>) -> Result<(), Self::Error> {
+    fn do_package(&self) -> Result<(), Self::Error> {
         Ok(())
     }
 }
