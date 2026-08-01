@@ -26,26 +26,39 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::types::PackageEntry;
 use crate::types::PackageFile;
 use crate::types::Result;
+use crate::types::{PackageEntry, TokenType};
 use regex::Regex;
 use reqwest::blocking::Client;
 use reqwest::blocking::Response;
 use std::fs::File;
 
+fn get_header_key(ty: TokenType) -> &'static str {
+    match ty {
+        TokenType::Private => "PRIVATE-TOKEN",
+        TokenType::Job => "JOB-TOKEN",
+    }
+}
+
 pub struct PackageManager {
     client: Client,
     base_url: String, //This way we support other gitlab instances (not just gitlab.com)
     access_token: Option<String>,
+    header_key: &'static str,
 }
 
 impl PackageManager {
-    pub fn new_authenticated(base_url: String, access_token: String) -> PackageManager {
+    pub fn new_authenticated(
+        base_url: String,
+        ty: TokenType,
+        access_token: String,
+    ) -> PackageManager {
         PackageManager {
             client: Client::new(),
             base_url,
             access_token: Some(access_token),
+            header_key: get_header_key(ty),
         }
     }
 
@@ -54,6 +67,7 @@ impl PackageManager {
             client: Client::new(),
             base_url,
             access_token: None,
+            header_key: "PRIVATE-TOKEN",
         }
     }
 
@@ -107,7 +121,7 @@ impl PackageManager {
         self.client
             .put(&path)
             .header(
-                "PRIVATE-TOKEN",
+                self.header_key,
                 self.access_token.as_deref().unwrap_or_default(),
             )
             .body(file)

@@ -91,6 +91,7 @@ format-code:
         - if: $CI_COMMIT_TAG
     variables:
         FPKG_PARAM_TOKEN: $CI_JOB_TOKEN
+        FPKG_PARAM_TOKEN_TYPE: job
     stage: deploy
     script:
         - startsection setup "Cloning tools.lua..."

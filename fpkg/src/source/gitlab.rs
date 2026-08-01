@@ -29,6 +29,7 @@
 use super::interface::{Dependency, Error, Provider, Result, Source};
 use crate::config::Parameters;
 use bp3d_debug::error;
+use glgp::types::TokenType;
 use glgp::util::{get_base_url, get_project_id};
 use regex::Regex;
 use std::boxed::Box;
@@ -195,17 +196,33 @@ impl Provider for GitLabProvider {
             Some(token) => Some(token.as_str().ok_or(Error::InvalidParameter("token"))?),
             None => None,
         };
+        let ty = params
+            .get("token-type")
+            .map(|v| v.as_enum(&[("private", TokenType::Private), ("job", TokenType::Job)]))
+            .unwrap_or(Some(TokenType::Private))
+            .ok_or(Error::InvalidParameter("token-type"))?;
         if allow_guest {
             Ok(Box::new(GitLab {
                 list: glgp::list::PackageList::new_guest(base_url.clone()),
-                manager: token.map(|v| glgp::manager::PackageManager::new_authenticated(base_url.clone(), v.into()))
+                manager: token
+                    .map(|v| {
+                        glgp::manager::PackageManager::new_authenticated(
+                            base_url.clone(),
+                            ty,
+                            v.into(),
+                        )
+                    })
                     .unwrap_or(glgp::manager::PackageManager::new_guest(base_url)),
             }))
         } else {
             let token = token.ok_or(Error::MissingParameter("token"))?;
             Ok(Box::new(GitLab {
                 list: glgp::list::PackageList::new_authenticated(base_url.clone(), token.into()),
-                manager: glgp::manager::PackageManager::new_authenticated(base_url, token.into()),
+                manager: glgp::manager::PackageManager::new_authenticated(
+                    base_url,
+                    ty,
+                    token.into(),
+                ),
             }))
         }
     }
