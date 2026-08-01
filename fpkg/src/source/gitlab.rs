@@ -196,9 +196,9 @@ impl Provider for GitLabProvider {
             Some(token) => Some(token.as_str().ok_or(Error::InvalidParameter("token"))?),
             None => None,
         };
-        let ty = params.get("type")
+        let ty = params.get("token-type")
             .map(|v| v.as_enum(&[("private", TokenType::Private), ("job", TokenType::Job)]))
-            .unwrap_or(Some(TokenType::Private)).ok_or(Error::InvalidParameter("type"))?;
+            .unwrap_or(Some(TokenType::Private)).ok_or(Error::InvalidParameter("token-type"))?;
         if allow_guest {
             Ok(Box::new(GitLab {
                 list: glgp::list::PackageList::new_guest(base_url.clone()),

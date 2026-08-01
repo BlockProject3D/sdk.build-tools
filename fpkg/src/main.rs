@@ -61,7 +61,7 @@ fn main() {
         .filter(|(key, _)| {
             key.starts_with("FPKG_PARAM_")
         })
-        .map(|(key, value)| key[11..].to_lowercase() + "=" + &value)
+        .map(|(key, value)| key[11..].to_lowercase().replace("_", "-") + "=" + &value)
         .collect();
     project
         .load_sources(&params)
