@@ -48,5 +48,5 @@ pub struct PackageEntry {
 #[derive(Copy, Clone)]
 pub enum TokenType {
     Private,
-    Job
+    Job,
 }
