@@ -201,4 +201,4 @@ unified-deploy:
         - windows-deploy
         - macos-deploy
     script:
-        - glab release upload $CI_COMMIT_TAG target/*
+        - GLAB_ENABLE_CI_AUTOLOGIN=true glab release upload --use-package-registry $CI_COMMIT_TAG target/*
