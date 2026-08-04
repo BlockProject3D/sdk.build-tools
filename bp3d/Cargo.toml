@@ -1,6 +1,6 @@
 [package]
 name = "bp3d"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
@@ -11,4 +11,4 @@ bp3d-build = { path = "../bp3d-build" }
 bp3d-package = { path = "../bp3d-package" }
 bp3d-script = { path = "../bp3d-script" }
 current_platform = "0.2.0"
-bp3d-os = { version = "2.3.1", features = ["module"] }
+bp3d-os = { version = "2.3.2", features = ["module"] }
