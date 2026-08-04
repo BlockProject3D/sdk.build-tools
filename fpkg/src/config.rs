@@ -70,6 +70,16 @@ impl ParamValue {
             _ => None,
         }
     }
+
+    pub fn as_enum<T: Copy>(&self, possible_values: &[(&str, T)]) -> Option<T> {
+        let s = self.as_str()?;
+        for (key, val) in possible_values {
+            if *key == s {
+                return Some(*val);
+            }
+        }
+        None
+    }
 }
 
 pub type Parameters = HashMap<String, ParamValue>;

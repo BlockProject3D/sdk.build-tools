@@ -44,3 +44,9 @@ pub struct PackageEntry {
     pub version: String,
     pub name: String,
 }
+
+#[derive(Copy, Clone)]
+pub enum TokenType {
+    Private,
+    Job,
+}

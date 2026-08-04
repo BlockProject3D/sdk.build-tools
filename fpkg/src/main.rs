@@ -57,9 +57,9 @@ fn main() {
     project
         .add_config_if_exists(&exe.join("../../res/config/fpkg.toml"))
         .expect_exit("unable to load built-in config", 1);
-    let params: Vec<String> = std::env::args()
-        .filter(|v| v.starts_with("FPKG_PARAM_"))
-        .map(|v| v[12..].to_lowercase())
+    let params: Vec<String> = std::env::vars()
+        .filter(|(key, _)| key.starts_with("FPKG_PARAM_"))
+        .map(|(key, value)| key[11..].to_lowercase().replace("_", "-") + "=" + &value)
         .collect();
     project
         .load_sources(&params)
