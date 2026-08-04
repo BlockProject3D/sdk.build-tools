@@ -16,4 +16,4 @@ current_platform = "0.2.0"
 glgp = { path = "../glgp" }
 reqwest = "0.13.4"
 regex = "1.12.4"
-bp3d-os = { version = "2.3.1", features = ["assets", "dirs"] }
+bp3d-os = { version = "2.3.2", features = ["assets", "dirs"] }
