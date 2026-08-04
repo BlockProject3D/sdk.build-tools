@@ -9,7 +9,7 @@ publish = false
 [dependencies]
 cargo_toml = "0.22.3"
 bp3d-util = { version = "2.2.0", features = ["simple-error", "result", "path"] }
-bp3d-os = { version = "2.3.2", features = ["fs", "assets", "dirs"] }
+bp3d-os = { version = "2.3.3", features = ["fs", "assets", "dirs"] }
 bp3d-debug = "1.0.3"
 bp3d-lua = { version = "1.0.0-rc.5.0.0", path = "../../tools.lua/core", features = ["root-vm", "libs", "dynamic", "send", "util-thread", "util-module"] }
 bp3d-lua-codegen = { path = "../../tools.lua/codegen" }
