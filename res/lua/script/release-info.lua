@@ -105,6 +105,9 @@ function ReleaseInfo:run()
             text = text .. name .. "=" .. content .. "\n"
         end
     end
+    if not bp3d.files.exists(self.context.path:join("target")) then
+        bp3d.files.createDir(self.context.path:join("target"))
+    end
     local out = self.context.path:join("target/release-info.env");
     bp3d.files.writeText(out, text)
     for key, content in pairs(blocks) do
