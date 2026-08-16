@@ -44,8 +44,10 @@ function ReleaseInfo:getParameters()
     local tag = ""
     local name = nil
     local version = nil
+    local packageNameIsPartOfComponents = false
     local compList = "## Components:\n\n"
     for k, v in pairs(components) do
+        if v.name == package.name then packageNameIsPartOfComponents = true end
         if self:canRelease(k, v) then
             tag = tag .. k .. "-" .. v.version .. "+"
             name = v.name
@@ -55,6 +57,7 @@ function ReleaseInfo:getParameters()
             compList = compList .. "    - " .. v.name .. " (" .. v.version .. ")\n"
         end
     end
+    if not packageNameIsPartOfComponents then name = package.name end
     if #tag <= 1 then
         print("This package does not have any new release available")
         return nil
