@@ -15,7 +15,7 @@ stages:
     script:
         - startsection setup "Cloning tools.lua..."
         - cd ..
-        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - git clone --recursive https://gitlab.com/bp3d/tools/lua.git tools.lua
         - cd -
         - endsection setup
         - startsection build "Building..."
@@ -36,7 +36,7 @@ stages:
         - startsection setup "Cloning tools.lua..."
         - pushd .
         - cd ..
-        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - git clone --recursive https://gitlab.com/bp3d/tools/lua.git tools.lua
         - popd
         - endsection setup
         - startsection build "Building..."
@@ -76,7 +76,7 @@ format-code:
         - endsection rustfmt
         - startsection setup "Cloning tools.lua..."
         - cd ..
-        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - git clone --recursive https://gitlab.com/bp3d/tools/lua.git tools.lua
         - cd -
         - endsection setup
         - cargo fmt
@@ -96,7 +96,7 @@ format-code:
     script:
         - startsection setup "Cloning tools.lua..."
         - cd ..
-        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - git clone --recursive https://gitlab.com/bp3d/tools/lua.git tools.lua
         - cd -
         - endsection setup
         - startsection build "Building..."
@@ -121,7 +121,7 @@ format-code:
         - startsection setup "Cloning tools.lua..."
         - pushd .
         - cd ..
-        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - git clone --recursive https://gitlab.com/bp3d/tools/lua.git tools.lua
         - popd
         - endsection setup
         - startsection build "Building..."
@@ -146,7 +146,7 @@ release-info:
     script:
         - startsection setup "Cloning tools.lua..."
         - cd ..
-        - git clone --recursive https://gitlab.com/bp3d/lua.git tools.lua
+        - git clone --recursive https://gitlab.com/bp3d/tools/lua.git tools.lua
         - cd -
         - endsection setup
         - startsection build "Building..."
