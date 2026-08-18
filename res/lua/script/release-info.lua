@@ -57,7 +57,10 @@ function ReleaseInfo:getParameters()
             compList = compList .. "    - " .. v.name .. " (" .. v.version .. ")\n"
         end
     end
-    if not packageNameIsPartOfComponents then name = package.name end
+    if not packageNameIsPartOfComponents then
+        name = package.name
+        version = package.version
+    end
     if #tag <= 1 then
         print("This package does not have any new release available")
         return nil
